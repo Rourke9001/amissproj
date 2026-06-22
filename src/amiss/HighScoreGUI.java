@@ -68,7 +68,7 @@ public class HighScoreGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnBack, new org.netbeans.lib.awtextra.AbsoluteConstraints(103, 363, 120, -1));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Pictures\\PAT Backgrounds\\pale-blue2.jpg")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/HighScore.png"));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(1, -4, 480, 400));
 
         pack();

@@ -156,7 +156,7 @@ public class MarketGUI extends javax.swing.JFrame {
         lblShopItems.setText("Shop Items");
         getContentPane().add(lblShopItems, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 10, 130, 40));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Market.png")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/Market.png"));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(1, -4, 490, 280));
 
         pack();

@@ -169,7 +169,7 @@ public class PizzaPalaceGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnTonno, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 200, -1, -1));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Pizza.png")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/Pizza.png"));
         lblBackground.setMaximumSize(new java.awt.Dimension(400, 360));
         lblBackground.setMinimumSize(new java.awt.Dimension(400, 360));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 530, 330));

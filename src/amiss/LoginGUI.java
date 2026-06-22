@@ -99,7 +99,7 @@ public class LoginGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnHelp, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 230, 70, -1));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Pictures\\PAT Backgrounds\\pale-blue2.jpg")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/Login.png"));
         lblBackground.setText("Help");
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 400, 300));
 

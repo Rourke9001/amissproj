@@ -97,13 +97,16 @@ classpath — no NetBeans or Ant required.
 ## Project structure
 
 ```
-src/amiss/        Java source (Swing GUIs + game logic + DB wrapper)
-db/setup.sql      Database schema + seed data (jobs, help text)
-scripts/          build.ps1 (compile+package), run.ps1 (launch)
-dist/lib/         third-party jars (committed; all redistributable)
-nbproject/        original NetBeans project files (optional, for the IDE)
-SETUP.md          detailed setup & troubleshooting guide
-tasks/todo.md     roadmap & progress
+src/amiss/            Java source (Swing GUIs + game logic + DB wrapper)
+src/amiss/resources/  bundled UI images (screen backgrounds + game board)
+db/setup.sql          Database schema + seed data (jobs, help text)
+scripts/              build.ps1 (compile+package), run.ps1 (launch),
+                      gen-placeholders.ps1 (regenerate placeholder art)
+dist/lib/             third-party jars (committed; all redistributable)
+nbproject/            leftover NetBeans Ant files (unused; build is scripts\build.ps1)
+.vscode/              shared editor config (Java classpath -> dist/lib)
+SETUP.md              detailed setup & troubleshooting guide
+tasks/todo.md         roadmap & progress
 ```
 
 ## Roadmap

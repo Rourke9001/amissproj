@@ -197,7 +197,7 @@ public class MainGameGUI extends javax.swing.JFrame {
 
         btnPanel.add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 90, 180, 160));
 
-        lblBoard.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Pictures\\Saved Pictures\\board.png")); // NOI18N
+        lblBoard.setIcon(amiss.Assets.icon("board.png"));
         btnPanel.add(lblBoard, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 380, 340));
 
         getContentPane().add(btnPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 20, -1, -1));
@@ -237,7 +237,7 @@ public class MainGameGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnStartNewGame, new org.netbeans.lib.awtextra.AbsoluteConstraints(470, 320, 130, -1));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Pictures\\PAT Backgrounds\\pale-blue2.jpg")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/MainGame.png"));
         lblBackground.setText("Show HighScores");
         lblBackground.setToolTipText("");
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 660, 380));

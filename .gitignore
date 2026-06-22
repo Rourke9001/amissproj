@@ -17,7 +17,10 @@ secrets.properties
 
 # ─── IDE / editor / OS cruft ───
 .idea/
-.vscode/
+# Ignore per-user VSCode state, but track shared project config (classpath, recos).
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 *.iml
 Thumbs.db
 .DS_Store

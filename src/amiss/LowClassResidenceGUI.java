@@ -87,7 +87,7 @@ public class LowClassResidenceGUI extends javax.swing.JFrame {
 
         getContentPane().add(pnlDisplay, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 66, 163, 141));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Untitled.png")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/Residence.png"));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 210, 300));
 
         pack();
