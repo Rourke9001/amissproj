@@ -52,15 +52,29 @@ Full first-time setup, including installing MySQL and troubleshooting, is in
 
 ### The MySQL server
 It was installed as a Windows **service** (`MySQL97`) set to start automatically on
-boot, so normally it's already running. To control it manually, use an **elevated**
-(Run as administrator) PowerShell:
+boot, so it's normally already running — you don't need to start it each time, and
+you only need to stop it if you want to free up resources.
 
+Starting/stopping a Windows service needs **administrator** rights — from a normal
+shell you'll get `System error 5: Access is denied`. Two easy options:
+
+**A. From a normal PowerShell** — each pops a UAC prompt (click *Yes*):
 ```powershell
-net start MySQL97     # start the database
-net stop  MySQL97     # stop it (frees memory when you're not playing)
-Get-Service MySQL97   # check status
+Start-Process powershell -Verb RunAs -ArgumentList 'net start MySQL97'   # start
+Start-Process powershell -Verb RunAs -ArgumentList 'net stop  MySQL97'   # stop
 ```
-(You can also use the **Services** app — `services.msc` — and start/stop *MySQL97*.)
+
+**B. From an elevated shell** (right-click PowerShell ▸ *Run as administrator*):
+```powershell
+net start MySQL97
+net stop  MySQL97
+```
+
+Checking status needs no admin rights:
+```powershell
+Get-Service MySQL97
+```
+(You can also use the **Services** app — run `services.msc`, find *MySQL97*, Start/Stop.)
 
 ### The game
 - **Start:** double-click `dist\AmissProj.jar`, or run `powershell -File scripts\run.ps1`.
