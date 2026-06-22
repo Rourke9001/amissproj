@@ -13,6 +13,24 @@ Add to this after any correction or non-obvious gotcha.
   with `$ErrorActionPreference='Stop'`, aborts the script. Capture such output via
   `cmd /c "java ... 2>&1"` to keep it as plain text.
 
+## Build / resources
+- **`javac` does not copy non-`.java` resources.** Images under `src` won't reach
+  `build/classes` (or the jar) unless the build copies them. `scripts/build.ps1` now
+  cleans `build/classes` then copies every non-`.java` file from `src`, preserving the
+  package path, so `getClass().getResource("/amiss/resources/...")` works from both the
+  classes dir and the jar. Load assets via the classpath, never absolute file paths.
+- **The `org.netbeans cannot be resolved` red errors were an IDE-classpath issue, not a
+  bug.** `AbsoluteLayout`/`AbsoluteConstraints` live in the committed
+  `dist/lib/AbsoluteLayout.jar` and compile fine. The fix is `.vscode/settings.json`
+  with `java.project.referencedLibraries: ["dist/lib/*.jar"]` (folder-based "invisible
+  project" — there's no pom/gradle to infer the classpath).
+- **`.vscode/` was git-ignored**, which would have hidden the classpath fix from the
+  repo. Keep ignoring per-user state but track shared config:
+  `.vscode/*` then `!.vscode/settings.json` / `!.vscode/extensions.json`.
+- **NetBeans `.form` files are designer-only** (never compiled or loaded). Once GUIs are
+  hand-edited outside NetBeans they're dead weight — and dangerous, since reopening in
+  NetBeans regenerates `initComponents()` from the `.form` and clobbers hand edits.
+
 ## Database
 - MySQL **9.x removed `mysql_native_password`** and defaults to `caching_sha2_password`;
   the original **Connector/J 5.1.22 (2012) cannot authenticate** to it. Modern
