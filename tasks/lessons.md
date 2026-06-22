@@ -21,3 +21,13 @@ Add to this after any correction or non-obvious gotcha.
   NetBeans' managed DB). It is **reconstructed** in `db/setup.sql` — job names and
   `location` strings are taken verbatim from the code (must match exactly); the
   numeric columns are tunable design values.
+
+## Git / version control
+- Commit identity is repo-local (`git config user.email rourke9001@gmail.com`) so
+  the personal account is used without touching global/work config.
+- **Don't embed double-quotes inside a `git commit -m @'...'@` here-string** in
+  PowerShell 5.1 — its native-argument quoting splits the message and git misreads
+  tokens as pathspecs (`fatal: '5:' is outside repository`). Write the message to a
+  file with `Set-Content -Encoding ascii` and use `git commit -F <file>` instead.
+- Managing the MySQL service (`net start/stop MySQL97`) needs an elevated shell;
+  a normal shell returns `System error 5: Access is denied`.
