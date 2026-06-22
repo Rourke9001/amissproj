@@ -113,7 +113,7 @@ public class RentOfficeGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnWork, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 280, 90, 36));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Factory.png")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/RentOffice.png"));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 320, 330));
 
         pack();

@@ -99,7 +99,7 @@ public class BankGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnWork, new org.netbeans.lib.awtextra.AbsoluteConstraints(149, 290, 110, 36));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Bank.jpg")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/Bank.png"));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 290, 350));
 
         pack();

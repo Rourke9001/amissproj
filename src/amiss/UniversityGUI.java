@@ -138,7 +138,7 @@ public class UniversityGUI extends javax.swing.JFrame {
         lblFee.setText("Fee: R50");
         getContentPane().add(lblFee, new org.netbeans.lib.awtextra.AbsoluteConstraints(103, 30, -1, -1));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Uni.png")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/University.png"));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, -1, -1));
 
         pack();

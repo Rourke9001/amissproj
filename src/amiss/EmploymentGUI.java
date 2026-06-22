@@ -300,7 +300,7 @@ public class EmploymentGUI extends javax.swing.JFrame {
         btnExit.setBounds(610, 420, 53, 25);
 
         lblBackground.setBackground(new java.awt.Color(135, 204, 250));
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Pictures\\PAT Backgrounds\\Employment.jpg")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/Employment.png"));
         getContentPane().add(lblBackground);
         lblBackground.setBounds(0, 0, 800, 460);
 

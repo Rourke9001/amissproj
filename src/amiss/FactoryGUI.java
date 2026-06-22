@@ -102,7 +102,7 @@ public class FactoryGUI extends javax.swing.JFrame {
         lblTime.setText("Time");
         getContentPane().add(lblTime, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 13, 59, 26));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Factory.png")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/Factory.png"));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(1, -4, 290, 350));
 
         getAccessibleContext().setAccessibleDescription("");

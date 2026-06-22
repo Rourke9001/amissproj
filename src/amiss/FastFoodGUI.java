@@ -184,7 +184,7 @@ public class FastFoodGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnFries, new org.netbeans.lib.awtextra.AbsoluteConstraints(470, 200, -1, -1));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Fast Food Place.png")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/FastFood.png"));
         lblBackground.setMaximumSize(new java.awt.Dimension(400, 360));
         lblBackground.setMinimumSize(new java.awt.Dimension(400, 360));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 540, 320));

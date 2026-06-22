@@ -126,7 +126,7 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
         lblShop.setText("SHOP");
         getContentPane().add(lblShop, new org.netbeans.lib.awtextra.AbsoluteConstraints(390, 10, 89, 46));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Untitled.png")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/ClothesStore.png"));
         getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 520, 300));
 
         pack();

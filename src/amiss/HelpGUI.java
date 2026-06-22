@@ -129,7 +129,7 @@ public class HelpGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnGetJob, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 170, 162, -1));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Pictures\\PAT Backgrounds\\pale-blue2.jpg")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/Help.png"));
         lblBackground.setMaximumSize(new java.awt.Dimension(540, 339));
         lblBackground.setMinimumSize(new java.awt.Dimension(540, 339));
         lblBackground.setName(""); // NOI18N

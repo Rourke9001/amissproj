@@ -82,7 +82,7 @@ public class PublicPoolGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnExit, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 250, 120, 40));
 
-        lblBackground.setIcon(new javax.swing.ImageIcon("C:\\Users\\The Rourke\\Desktop\\Rourke\\Grade 12\\IT\\IT PAT\\Screens\\Market.png")); // NOI18N
+        lblBackground.setIcon(amiss.Assets.icon("screens/PublicPool.png"));
         lblBackground.setMaximumSize(new java.awt.Dimension(192, 290));
         lblBackground.setMinimumSize(new java.awt.Dimension(192, 290));
         lblBackground.setPreferredSize(new java.awt.Dimension(192, 290));
