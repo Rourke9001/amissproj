@@ -108,14 +108,10 @@ tasks/todo.md     roadmap & progress
 
 ## Roadmap
 
-Done: revived the build, modernised the JDBC driver, reconstructed the database.
-Next up (see **[tasks/todo.md](tasks/todo.md)** for detail):
-
-- [ ] Replace string-concatenated SQL with **parameterised `PreparedStatement`s** (fixes SQL injection)
-- [ ] Use a **least-privilege DB user** instead of `root`
-- [ ] Close JDBC resources with try-with-resources
-- [ ] Externalise DB config out of `DB.java`
-- [ ] Separate game logic from Swing so the rules can be unit-tested
+This project is being grown from a high-school desktop game into a full-stack,
+CV-ready Java application — backend hardening → testing & build tooling → a Spring
+Boot API + web frontend → deployment. The full phased plan lives in
+**[ROADMAP.md](ROADMAP.md)**.
 
 ## Notes
 
