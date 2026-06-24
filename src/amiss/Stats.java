@@ -40,7 +40,7 @@ public class Stats {
      */
     public String buy(String prc) {
 
-        int price = Integer.parseInt(prc);
+        int price = Validation.parseIntOrDefault(prc, 0);
         String userName = user.getUser();
 
         int currCash = getCash();

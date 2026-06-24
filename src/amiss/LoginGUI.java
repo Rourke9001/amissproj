@@ -109,9 +109,9 @@ public class LoginGUI extends javax.swing.JFrame {
 
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
         try {
-            user = txfUserName.getText();
+            user = txfUserName.getText().trim();
             passwrd = pwdPassword.getText();
-            if (user.length() != 0 && passwrd.length() != 0) { //checks that text fields contains values
+            if (Validation.isValidUsername(user) && passwrd.length() != 0) { //checks the fields hold a valid username + a password
                 boolean userExists = db.queryForObject(
                         "SELECT name FROM tbluser WHERE name = ?",
                         rs -> rs.getString("name"), user).isPresent(); //queries the database for the username
@@ -148,7 +148,9 @@ public class LoginGUI extends javax.swing.JFrame {
     private void btnCreateUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCreateUserActionPerformed
         try {
             String conf = pwdConfirmPassword.getText();//retrives the text from the password text field
-            if (conf.equals(passwrd)) { //Checks if both passwords entered by the user match
+            if (!Validation.isValidPassword(passwrd)) {
+                lblError.setText("Password must be at least " + Validation.MIN_PASSWORD_LENGTH + " characters");
+            } else if (conf.equals(passwrd)) { //Checks if both passwords entered by the user match
                 db.update("INSERT INTO tbluser VALUES (?,?,0,0,720,100,1,'Unemployed',1,1,0,0)", user, passwrd); //queries the database to create the new user
                 db.update("INSERT INTO tbluserstats VALUES (?,0,0,0,0)", user);
                 lblError.setText("User Added");//message guide to the user

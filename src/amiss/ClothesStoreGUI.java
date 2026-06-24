@@ -141,7 +141,7 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
 
     private void btnCasualActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCasualActionPerformed
         int price = 0;
-        job.setClothes(Integer.parseInt(evt.getActionCommand()),txaNotification);
+        job.setClothes(Validation.parseIntOrDefault(evt.getActionCommand(), 0),txaNotification);
         switch (evt.getActionCommand()) { //gets the price of the clothing item
             case "1":
                 price = 20;
