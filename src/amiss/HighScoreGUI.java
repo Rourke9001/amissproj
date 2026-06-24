@@ -5,14 +5,17 @@
  */
 package amiss;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author The Rourke
  */
 public class HighScoreGUI extends javax.swing.JFrame {
+
+    private static final Logger log = LoggerFactory.getLogger(HighScoreGUI.class);
 
     /**
      * Creates new form HighScoreGUI
@@ -77,18 +80,14 @@ public class HighScoreGUI extends javax.swing.JFrame {
 
     private void btnShowHighScoreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShowHighScoreActionPerformed
         try {
-            ResultSet rs = db.query("SELECT name, round FROM tbluser ORDER BY round DESC");
-            String n;
             String temp = "";
-            int h;
-            while (rs.next()) {
-                n = rs.getString("name");
-                h = rs.getInt("round");
-                temp = temp + n + "\t\t\t" + h + "\n";
+            for (String[] row : db.query("SELECT name, round FROM tbluser ORDER BY round DESC",
+                    rs -> new String[]{rs.getString("name"), Integer.toString(rs.getInt("round"))})) {
+                temp = temp + row[0] + "\t\t\t" + row[1] + "\n";
             }
             txaHighScore.setText(temp);
         } catch (SQLException ex) {
-            System.out.println("Can't Load HighScore");
+            log.warn("Failed to load high scores", ex);
         }
     }//GEN-LAST:event_btnShowHighScoreActionPerformed
 

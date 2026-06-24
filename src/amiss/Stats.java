@@ -7,10 +7,11 @@ package amiss;
 
 import static amiss.MainGameGUI.db;
 import static amiss.MainGameGUI.user;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class that updates the users cash when buying an item or working
@@ -18,6 +19,8 @@ import javax.swing.JTextArea;
  * @author The Rourke
  */
 public class Stats {
+
+    private static final Logger log = LoggerFactory.getLogger(Stats.class);
 
     static GetAJob job = new GetAJob();
     static CalcDuration dist = new CalcDuration();
@@ -37,7 +40,7 @@ public class Stats {
      */
     public String buy(String prc) {
 
-        int price = Integer.parseInt(prc);
+        int price = Validation.parseIntOrDefault(prc, 0);
         String userName = user.getUser();
 
         int currCash = getCash();
@@ -49,7 +52,7 @@ public class Stats {
 
         } else {
             try {
-                db.update("update tbluser SET cash = " + currCash + " WHERE name = '" + userName + "'");
+                db.update("update tbluser SET cash = ? WHERE name = ?", currCash, userName);
                 return "You spent R" + price + ", You have R" + currCash + " left";
             } catch (SQLException ex) {
                 return ("failed to purchase");
@@ -66,14 +69,9 @@ public class Stats {
 
         String userName = user.getUser();
         try {
-
-            ResultSet cash = db.query("SELECT cash FROM tbluser WHERE name = '" + userName + "'");
-            if (cash.next()) {
-                int currCash = cash.getInt("cash");
-                return currCash;
-            }
+            return db.queryForInt("SELECT cash FROM tbluser WHERE name = ?", -1, userName);
         } catch (SQLException ex) {
-            System.out.println("Failed to Get Cash");;
+            log.warn("Failed to get cash", ex);
         }
         return -1;
 
@@ -92,7 +90,7 @@ public class Stats {
             currCash = earn + getCash() - 10;
             payDebt();
             try {
-                db.update("update tbluser SET cash = " + currCash + " WHERE name = '" + userName + "'");
+                db.update("update tbluser SET cash = ? WHERE name = ?", currCash, userName);
                 return "You were deducted R10 for not paying rent \nYou now have R" + currCash;
             } catch (SQLException ex) {
                 return ("failed to update cash");
@@ -101,7 +99,7 @@ public class Stats {
             currCash = earn + getCash();
 
             try {
-                db.update("update tbluser SET cash = " + currCash + " WHERE name = '" + userName + "'");
+                db.update("update tbluser SET cash = ? WHERE name = ?", currCash, userName);
                 return "You now have R" + currCash;
             } catch (SQLException ex) {
                 return ("failed to update cash");
@@ -118,7 +116,7 @@ public class Stats {
 
         String userName = user.getUser();
         try {
-            db.update("update tbluser SET rent = " + num + " WHERE name = '" + userName + "'");
+            db.update("update tbluser SET rent = ? WHERE name = ?", num, userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nfailed to set rent");
         }
@@ -134,16 +132,10 @@ public class Stats {
 
         String userName = user.getUser();
         try {
-
-            ResultSet paid = db.query("SELECT rent FROM tbluser WHERE name = '" + userName + "'");
-            if (paid.next()) {
-                int rent = paid.getInt("rent");
-                return rent;
-            }
+            return db.queryForInt("SELECT rent FROM tbluser WHERE name = ?", -1, userName);
         } catch (SQLException ex) {
             return (-1);
         }
-        return -1;
 
     }
 
@@ -151,7 +143,7 @@ public class Stats {
 
         String userName = user.getUser();
         try {
-            db.update("UPDATE tbluser SET debt = debt + '" + num + "' WHERE name = '" + userName + "'");
+            db.update("UPDATE tbluser SET debt = debt + ? WHERE name = ?", num, userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nFailed to set debt");
         }
@@ -161,9 +153,9 @@ public class Stats {
 
         String userName = user.getUser();
         try {
-            db.update("UPDATE tbluser SET debt = debt - '" + 10 + "' WHERE name = '" + userName + "'");
+            db.update("UPDATE tbluser SET debt = debt - ? WHERE name = ?", 10, userName);
         } catch (SQLException ex) {
-            
+            log.warn("Failed to pay debt", ex);
         }
     }
 
@@ -171,16 +163,10 @@ public class Stats {
 
         String userName = user.getUser();
         try {
-
-            ResultSet debt = db.query("SELECT debt FROM tbluser WHERE name = '" + userName + "'");
-            if (debt.next()) {
-                int debtAmount = debt.getInt("debt");
-                return debtAmount;
-            }
+            return db.queryForInt("SELECT debt FROM tbluser WHERE name = ?", -1, userName);
         } catch (SQLException ex) {
             return (-1);
         }
-        return -1;
 
     }
 
@@ -192,7 +178,7 @@ public class Stats {
     public void updateWork(JTextArea txaNotification) {
         String userName = user.getUser();
         try {
-            db.update("UPDATE tbluserstats SET work = work + '" + 1 + "' WHERE name = '" + userName + "'");
+            db.update("UPDATE tbluserstats SET work = work + ? WHERE name = ?", 1, userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nFailed to update work stats");
         }
@@ -206,16 +192,10 @@ public class Stats {
     public String getWork() {
         try {
             String userName = user.getUser();
-
-            ResultSet rs = db.query("SELECT work FROM tbluserstats WHERE name = '" + userName + "'");
-            if (rs.next()) {
-                String work = rs.getString("work");
-                return work;
-            }
+            return db.queryForString("SELECT work FROM tbluserstats WHERE name = ?", null, userName);
         } catch (SQLException ex) {
             return ("Failed to get work");
         }
-        return null;
     }
 
     /**
@@ -227,7 +207,7 @@ public class Stats {
         String userName = user.getUser();
 
         try {
-            db.update("UPDATE tbluserstats SET happiness = happiness + '" + 1 + "' WHERE name = '" + userName + "'");
+            db.update("UPDATE tbluserstats SET happiness = happiness + ? WHERE name = ?", 1, userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nFailed to updated happiness stats");
         }
@@ -241,16 +221,10 @@ public class Stats {
     public String getHappiness() {
         try {
             String userName = user.getUser();
-
-            ResultSet rs = db.query("SELECT happiness FROM tbluserstats WHERE name = '" + userName + "'");
-            if (rs.next()) {
-                String happy = rs.getString("happiness");
-                return happy;
-            }
+            return db.queryForString("SELECT happiness FROM tbluserstats WHERE name = ?", null, userName);
         } catch (SQLException ex) {
             return ("Failed to get Happiness");
         }
-        return null;
     }
 
     /**
@@ -318,8 +292,8 @@ public class Stats {
         String userName = user.getUser();
 
         try {
-            db.update("UPDATE amissdb.tbluserstats SET `happiness` = 0, `education` = 0, `work` = 0 WHERE name = '" + userName + "'");
-            db.update("UPDATE amissdb.tbluser SET `xpos` = 0, `ypos` = 0, `time` = 720, `cash` = 100, `round` = 1, `job` = 'Unemployed', `clothing` = 1,`eat` = 0, `rent` = 1, `debt` = 0 WHERE name = '" + userName + "'");
+            db.update("UPDATE amissdb.tbluserstats SET `happiness` = 0, `education` = 0, `work` = 0 WHERE name = ?", userName);
+            db.update("UPDATE amissdb.tbluser SET `xpos` = 0, `ypos` = 0, `time` = 720, `cash` = 100, `round` = 1, `job` = 'Unemployed', `clothing` = 1,`eat` = 0, `rent` = 1, `debt` = 0 WHERE name = ?", userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nFailed to Reset stats");
         }

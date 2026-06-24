@@ -2,11 +2,17 @@
 /build/
 /dist/AmissProj.jar
 
+# ─── Runtime logs (written by Logback's file appender) ───
+/logs/
+
 # The jars in dist/lib/ ARE committed on purpose so the project is clone-and-run.
-# All three are freely redistributable:
+# All are freely redistributable:
 #   AbsoluteLayout.jar       - NetBeans, CDDL/GPLv2+CPE
 #   beansbinding-1.2.1.jar   - LGPL/BSD
 #   mysql-connector-j-*.jar  - GPLv2 + FOSS exception (Community build from Maven Central)
+#   slf4j-api-*.jar          - MIT
+#   logback-core/classic-*.jar - EPL-1.0 / LGPL-2.1 (dual)
+#   jbcrypt-*.jar            - ISC-style BSD
 
 # ─── NetBeans per-user state (machine-specific, not portable) ───
 /nbproject/private/

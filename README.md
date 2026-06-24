@@ -15,8 +15,11 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 | | |
 |---|---|
 | Language / UI | Java 8 source, Swing (`amiss` package) |
-| Database | MySQL 8.4+ / 9.x (`amissdb`) |
+| Database | MySQL 8.4+ / 9.x (`amissdb`); app runs as least-privilege `amiss` user |
 | JDBC driver | MySQL Connector/J 9.7 (`dist/lib/`) |
+| Security | BCrypt password hashing (jbcrypt) + parameterised JDBC throughout |
+| Logging | SLF4J + Logback (`src/logback.xml`) |
+| Config | `src/application.properties`, overridable via `AMISS_DB_*` env vars |
 | Build | plain `javac` + `jar` via `scripts\build.ps1` (no NetBeans/Ant needed) |
 | Entry point | `amiss.LoginGUI` |
 
@@ -28,10 +31,13 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 ## Quick start
 
 ```powershell
-# 1. Create the database (one-time). Enter your MySQL root password when asked.
+# 1. Create the database + the least-privilege 'amiss' user (one-time).
+#    Enter your MySQL root password when asked.
 mysql -u root -p < db\setup.sql
 
-# 2. Make sure src\amiss\DB.java has your MySQL root password (default: "password").
+# 2. (Optional) If your DB differs from the defaults, override at runtime:
+#    $env:AMISS_DB_USER / $env:AMISS_DB_PASSWORD / $env:AMISS_DB_URL.
+#    Defaults (amiss / amisspw / localhost:3306) live in src\application.properties.
 
 # 3. Build and run.
 powershell -File scripts\build.ps1
@@ -97,9 +103,11 @@ classpath — no NetBeans or Ant required.
 ## Project structure
 
 ```
-src/amiss/            Java source (Swing GUIs + game logic + DB wrapper)
+src/amiss/            Java source (Swing GUIs + game logic + DB/Config/Validation/PasswordHasher)
 src/amiss/resources/  bundled UI images (screen backgrounds + game board)
-db/setup.sql          Database schema + seed data (jobs, help text)
+src/application.properties  DB connection settings (overridable via AMISS_DB_* env vars)
+src/logback.xml       logging config (console + rolling file under logs/)
+db/setup.sql          Database schema + seed data + least-privilege amiss user
 scripts/              build.ps1 (compile+package), run.ps1 (launch),
                       gen-placeholders.ps1 (regenerate placeholder art)
 dist/lib/             third-party jars (committed; all redistributable)

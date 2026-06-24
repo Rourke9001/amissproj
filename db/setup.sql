@@ -30,11 +30,11 @@ USE amissdb;
 --  Player save tables  (CREATE IF NOT EXISTS so re-running keeps your saves)
 -- ---------------------------------------------------------------------------
 
--- Column order matters: LoginGUI inserts positionally
---   INSERT INTO tbluser VALUES ('name','pass',0,0,720,100,1,'Unemployed',1,1,0,0)
+-- Column order matters: LoginGUI inserts positionally (password is a BCrypt hash)
+--   INSERT INTO tbluser VALUES ('name','<bcrypt-hash>',0,0,720,100,1,'Unemployed',1,1,0,0)
 CREATE TABLE IF NOT EXISTS tbluser (
     name      VARCHAR(50)  NOT NULL,
-    password  VARCHAR(50)  NOT NULL,
+    password  VARCHAR(60)  NOT NULL,   -- BCrypt hash is always 60 chars
     xpos      INT          NOT NULL DEFAULT 0,
     ypos      INT          NOT NULL DEFAULT 0,
     `time`    INT          NOT NULL DEFAULT 720,   -- minutes left in the round (12h)
@@ -47,6 +47,10 @@ CREATE TABLE IF NOT EXISTS tbluser (
     debt      INT          NOT NULL DEFAULT 0,
     PRIMARY KEY (name)
 );
+
+-- Databases created before password hashing have password VARCHAR(50); widen it
+-- so the 60-char BCrypt hashes fit. Idempotent - safe to re-run.
+ALTER TABLE tbluser MODIFY password VARCHAR(60) NOT NULL;
 
 -- Column order matters: LoginGUI inserts positionally
 --   INSERT INTO tbluserstats VALUES ('name',0,0,0,0)
@@ -138,3 +142,16 @@ INSERT INTO tblhelp (topic, description) VALUES
      'first job. Raise your education at the University and buy better clothing '
      'at the Clothes Store to qualify for higher-paying careers. Once hired, '
      'go to that job''s building and work to earn your hourly salary.');
+
+-- ---------------------------------------------------------------------------
+--  Application database user  (least privilege)
+-- ---------------------------------------------------------------------------
+--  The game connects as this dedicated account instead of root. It can only
+--  read and write rows in amissdb - no DDL, no GRANT, no access to other
+--  schemas. (The app never issues DELETE/DROP, so those are not granted.)
+--  Change the password here and in src/application.properties to match, or
+--  override at runtime with the AMISS_DB_USER / AMISS_DB_PASSWORD env vars.
+
+CREATE USER IF NOT EXISTS 'amiss'@'localhost' IDENTIFIED BY 'amisspw';
+GRANT SELECT, INSERT, UPDATE ON amissdb.* TO 'amiss'@'localhost';
+FLUSH PRIVILEGES;

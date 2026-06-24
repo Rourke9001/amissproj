@@ -179,7 +179,7 @@ public class PizzaPalaceGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnMargaritaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMargaritaActionPerformed
-        stat.eatMain(txaNotification, lblTimer, lblMoney, Integer.parseInt(evt.getActionCommand())); //checks if the user has enough time and money to purcahse item
+        stat.eatMain(txaNotification, lblTimer, lblMoney, Validation.parseIntOrDefault(evt.getActionCommand(), 0)); //checks if the user has enough time and money to purcahse item
     }//GEN-LAST:event_btnMargaritaActionPerformed
 
     private void btnExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExitActionPerformed

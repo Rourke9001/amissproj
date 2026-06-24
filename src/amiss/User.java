@@ -11,13 +11,12 @@ package amiss;
  */
 public class User {
 
-    private String user, passwrd, job;
+    private String user, job;
     private int round, xpos, ypos, time, cash, clothing, rent, eat, debt;
 
     /**
      * Creates the user object
      * @param user The user's name
-     * @param passwrd The user's password
      * @param xpos The user's x position
      * @param ypos The user's y position
      * @param time The user's remaining time 
@@ -29,9 +28,8 @@ public class User {
      * @param eat The user's amount of food
      * @param debt The user's debt
      */
-    public User(String user, String passwrd, int xpos, int ypos, int time, int cash, int round, String job, int clothing, int rent, int eat, int debt) {
+    public User(String user, int xpos, int ypos, int time, int cash, int round, String job, int clothing, int rent, int eat, int debt) {
         this.user = user;
-        this.passwrd = passwrd;
         this.xpos = xpos;
         this.ypos = ypos;
         this.time = time;
@@ -58,22 +56,6 @@ public class User {
      */
     public void setUser(String user) {
         this.user = user;
-    }
-
-    /**
-     * Returns the User's Password
-     * @return Returns The User's Password
-     */
-    public String getPasswrd() {
-        return passwrd;
-    }
-
-    /**
-     * Sets the User's Password
-     * @param passwrd the users password
-     */
-    public void setPasswrd(String passwrd) {
-        this.passwrd = passwrd;
     }
 
     /**
@@ -238,7 +220,7 @@ public class User {
 
     @Override
     public String toString() {
-        return "User{" + "user=" + user + ", passwrd=" + passwrd + ", job=" + job + ", round=" + round + ", xpos=" + xpos + ", ypos=" + ypos + ", time=" + time + ", cash=" + cash + ", clothing=" + clothing + ", rent=" + rent + ", eat=" + eat + ", debt=" + debt + '}';
+        return "User{" + "user=" + user + ", job=" + job + ", round=" + round + ", xpos=" + xpos + ", ypos=" + ypos + ", time=" + time + ", cash=" + cash + ", clothing=" + clothing + ", rent=" + rent + ", eat=" + eat + ", debt=" + debt + '}';
     }
 
 }

@@ -7,14 +7,17 @@ package amiss;
 
 import static amiss.MainGameGUI.db;
 import static amiss.MainGameGUI.user;
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class that updates the time whenever a user does an action
  * @author The Rourke
  */
 public class CalcDuration {
+
+    private static final Logger log = LoggerFactory.getLogger(CalcDuration.class);
 
     /**
      * Updates the time whenever a user does an action
@@ -30,18 +33,12 @@ public class CalcDuration {
      * @return Returns the x-coord
      */
         public int getX() {
-        int oldRow;
         String userName = user.getUser();
 
         try {
-            ResultSet old = db.query("SELECT xpos FROM tbluser WHERE name = '" + userName + "'");
-            if (old.next()) {
-                oldRow = old.getInt("xpos");
-                return oldRow;
-            }
-
+            return db.queryForInt("SELECT xpos FROM tbluser WHERE name = ?", 0, userName);
         } catch (SQLException ex) {
-            System.out.println("failed to get x-pos");
+            log.warn("Failed to get x-pos", ex);
         }
         return 0;
     }
@@ -51,18 +48,12 @@ public class CalcDuration {
      * @return Returns the y-coord
      */
     public int getY() {
-        int oldCol;
         String userName = user.getUser();
 
         try {
-            ResultSet old = db.query("SELECT ypos FROM tbluser WHERE name = '" + userName + "'");
-            if (old.next()) {
-                oldCol = old.getInt("ypos");
-                return oldCol;
-            }
-
+            return db.queryForInt("SELECT ypos FROM tbluser WHERE name = ?", 0, userName);
         } catch (SQLException ex) {
-            System.out.println("failed to get y-pos");
+            log.warn("Failed to get y-pos", ex);
         }
         return 0;
     }
@@ -104,9 +95,9 @@ public class CalcDuration {
         String userName = user.getUser();
 
         try {
-            db.update("UPDATE tbluser SET xpos = " + row + ",ypos = " + col + " WHERE name = '" + userName + "'");
+            db.update("UPDATE tbluser SET xpos = ?, ypos = ? WHERE name = ?", row, col, userName);
         } catch (SQLException ex) {
-            System.out.println("failed to update position");
+            log.warn("Failed to update position", ex);
         }
 
     }
@@ -119,10 +110,10 @@ public class CalcDuration {
         int time = tm;
         String userName = user.getUser();
         try {
-            db.update("update tbluser set time = " + time + " WHERE name = '" + userName + "'");
+            db.update("update tbluser set time = ? WHERE name = ?", time, userName);
 
         } catch (SQLException ex) {
-            System.out.println("Failed To Update Time");
+            log.warn("Failed to update time", ex);
         }
     }
 
@@ -141,9 +132,8 @@ public class CalcDuration {
         String min = "0";
 
         try {
-            ResultSet rs = db.query("SELECT time FROM tbluser WHERE name = '" + userName + "'");
-            if (rs.next()) {
-                time = rs.getInt("time");
+            time = db.queryForInt("SELECT time FROM tbluser WHERE name = ?", -1, userName);
+            if (time != -1) {
 
                 for (int i = 0; i < multi; i++) {
                     time = time - 10;
@@ -166,7 +156,7 @@ public class CalcDuration {
                 }
             }
         } catch (SQLException ex) {
-            System.out.println("failed to get time");
+            log.warn("Failed to get time", ex);
         }
 
         return "failed to get time";
@@ -178,16 +168,14 @@ public class CalcDuration {
      */
     public String getRound() {
         String userName = user.getUser();
-        int round;
 
         try {
-            ResultSet rs = db.query("SELECT round FROM tbluser WHERE name = '" + userName + "'");
-            if (rs.next()) {
-                round = rs.getInt("round");
+            int round = db.queryForInt("SELECT round FROM tbluser WHERE name = ?", -1, userName);
+            if (round != -1) {
                 return round + "";
             }
         } catch (SQLException ex) {
-            System.out.println("failed to get round");
+            log.warn("Failed to get round", ex);
         }
         return "failed to get round";
     }
@@ -199,9 +187,9 @@ public class CalcDuration {
         String userName = user.getUser();
         int round = Integer.parseInt(getRound()) + 1;
         try {
-            db.update("update tbluser set round = " + round + " WHERE name = '" + userName + "'");
+            db.update("update tbluser set round = ? WHERE name = ?", round, userName);
         } catch (SQLException ex) {
-            System.out.println("failed to update round");
+            log.warn("Failed to update round", ex);
         }
     }
 

@@ -5,8 +5,8 @@
  */
 package amiss;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 
 /**
  * The Login Screen
@@ -109,24 +109,27 @@ public class LoginGUI extends javax.swing.JFrame {
 
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
         try {
-            user = txfUserName.getText();
+            user = txfUserName.getText().trim();
             passwrd = pwdPassword.getText();
-            if (user.length() != 0 && passwrd.length() != 0) { //checks that text fields contains values
-                ResultSet rs = db.query("SELECT * FROM tbluser WHERE name = '" + user + "'"); //queries the database for the username
-                if (rs.next()) { //checks if user exists in database
-                    ResultSet rsPasswrd = db.query("SELECT * FROM tbluser WHERE password = '" + passwrd + "' AND name = '" + user + "'"); //queries the databasefor the password
-                    if (rsPasswrd.next()) { //checks if the password matches the database
-                        int xpos = rsPasswrd.getInt("xpos");//retrieves the information for the user from the database
-                        int ypos = rsPasswrd.getInt("ypos");
-                        int time = rsPasswrd.getInt("time");
-                        int cash = rsPasswrd.getInt("cash");
-                        int round = rsPasswrd.getInt("round");
-                        String job = rsPasswrd.getString("job");
-                        int clothing = rsPasswrd.getInt("clothing");
-                        int rent = rsPasswrd.getInt("rent");
-                        int eat = rsPasswrd.getInt("eat");
-                        int debt = rsPasswrd.getInt("debt");
-                        User newUser = new User(user, passwrd, xpos, ypos, time, cash, round, job, clothing, rent, eat, debt); //creates a new user object
+            if (Validation.isValidUsername(user) && passwrd.length() != 0) { //checks the fields hold a valid username + a password
+                Optional<String> storedPassword = db.queryForObject(
+                        "SELECT password FROM tbluser WHERE name = ?",
+                        rs -> rs.getString("password"), user); //fetches the stored hash for the username
+                if (storedPassword.isPresent()) { //checks if user exists in database
+                    String stored = storedPassword.get();
+                    if (PasswordHasher.matches(passwrd, stored)) { //verifies the password against the stored hash
+                        if (PasswordHasher.needsRehash(stored)) { //transparently upgrade a legacy plaintext password
+                            db.update("UPDATE tbluser SET password = ? WHERE name = ?",
+                                    PasswordHasher.hash(passwrd), user);
+                        }
+                        User newUser = db.queryForObject(
+                                "SELECT * FROM tbluser WHERE name = ?",
+                                rs -> new User(user,
+                                        rs.getInt("xpos"), rs.getInt("ypos"), rs.getInt("time"),
+                                        rs.getInt("cash"), rs.getInt("round"), rs.getString("job"),
+                                        rs.getInt("clothing"), rs.getInt("rent"), rs.getInt("eat"),
+                                        rs.getInt("debt")),
+                                user).get(); //loads the player's saved state
                         new MainGameGUI(newUser, db).setVisible(true);
                         this.dispose(); //closes the login GUI
                     } else {
@@ -150,11 +153,13 @@ public class LoginGUI extends javax.swing.JFrame {
     private void btnCreateUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCreateUserActionPerformed
         try {
             String conf = pwdConfirmPassword.getText();//retrives the text from the password text field
-            if (conf.equals(passwrd)) { //Checks if both passwords entered by the user match
-                db.update("INSERT INTO tbluser VALUES ('" + user + "','" + passwrd + "',0,0,720,100,1,'Unemployed',1,1,0,0)"); //queries the database to create the new user                db.update("INSERT INTO tbluserstats VALUES ('" + user + "',0,0,0,0)");
+            if (!Validation.isValidPassword(passwrd)) {
+                lblError.setText("Password must be at least " + Validation.MIN_PASSWORD_LENGTH + " characters");
+            } else if (conf.equals(passwrd)) { //Checks if both passwords entered by the user match
+                db.update("INSERT INTO tbluser VALUES (?,?,0,0,720,100,1,'Unemployed',1,1,0,0)", user, PasswordHasher.hash(passwrd)); //creates the new user with a hashed password
+                db.update("INSERT INTO tbluserstats VALUES (?,0,0,0,0)", user);
                 lblError.setText("User Added");//message guide to the user
-                db.update("INSERT INTO tbluserstats VALUES ('" + user + "',0,0,0,0)");
-                User newUser = new User(user, passwrd, 0, 0, 720, 100, 1, "Unemployed", 1, 1, 0, 0);//create new user object
+                User newUser = new User(user, 0, 0, 720, 100, 1, "Unemployed", 1, 1, 0, 0);//create new user object
                 UserGoals newUserGoals = new UserGoals(user, 0, 0, 0, 0);//creates new userGoal object
                 new MainGameGUI(newUser, db).setVisible(true);
                 this.dispose();

@@ -33,10 +33,24 @@ replacing root with a least-privilege user is the first Goal 2 item.*
 
 ---
 
-## Goal 2 (later): "fix what I can" — modernise for a banking-sector portfolio
-See SETUP.md §8. Highest value first:
-- [ ] Parameterise all SQL (`PreparedStatement`) — kills the pervasive SQL injection
-- [ ] try-with-resources for all JDBC `ResultSet`/`Statement`
-- [ ] Dedicated least-privilege DB user instead of `root`
-- [ ] Externalise DB config (properties/env) out of `DB.java`
-- [ ] Separate game logic from Swing so rules are unit-testable
+## Goal 2: backend hygiene & security  →  shipped as ROADMAP Phase 1 (June 2026)
+The "fix what I can" backlog (ROADMAP.md Phase 1 is the canonical list):
+- [x] Parameterise all SQL (`PreparedStatement`) — killed the pervasive SQL injection
+- [x] try-with-resources for all JDBC `ResultSet`/`Statement`
+- [x] Dedicated least-privilege DB user instead of `root`
+- [x] Externalise DB config (properties/env) out of `DB.java`
+- [x] Hash passwords (BCrypt), SLF4J/Logback logging, input validation
+- [ ] Separate game logic from Swing so rules are unit-testable  → ROADMAP Phase 2
+
+### Review — Phase 1 (backend hygiene & security)
+All seven Phase-1 items shipped on branch `feat/phase1-backend-hardening`, one
+commit per step. `DB` is now a small JdbcTemplate-style helper (parameterised,
+try-with-resources); passwords are BCrypt hashes with transparent legacy upgrade;
+the app connects as the least-privilege `amiss` user using settings from
+`application.properties` / `AMISS_DB_*`; logging is SLF4J + Logback; usernames and
+passwords are validated. Verified end-to-end against live MySQL as `amiss`
+(connect, hashed insert, password verify, update, and DELETE correctly denied).
+
+Found-but-deferred (for the backlog, out of scope here): `HelpGUI` reads column
+`descip` while `setup.sql` defines `description`, so in-game Help has been broken
+since the schema reconstruction — a one-line fix that belongs in its own commit.

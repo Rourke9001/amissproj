@@ -2,6 +2,8 @@ package amiss;
 
 import java.net.URL;
 import javax.swing.ImageIcon;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loads bundled image assets from the classpath so they work both from
@@ -13,6 +15,8 @@ import javax.swing.ImageIcon;
  * see {@code scripts/gen-placeholders.ps1}.
  */
 public final class Assets {
+
+    private static final Logger log = LoggerFactory.getLogger(Assets.class);
 
     private Assets() {
     }
@@ -29,7 +33,7 @@ public final class Assets {
     public static ImageIcon icon(String name) {
         URL url = Assets.class.getResource("/amiss/resources/" + name);
         if (url == null) {
-            System.err.println("Asset missing on classpath: /amiss/resources/" + name);
+            log.warn("Asset missing on classpath: /amiss/resources/{}", name);
             return null;
         }
         return new ImageIcon(url);

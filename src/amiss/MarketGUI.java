@@ -195,7 +195,7 @@ public class MarketGUI extends javax.swing.JFrame {
         String time = dist.getNewTime(1); //checks if the user has enough time and cash to pay for item
         if (time.equals("Not Enough Time")) {
             txaNotification.setText(txaNotification.getText() + "\n" + time);
-        } else if (stat.getCash() < Integer.parseInt(evt.getActionCommand())) {
+        } else if (stat.getCash() < Validation.parseIntOrDefault(evt.getActionCommand(), 0)) {
             txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash, You only have R" + stat.getCash());
         } else {
             txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(evt.getActionCommand()));

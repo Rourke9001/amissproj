@@ -7,7 +7,6 @@ package amiss;
 
 import static amiss.MainGameGUI.db;
 import static amiss.MainGameGUI.user;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.JTextArea;
 
@@ -48,17 +47,10 @@ public class GetAJob {
     private int neededEdu(String jb) {
         String job = jb;
         try {
-            ResultSet rs = db.query("SELECT education from tbljobs where job = '" + job + "'");
-            if (rs.next()) {
-                int needed = rs.getInt("education");
-                return needed;
-            }
+            return db.queryForInt("SELECT education from tbljobs where job = ?", -1, job);
         } catch (SQLException ex) {
             return(-1);
         }
-
-        return -1;
-
     }
 
     private void setJob(String jb,JTextArea txaNotification) {
@@ -66,7 +58,7 @@ public class GetAJob {
         String userName = user.getUser();
 
         try {
-            db.update("UPDATE tbluser set job = '" + job + "' WHERE name = '" + userName + "'");
+            db.update("UPDATE tbluser set job = ? WHERE name = ?", job, userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\ncouldnt update job");
         }
@@ -78,35 +70,22 @@ public class GetAJob {
      */
     public int getEarnings() {
         String job = getJob();
-        String userName = user.getUser();
 
         try {
-            ResultSet rs = db.query("SELECT salary from tbljobs where job = '" + job + "'");
-            if (rs.next()) {
-                int earn = rs.getInt("salary");
-
-                return earn;
-
-            }
+            return db.queryForInt("SELECT salary from tbljobs where job = ?", -1, job);
         } catch (SQLException ex) {
             return -1;
         }
-        return -1;
     }
 
     private String getJob() {
         String userName = user.getUser();
 
         try {
-            ResultSet rs = db.query("SELECT job from tbluser where name = '" + userName + "'");
-            if (rs.next()) {
-                String job = rs.getString("job");
-                return job;
-            }
+            return db.queryForString("SELECT job from tbluser where name = ?", null, userName);
         } catch (SQLException ex) {
             return("failed to get earnings");
         }
-        return null;
     }
 
     /**
@@ -116,17 +95,10 @@ public class GetAJob {
     public String getLocation() {
         String job = getJob();
         try {
-            ResultSet rs = db.query("SELECT location from tbljobs where job = '" + job + "'");
-            if (rs.next()) {
-                String loc = rs.getString("location");
-                return loc;
-            }
+            return db.queryForString("SELECT location from tbljobs where job = ?", null, job);
         } catch (SQLException ex) {
             return("failed to get location");
         }
-
-        return null;
-
     }
 
     /**
@@ -137,7 +109,7 @@ public class GetAJob {
     public void setClothes(int clothes,JTextArea txaNotification) {
         String userName = user.getUser();
         try {
-            db.update("UPDATE tbluser SET clothing = '" + clothes + "' WHERE name = '" + userName + "'");
+            db.update("UPDATE tbluser SET clothing = ? WHERE name = ?", clothes, userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nFailed to update clothes");
         }
@@ -149,12 +121,9 @@ public class GetAJob {
      */
     public String getJobClothes() {
         String job = getJob();
-        ;
         try {
-            ResultSet rs = db.query("SELECT clothing from tbljobs where job = '" + job + "'");
-
-            if (rs.next()) {
-                String clothes = rs.getString("clothing");
+            String clothes = db.queryForString("SELECT clothing from tbljobs where job = ?", null, job);
+            if (clothes != null) {
                 int userC = Integer.parseInt(getUserClothes());
                 int reqC = Integer.parseInt(clothes);
                 if (!(userC >= reqC)) {
@@ -174,15 +143,10 @@ public class GetAJob {
     private String getUserClothes() {
         String userName = user.getUser();
         try {
-            ResultSet rs = db.query("SELECT clothing FROM tbluser WHERE name = '" + userName + "'");
-            if (rs.next()) {
-                String clothes = rs.getString("clothing");
-                return clothes;
-            }
+            return db.queryForString("SELECT clothing FROM tbluser WHERE name = ?", null, userName);
         } catch (SQLException ex) {
             return("Failed to Get User Clothes");
         }
-        return null;
     }
 
     @Override
