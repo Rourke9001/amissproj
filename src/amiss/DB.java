@@ -1,6 +1,8 @@
 package amiss;
 
 import java.sql.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class to connect to the database
@@ -8,6 +10,7 @@ import java.sql.*;
  */
 public class DB {
 
+    private static final Logger log = LoggerFactory.getLogger(DB.class);
     private static final String driver = "com.mysql.cj.jdbc.Driver";
     private static final String user = "root";
     private static final String password = "password";
@@ -25,11 +28,11 @@ public class DB {
         try {
             Class.forName(driver);
             connection = DriverManager.getConnection(url, user, password);
-            System.out.println("Connection Successful");
+            log.info("Connection Successful");
         } catch (SQLException s) {
-            System.out.println("Cannot connect to database: " + s.getMessage());
+            log.error("Cannot connect to database: {}", s.getMessage());
         } catch (ClassNotFoundException c) {
-            System.out.println("Cannot load driver" + c);
+            log.error("Cannot load driver", c);
         }
     }
 

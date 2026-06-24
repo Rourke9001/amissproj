@@ -11,6 +11,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class that updates the users cash when buying an item or working
@@ -18,6 +20,8 @@ import javax.swing.JTextArea;
  * @author The Rourke
  */
 public class Stats {
+
+    private static final Logger log = LoggerFactory.getLogger(Stats.class);
 
     static GetAJob job = new GetAJob();
     static CalcDuration dist = new CalcDuration();
@@ -73,7 +77,7 @@ public class Stats {
                 return currCash;
             }
         } catch (SQLException ex) {
-            System.out.println("Failed to Get Cash");;
+            log.warn("Failed to get cash", ex);
         }
         return -1;
 
@@ -163,7 +167,7 @@ public class Stats {
         try {
             db.update("UPDATE tbluser SET debt = debt - '" + 10 + "' WHERE name = '" + userName + "'");
         } catch (SQLException ex) {
-            
+            log.warn("Failed to pay debt", ex);
         }
     }
 

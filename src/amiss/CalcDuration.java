@@ -9,12 +9,16 @@ import static amiss.MainGameGUI.db;
 import static amiss.MainGameGUI.user;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class that updates the time whenever a user does an action
  * @author The Rourke
  */
 public class CalcDuration {
+
+    private static final Logger log = LoggerFactory.getLogger(CalcDuration.class);
 
     /**
      * Updates the time whenever a user does an action
@@ -41,7 +45,7 @@ public class CalcDuration {
             }
 
         } catch (SQLException ex) {
-            System.out.println("failed to get x-pos");
+            log.warn("Failed to get x-pos", ex);
         }
         return 0;
     }
@@ -62,7 +66,7 @@ public class CalcDuration {
             }
 
         } catch (SQLException ex) {
-            System.out.println("failed to get y-pos");
+            log.warn("Failed to get y-pos", ex);
         }
         return 0;
     }
@@ -106,7 +110,7 @@ public class CalcDuration {
         try {
             db.update("UPDATE tbluser SET xpos = " + row + ",ypos = " + col + " WHERE name = '" + userName + "'");
         } catch (SQLException ex) {
-            System.out.println("failed to update position");
+            log.warn("Failed to update position", ex);
         }
 
     }
@@ -122,7 +126,7 @@ public class CalcDuration {
             db.update("update tbluser set time = " + time + " WHERE name = '" + userName + "'");
 
         } catch (SQLException ex) {
-            System.out.println("Failed To Update Time");
+            log.warn("Failed to update time", ex);
         }
     }
 
@@ -166,7 +170,7 @@ public class CalcDuration {
                 }
             }
         } catch (SQLException ex) {
-            System.out.println("failed to get time");
+            log.warn("Failed to get time", ex);
         }
 
         return "failed to get time";
@@ -187,7 +191,7 @@ public class CalcDuration {
                 return round + "";
             }
         } catch (SQLException ex) {
-            System.out.println("failed to get round");
+            log.warn("Failed to get round", ex);
         }
         return "failed to get round";
     }
@@ -201,7 +205,7 @@ public class CalcDuration {
         try {
             db.update("update tbluser set round = " + round + " WHERE name = '" + userName + "'");
         } catch (SQLException ex) {
-            System.out.println("failed to update round");
+            log.warn("Failed to update round", ex);
         }
     }
 

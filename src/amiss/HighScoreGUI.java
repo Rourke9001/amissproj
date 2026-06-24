@@ -7,12 +7,16 @@ package amiss;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author The Rourke
  */
 public class HighScoreGUI extends javax.swing.JFrame {
+
+    private static final Logger log = LoggerFactory.getLogger(HighScoreGUI.class);
 
     /**
      * Creates new form HighScoreGUI
@@ -88,7 +92,7 @@ public class HighScoreGUI extends javax.swing.JFrame {
             }
             txaHighScore.setText(temp);
         } catch (SQLException ex) {
-            System.out.println("Can't Load HighScore");
+            log.warn("Failed to load high scores", ex);
         }
     }//GEN-LAST:event_btnShowHighScoreActionPerformed
 
