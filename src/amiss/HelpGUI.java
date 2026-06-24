@@ -5,7 +5,6 @@
  */
 package amiss;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
@@ -143,13 +142,11 @@ public class HelpGUI extends javax.swing.JFrame {
 
     private void btnLoadGameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoadGameActionPerformed
         try {
-            ResultSet rs = db.query("SELECT * FROM tblhelp WHERE topic = '" + evt.getActionCommand() + "'"); //queries the database for the corresponding topic description
-            String t, d;
+            String topic = evt.getActionCommand();
             String temp = "";
-            while (rs.next()) {
-                t = rs.getString("topic");
-                d = rs.getString("descip");
-                temp = temp + t + "\n\n" + d + "\n";
+            for (String[] row : db.query("SELECT * FROM tblhelp WHERE topic = ?",
+                    rs -> new String[]{rs.getString("topic"), rs.getString("descip")}, topic)) {
+                temp = temp + row[0] + "\n\n" + row[1] + "\n";
             }
             txaNotification.setText(temp); //sets the text field with the description
         } catch (SQLException ex) {

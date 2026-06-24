@@ -5,8 +5,8 @@
  */
 package amiss;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 
 /**
  * The Login Screen
@@ -112,22 +112,20 @@ public class LoginGUI extends javax.swing.JFrame {
             user = txfUserName.getText();
             passwrd = pwdPassword.getText();
             if (user.length() != 0 && passwrd.length() != 0) { //checks that text fields contains values
-                ResultSet rs = db.query("SELECT * FROM tbluser WHERE name = '" + user + "'"); //queries the database for the username
-                if (rs.next()) { //checks if user exists in database
-                    ResultSet rsPasswrd = db.query("SELECT * FROM tbluser WHERE password = '" + passwrd + "' AND name = '" + user + "'"); //queries the databasefor the password
-                    if (rsPasswrd.next()) { //checks if the password matches the database
-                        int xpos = rsPasswrd.getInt("xpos");//retrieves the information for the user from the database
-                        int ypos = rsPasswrd.getInt("ypos");
-                        int time = rsPasswrd.getInt("time");
-                        int cash = rsPasswrd.getInt("cash");
-                        int round = rsPasswrd.getInt("round");
-                        String job = rsPasswrd.getString("job");
-                        int clothing = rsPasswrd.getInt("clothing");
-                        int rent = rsPasswrd.getInt("rent");
-                        int eat = rsPasswrd.getInt("eat");
-                        int debt = rsPasswrd.getInt("debt");
-                        User newUser = new User(user, passwrd, xpos, ypos, time, cash, round, job, clothing, rent, eat, debt); //creates a new user object
-                        new MainGameGUI(newUser, db).setVisible(true);
+                boolean userExists = db.queryForObject(
+                        "SELECT name FROM tbluser WHERE name = ?",
+                        rs -> rs.getString("name"), user).isPresent(); //queries the database for the username
+                if (userExists) { //checks if user exists in database
+                    Optional<User> match = db.queryForObject(
+                            "SELECT * FROM tbluser WHERE name = ? AND password = ?",
+                            rs -> new User(user, passwrd,
+                                    rs.getInt("xpos"), rs.getInt("ypos"), rs.getInt("time"),
+                                    rs.getInt("cash"), rs.getInt("round"), rs.getString("job"),
+                                    rs.getInt("clothing"), rs.getInt("rent"), rs.getInt("eat"),
+                                    rs.getInt("debt")),
+                            user, passwrd); //queries the database for the password
+                    if (match.isPresent()) { //checks if the password matches the database
+                        new MainGameGUI(match.get(), db).setVisible(true);
                         this.dispose(); //closes the login GUI
                     } else {
                         lblError.setText("Incorrect Password"); //Message Guide for the user
@@ -151,9 +149,9 @@ public class LoginGUI extends javax.swing.JFrame {
         try {
             String conf = pwdConfirmPassword.getText();//retrives the text from the password text field
             if (conf.equals(passwrd)) { //Checks if both passwords entered by the user match
-                db.update("INSERT INTO tbluser VALUES ('" + user + "','" + passwrd + "',0,0,720,100,1,'Unemployed',1,1,0,0)"); //queries the database to create the new user                db.update("INSERT INTO tbluserstats VALUES ('" + user + "',0,0,0,0)");
+                db.update("INSERT INTO tbluser VALUES (?,?,0,0,720,100,1,'Unemployed',1,1,0,0)", user, passwrd); //queries the database to create the new user
+                db.update("INSERT INTO tbluserstats VALUES (?,0,0,0,0)", user);
                 lblError.setText("User Added");//message guide to the user
-                db.update("INSERT INTO tbluserstats VALUES ('" + user + "',0,0,0,0)");
                 User newUser = new User(user, passwrd, 0, 0, 720, 100, 1, "Unemployed", 1, 1, 0, 0);//create new user object
                 UserGoals newUserGoals = new UserGoals(user, 0, 0, 0, 0);//creates new userGoal object
                 new MainGameGUI(newUser, db).setVisible(true);

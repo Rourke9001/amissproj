@@ -7,7 +7,6 @@ package amiss;
 
 import static amiss.MainGameGUI.db;
 import static amiss.MainGameGUI.user;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.JTextArea;
 
@@ -32,15 +31,10 @@ public class University {
         String userName = user.getUser();
 
         try {
-            ResultSet rs = db.query("SELECT education from tbluserstats where name = '" + userName + "'");
-            if (rs.next()) {
-                int edu = rs.getInt("education");
-                return(edu);
-            }
+            return db.queryForInt("SELECT education from tbluserstats where name = ?", -1, userName);
         } catch (SQLException ex) {
             return(-1);
         }
-        return -1;
 
     }
 
@@ -53,7 +47,7 @@ public class University {
         String userName = user.getUser();
 
         try {
-            db.update("UPDATE tbluserstats set education = " + edu + " where name = '" + userName + "'");
+            db.update("UPDATE tbluserstats set education = ? where name = ?", edu, userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nfailed to update education");
         }
@@ -83,15 +77,10 @@ public class University {
 
         String userName = user.getUser();
         try {
-            ResultSet prog = db.query("SELECT eduprog from tbluserstats where name = '" + userName + "'");
-            if (prog.next()) {
-                int currProg = prog.getInt("eduprog");
-                return currProg;
-            }
+            return db.queryForInt("SELECT eduprog from tbluserstats where name = ?", -1, userName);
         } catch (SQLException ex) {
             return(-1);
         }
-        return -1;
     }
 
     /**
@@ -105,7 +94,7 @@ public class University {
         String userName = user.getUser();
 
         try {
-            db.update("Update tbluserstats set eduprog = " + currProg + " where name = '" + userName + "'");
+            db.update("Update tbluserstats set eduprog = ? where name = ?", currProg, userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nfailed to set progress");
         }

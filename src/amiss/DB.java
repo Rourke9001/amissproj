@@ -128,30 +128,6 @@ public class DB implements AutoCloseable {
         }
     }
 
-    // ---- Legacy string-concatenation API (removed in the next commit) -----
-
-    /**
-     * @deprecated builds queries by string concatenation (SQL-injection prone);
-     *             use {@link #query(String, RowMapper, Object...)} /
-     *             {@link #queryForObject(String, RowMapper, Object...)} instead.
-     */
-    @Deprecated
-    public ResultSet query(String qry) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement(qry);
-        return statement.executeQuery();
-    }
-
-    /**
-     * @deprecated builds queries by string concatenation (SQL-injection prone);
-     *             use {@link #update(String, Object...)} instead.
-     */
-    @Deprecated
-    public void update(String qry) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(qry)) {
-            statement.executeUpdate();
-        }
-    }
-
     /** Closes the underlying connection; safe to call more than once. */
     @Override
     public void close() {
