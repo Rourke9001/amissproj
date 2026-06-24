@@ -142,3 +142,16 @@ INSERT INTO tblhelp (topic, description) VALUES
      'first job. Raise your education at the University and buy better clothing '
      'at the Clothes Store to qualify for higher-paying careers. Once hired, '
      'go to that job''s building and work to earn your hourly salary.');
+
+-- ---------------------------------------------------------------------------
+--  Application database user  (least privilege)
+-- ---------------------------------------------------------------------------
+--  The game connects as this dedicated account instead of root. It can only
+--  read and write rows in amissdb - no DDL, no GRANT, no access to other
+--  schemas. (The app never issues DELETE/DROP, so those are not granted.)
+--  Change the password here and in src/application.properties to match, or
+--  override at runtime with the AMISS_DB_USER / AMISS_DB_PASSWORD env vars.
+
+CREATE USER IF NOT EXISTS 'amiss'@'localhost' IDENTIFIED BY 'amisspw';
+GRANT SELECT, INSERT, UPDATE ON amissdb.* TO 'amiss'@'localhost';
+FLUSH PRIVILEGES;

@@ -57,11 +57,11 @@ public final class Config {
 
     /** Database user. Override with {@code AMISS_DB_USER}. */
     public static String dbUser() {
-        return resolve("db.user", "AMISS_DB_USER", "root");
+        return resolve("db.user", "AMISS_DB_USER", "amiss");
     }
 
     /** Database password. Override with {@code AMISS_DB_PASSWORD}. */
     public static String dbPassword() {
-        return resolve("db.password", "AMISS_DB_PASSWORD", "password");
+        return resolve("db.password", "AMISS_DB_PASSWORD", "amisspw");
     }
 }
