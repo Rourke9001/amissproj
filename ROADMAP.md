@@ -30,7 +30,7 @@ Branch name prefixes: `feat/` (feature), `fix/` (bug), `chore/` (tooling/deps),
 ## Status at a glance
 
 - [x] **Phase 0 — Revival & version control** (June 2026)
-- [ ] **Phase 1 — Backend hygiene & security**
+- [x] **Phase 1 — Backend hygiene & security** (June 2026)
 - [ ] **Phase 2 — Architecture, testing & build tooling**
 - [ ] **Phase 3 — Go full-stack (Spring Boot API + web UI)**
 - [ ] **Phase 4 — Showcase & deploy**
@@ -45,17 +45,20 @@ Branch name prefixes: `feat/` (feature), `fix/` (bug), `chore/` (tooling/deps),
 - [x] Build/run without NetBeans/Ant (`scripts/build.ps1`, `scripts/run.ps1`)
 - [x] Git repo + first commits pushed to GitHub
 
-## Phase 1 — Backend hygiene & security
+## Phase 1 — Backend hygiene & security ✅ (June 2026)
 *Why (CV): writing safe, maintainable data-access code is table stakes for banking.
 These are the fixes an interviewer will look for first.*
-- [ ] **Parameterise all SQL with `PreparedStatement`** — kills the pervasive SQL
-      injection (every query is currently string-concatenated). **← recommended first**
-- [ ] **Hash passwords (BCrypt)** — they're stored and compared in *plaintext* today
-- [ ] try-with-resources for every `ResultSet`/`Statement`; stop leaking connections
-- [ ] Externalise DB config (host/user/password) to `application.properties` / env vars
-- [ ] Create a dedicated least-privilege MySQL user instead of `root`
-- [ ] Replace `System.out` debugging with real logging (SLF4J + Logback)
-- [ ] Basic input validation on usernames / form fields
+- [x] **Parameterise all SQL with `PreparedStatement`** — killed the pervasive SQL
+      injection; `DB` is now a small JdbcTemplate-style helper (all 36 queries bound)
+- [x] **Hash passwords (BCrypt)** — salted hashes via `PasswordHasher`; legacy plaintext
+      logins are transparently re-hashed; `User` no longer holds the password
+- [x] try-with-resources for every `ResultSet`/`Statement` — owned inside `DB`, no leaks
+- [x] Externalise DB config (host/user/password) to `application.properties` / env vars
+      (`Config`; `AMISS_DB_URL`/`AMISS_DB_USER`/`AMISS_DB_PASSWORD` overrides)
+- [x] Create a dedicated least-privilege MySQL user instead of `root`
+      (`amiss`@`localhost`, only SELECT/INSERT/UPDATE on `amissdb`)
+- [x] Replace `System.out` debugging with real logging (SLF4J + Logback)
+- [x] Basic input validation on usernames / form fields (`Validation`)
 
 ## Phase 2 — Architecture, testing & build tooling
 *Why (CV): demonstrates clean architecture, testing discipline and a modern build —

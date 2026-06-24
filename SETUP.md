@@ -43,10 +43,12 @@ database the login window still opens, but you cannot create or load a player.
 3. In the configuration wizard:
    - Keep **port `3306`** and run it **as a Windows Service** (starts on boot).
    - Authentication: **"Use Strong Password Encryption"** (the default) is fine.
-   - **Set a root password and remember it.** On this machine it was set to
-     `password`, and [`src/amiss/DB.java`](src/amiss/DB.java) is already
-     configured to connect as `root` / `password`. *(If you use a different
-     password, change `password` in `DB.java` and re-run `scripts\build.ps1`.)*
+   - **Set a root password and remember it.** On this machine it is `password`.
+     Root is only used to run `db\setup.sql` (below); the game itself connects as
+     a least-privilege **`amiss`** user that the script creates. App connection
+     settings live in [`src/application.properties`](src/application.properties)
+     and can be overridden at runtime with the `AMISS_DB_URL` / `AMISS_DB_USER` /
+     `AMISS_DB_PASSWORD` environment variables — no need to edit Java or rebuild.
 
 Verify the service is up:
 
@@ -70,12 +72,14 @@ mysql -u root -p < db\setup.sql
 & "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u root -p < db\setup.sql
 ```
 
-Enter the root password (`nbuser`) when prompted.
+Enter the root password (`password`) when prompted.
 
 **Option B — MySQL Workbench:** File ▸ Open SQL Script ▸ `db\setup.sql` ▸ run (⚡).
 
-This creates database `amissdb` with four tables and seeds `tbljobs` / `tblhelp`.
-It is safe to re-run — it preserves saved players and only re-seeds reference data.
+This creates database `amissdb` with four tables, seeds `tbljobs` / `tblhelp`, and
+creates the least-privilege **`amiss`@`localhost`** user the game logs in as
+(password `amisspw`; granted only SELECT/INSERT/UPDATE on `amissdb`). It is safe to
+re-run — it preserves saved players and only re-seeds reference data.
 
 ---
 
@@ -102,7 +106,7 @@ the main city screen opens.
 | Console / symptom | Cause & fix |
 |---|---|
 | `Cannot connect to database: Communications link failure` | MySQL isn't running. Start it: `net start MySQL84` (service name may differ) or via *services.msc*. |
-| `Cannot connect to database: Access denied for user 'root'` | root password isn't `password`. Reset it, or edit `password` in `DB.java` and rebuild. |
+| `Cannot connect to database: Access denied for user 'amiss'` | The `amiss` user/password don't match. Re-run `db\setup.sql` as root to (re)create the user, or set `AMISS_DB_USER` / `AMISS_DB_PASSWORD` to the right values. |
 | `Cannot connect to database: Unknown database 'amissdb'` | You haven't loaded the schema — do step 4. |
 | `Public Key Retrieval is not allowed` | Shouldn't happen (the JDBC URL sets `allowPublicKeyRetrieval=true`). If it does, confirm `DB.java` URL wasn't reverted. |
 | `Cannot load driver` | The connector jar is missing from `dist/lib` — re-extract it (see §2). |
@@ -126,20 +130,22 @@ the main city screen opens.
 - **`db/setup.sql` added** — the schema was reverse-engineered from the SQL in the
   code; the contents of `tbljobs`/`tblhelp` are a reconstruction (the originals
   lived only in NetBeans' database and were never in source control).
+- **Phase 1 backend hardening** — all SQL is parameterised through a small
+  JdbcTemplate-style `DB` (try-with-resources, no leaked cursors); passwords are
+  BCrypt hashes (`PasswordHasher`, with transparent upgrade of legacy plaintext);
+  the app connects as a least-privilege `amiss` user with settings from
+  `src/application.properties` / `AMISS_DB_*` env vars (`Config`); logging is
+  SLF4J + Logback; usernames/passwords are validated (`Validation`). New committed
+  jars: `slf4j-api`, `logback-core`, `logback-classic`, `jbcrypt`.
 
 ---
 
-## 8. Good next steps (for refreshing your Java / impressing reviewers)
+## 8. What's next
 
-These are deliberately **not** done yet — they're the "fix what I can" backlog:
-
-1. **Use a dedicated least-privilege DB user** instead of `root` (create
-   `amiss`@`localhost` with rights only on `amissdb`).
-2. **Externalise the DB config** (host/user/password) to a properties file or
-   environment variables instead of hard-coding in `DB.java`.
-3. **Fix SQL injection** — every query is built by string concatenation
-   (e.g. `"... WHERE name = '" + user + "'"`). Switch to parameterised
-   `PreparedStatement`s. This is the single most important "banking-grade" fix.
-4. **Close JDBC resources** (`ResultSet`/`Statement`/`Connection`) with
-   try-with-resources to stop leaking connections.
-5. **Separate game logic from Swing** so the rules can be unit-tested without a GUI.
+Phase 1 (backend hygiene & security) is **done** — the items that used to live
+here have shipped: parameterised SQL, try-with-resources, a least-privilege
+`amiss` DB user, externalised config, BCrypt password hashing, SLF4J/Logback
+logging and input validation. See **[ROADMAP.md](ROADMAP.md)** for the full
+phased plan; **Phase 2** (Maven build, layered architecture, JUnit tests, CI) is
+next — starting with separating the game logic from Swing so the rules can be
+unit-tested without a GUI.

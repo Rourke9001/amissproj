@@ -49,3 +49,26 @@ Add to this after any correction or non-obvious gotcha.
   file with `Set-Content -Encoding ascii` and use `git commit -F <file>` instead.
 - Managing the MySQL service (`net start/stop MySQL97`) needs an elevated shell;
   a normal shell returns `System error 5: Access is denied`.
+
+## Phase 1 / backend hardening
+- **BCrypt hashes are always 60 chars** — the `password` column must be
+  `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an
+  idempotent `ALTER` for DBs created before hashing.
+- **Adding deps without Maven:** drop the jar in `dist/lib/` (fetched from Maven
+  Central) — `scripts/build.ps1` globs `dist/lib/*.jar` onto both the compile
+  classpath and the jar `Class-Path`, so no build-script change is needed. Phase 1
+  added slf4j-api 2.0.13, logback-core/classic 1.3.14 (the Java-8 line — 1.4+
+  needs Java 11) and jbcrypt 0.4.
+- **The IDE (Java extension) lags behind newly-added jars** — `org.slf4j` /
+  `org.mindrot` show "cannot be resolved" until the language server reindexes, but
+  `scripts/build.ps1` compiles fine. Trust the build, not the red squiggles (same
+  root cause as the old `org.netbeans` classpath issue).
+- **PowerShell 5.1 has no `<` input redirection** — `mysql -u root -p < file.sql`
+  is a parser error. Use the Bash tool (Git Bash) or `cmd /c "mysql ... < file.sql"`.
+- **The least-privilege `amiss` user has no DELETE/DDL** — cleaning up test rows
+  needs root, not the app connection. (Verified at runtime: DELETE as `amiss` is
+  denied, which is the point.)
+- **try-with-resources + a returning catch can make the trailing `return` unreachable.**
+  Converting `try { if (rs.next()) return x; } catch { return s; } return s;` to
+  `try { return db.queryForX(...); } catch { return s; }` — drop the now-dead
+  trailing `return`, or javac errors with "unreachable statement".
