@@ -24,11 +24,6 @@ public class DB implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(DB.class);
     private static final String driver = "com.mysql.cj.jdbc.Driver";
-    private static final String user = "root";
-    private static final String password = "password";
-    private static final String url =
-            "jdbc:mysql://localhost:3306/amissdb"
-            + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private Connection connection;
 
     /** Maps the current row of a {@link ResultSet} to a value of type {@code T}. */
@@ -43,7 +38,7 @@ public class DB implements AutoCloseable {
     public DB() {
         try {
             Class.forName(driver);
-            connection = DriverManager.getConnection(url, user, password);
+            connection = DriverManager.getConnection(Config.dbUrl(), Config.dbUser(), Config.dbPassword());
             log.info("Connection Successful");
         } catch (SQLException s) {
             log.error("Cannot connect to database: {}", s.getMessage());
