@@ -16,6 +16,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>8</maven.compiler.release>
         <main.class>amiss.LoginGUI</main.class>
+
+        <!-- Test toolchain (test scope only; runs on the JDK 20 runtime). -->
+        <junit.version>5.10.2</junit.version>
+        <mockito.version>5.11.0</mockito.version>
+        <surefire.version>3.2.5</surefire.version>
+        <jacoco.version>0.8.12</jacoco.version>
     </properties>
 
     <!--
@@ -36,6 +42,22 @@
             <snapshots><enabled>false</enabled></snapshots>
         </repository>
     </repositories>
+
+    <!--
+      Align all JUnit 5 artifacts (jupiter API/engine, platform) on one version
+      via the official BOM, so we never have to pin them individually.
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- MySQL JDBC driver (Community build from Maven Central). -->
@@ -75,6 +97,31 @@
             <artifactId>absolutelayout</artifactId>
             <version>1.0.0</version>
         </dependency>
+
+        <!-- ===== Test scope ===== -->
+        <!-- JUnit 5 (Jupiter aggregator: API + params + engine), version from the BOM. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+          Mockito to mock the amiss.repository DAOs so the service rules are unit-tested
+          in isolation from MySQL. mockito-junit-jupiter provides MockitoExtension.
+        -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -84,6 +131,39 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
+            </plugin>
+
+            <!--
+              Pin Surefire 3.x so the JUnit 5 (JUnit Platform) engine is discovered
+              and run. Maven 3.9.9's default is already 3.x, but we pin it explicitly
+              so the test run is reproducible across Maven versions / CI.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.version}</version>
+            </plugin>
+
+            <!--
+              JaCoCo line/branch coverage. prepare-agent wires the coverage agent into
+              the Surefire JVM; the report goal (bound to test) writes
+              target/site/jacoco/index.html after the tests run.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>jacoco-prepare-agent</id>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>test</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!--
