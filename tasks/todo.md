@@ -166,3 +166,47 @@ generated `initComponents()` block — only field decls, constructors and button
 Phase 2 "layered architecture + decouple rules from Swing" is now complete (PR A + PR B). Next
 Phase 2 items: JUnit 5 tests over the now-headless services, then GitHub Actions CI, then Flyway
 migrations.
+
+### Item 3 — JUnit 5 unit tests for the game logic  (branch `test/phase2-junit`)
+The "JUnit 5 unit tests; aim for meaningful coverage" Phase 2 item, over the now-headless
+`amiss.service` rules unlocked by PR B.
+Plan:
+- [x] **DB isolation = mock the repositories (Mockito).** Surfaced this decision before coding
+      (mock vs in-memory H2 vs throwaway MySQL) and chose mocking: the unit under test is the
+      *rules*, not JDBC; `DB`'s constructor is hardcoded to MySQL so an in-memory DB would force a
+      behaviour-risky `DB` refactor; mocking is fast/deterministic and lets CI run with no MySQL.
+- [x] `pom.xml` (additive only): JUnit 5 via `junit-bom`, Mockito (`mockito-core` +
+      `mockito-junit-jupiter`), pinned `maven-surefire-plugin` 3.2.5, and JaCoCo for coverage
+- [x] 9 test classes / **87 tests** under `src/test/java/amiss`: `Validation`, `ActionResult`,
+      and the five services. Pure logic (board-distance maths, time formatting, buy/eat/work
+      decision branches) + every `catch (SQLException)` fallback, via `@Mock` repositories
+- [x] `workMain`/`eatMain` orchestration tested with **real** collaborator services over mocked
+      repos (Mockito can't stub `job.toString()`), mirroring the `GameServices` wiring
+- [x] `src/test/resources/logback-test.xml` silences the `amiss` logger so the deliberately-thrown
+      `SQLException` fallbacks don't dump stack traces into the Surefire output
+- [x] Verify: `./mvnw clean test` green (87/0/0/0); `git diff --stat main` = `pom.xml` + `src/test`
+      only (zero `src/main` change → behaviour preserved by construction)
+
+### Review — Item 3 (JUnit 5 tests)
+Added a JUnit 5 + Mockito suite (87 tests, 9 classes) over the `amiss.service` rules, green via
+`./mvnw clean test`. The repositories are mocked so each service is exercised in isolation from
+MySQL — the tests are hermetic and fast (~1s), which is exactly what the upcoming GitHub Actions
+CI needs (it can run them with no database). JaCoCo reports **≈88% instruction / 82% line / 78%
+branch** coverage of `amiss.service` and **100%** of `Validation`; the remaining uncovered lines
+are almost entirely the symmetric one-line `catch (SQLException) { return <fallback>; }` returns and
+one provably-dead branch (below). These are characterization tests: they pin the current behaviour
+rather than asserting an ideal, which is the right stance for a refactor-enabling safety net.
+
+Two real findings surfaced (documented, **not** "fixed" — that would change behaviour):
+- **`TimeService.getNewTime` doesn't zero-pad single-digit minutes** — only `mins == 0` is padded
+  to `"00"`, so e.g. 2h 5m renders `"2:5"`, not `"2:05"`. Locked by a test as current behaviour.
+- **`TimeService.getMulti` has a dead `else if`** — the third bonus branch
+  (`|oldCol-col|==3 && row!=oldRow && row,oldRow interior`) is a strict subset of the first `if`'s
+  condition, so it can never execute. Noted in `lessons.md`; chasing 100% branch on `getMulti`
+  isn't meaningful because of it (and the many infeasible combinations of that compound condition).
+
+The orchestration methods (`workMain`/`eatMain`) are covered with real collaborator services over
+mocked repos rather than mocked services, because `workMain` calls `job.toString()`, which Mockito
+can't stub — this also gives a more faithful end-to-end exercise of the decision tree. Build impact
+is additive only (test deps + Surefire pin + JaCoCo); `git diff main` touches no `src/main` file, so
+the game is byte-identical. Next Phase 2 item: GitHub Actions CI to run this suite on every push/PR.
