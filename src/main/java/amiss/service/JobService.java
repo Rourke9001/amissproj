@@ -1,75 +1,63 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package amiss;
+package amiss.service;
 
-import static amiss.MainGameGUI.user;
 import amiss.repository.JobRepository;
 import amiss.repository.UserRepository;
 import java.sql.SQLException;
-import javax.swing.JTextArea;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Class that checks if the user can get a job
- * @author The Rourke
+ * Applying for and describing the player's job (was {@code GetAJob}). Swing-free and
+ * constructor-injected; depends on {@link EducationService} to check a job's entry
+ * requirements. Persistence failures are logged, not shown in the UI.
  */
-public class GetAJob {
+public class JobService {
 
-    static University uni = new University();
+    private static final Logger log = LoggerFactory.getLogger(JobService.class);
 
-    /**
-     *Checks if the user can get a job
-     */
-    public GetAJob() {
-    }
+    private final JobRepository jobs;
+    private final UserRepository users;
+    private final EducationService education;
+    private final String username;
 
-    private UserRepository users() {
-        return new UserRepository(MainGameGUI.db);
-    }
-
-    private JobRepository jobs() {
-        return new JobRepository(MainGameGUI.db);
+    public JobService(JobRepository jobs, UserRepository users, EducationService education, String username) {
+        this.jobs = jobs;
+        this.users = users;
+        this.education = education;
+        this.username = username;
     }
 
     /**
-     * Returns if the User Got the job
-     * Checks if the user is able to able for a job and updates the users job in the database
+     * Returns if the User Got the job. Checks if the user is eligible for a job and
+     * updates the users job in the database.
      * @param job field name of the job
-     * @param txaNotification text area field to display errors
      * @return Returns if the User Got the job
      */
-    public String applyForJob(String job, JTextArea txaNotification) {
+    public String applyForJob(String job) {
         String selected = job;
         int neededEdu = neededEdu(selected);
-        int actualEdu = uni.getEducation();
+        int actualEdu = education.getEducation();
         if (actualEdu < neededEdu) {
             return "not enough education";
         } else {
-            setJob(selected,txaNotification);
+            setJob(selected);
             return "Well Done! You Got The Job, You will earn R" + getEarnings() + " for every hour you Work!";
         }
-
     }
 
     private int neededEdu(String jb) {
-        String job = jb;
         try {
-            return jobs().getRequiredEducation(job);
+            return jobs.getRequiredEducation(jb);
         } catch (SQLException ex) {
-            return(-1);
+            return (-1);
         }
     }
 
-    private void setJob(String jb,JTextArea txaNotification) {
-        String job = jb;
-        String userName = user.getUser();
-
+    private void setJob(String jb) {
         try {
-            users().updateJob(userName, job);
+            users.updateJob(username, jb);
         } catch (SQLException ex) {
-            txaNotification.setText(txaNotification.getText() + "\ncouldnt update job");
+            log.warn("Failed to update job", ex);
         }
     }
 
@@ -79,21 +67,18 @@ public class GetAJob {
      */
     public int getEarnings() {
         String job = getJob();
-
         try {
-            return jobs().getSalary(job);
+            return jobs.getSalary(job);
         } catch (SQLException ex) {
             return -1;
         }
     }
 
     private String getJob() {
-        String userName = user.getUser();
-
         try {
-            return users().getJob(userName);
+            return users.getJob(username);
         } catch (SQLException ex) {
-            return("failed to get earnings");
+            return ("failed to get earnings");
         }
     }
 
@@ -104,23 +89,21 @@ public class GetAJob {
     public String getLocation() {
         String job = getJob();
         try {
-            return jobs().getLocation(job);
+            return jobs.getLocation(job);
         } catch (SQLException ex) {
-            return("failed to get location");
+            return ("failed to get location");
         }
     }
 
     /**
      * Sets the users clothes
      * @param clothes clothes item purchased
-     * @param txaNotification text area field to display errors
      */
-    public void setClothes(int clothes,JTextArea txaNotification) {
-        String userName = user.getUser();
+    public void setClothes(int clothes) {
         try {
-            users().updateClothing(userName, clothes);
+            users.updateClothing(username, clothes);
         } catch (SQLException ex) {
-            txaNotification.setText(txaNotification.getText() + "\nFailed to update clothes");
+            log.warn("Failed to update clothes", ex);
         }
     }
 
@@ -131,7 +114,7 @@ public class GetAJob {
     public String getJobClothes() {
         String job = getJob();
         try {
-            String clothes = jobs().getRequiredClothing(job);
+            String clothes = jobs.getRequiredClothing(job);
             if (clothes != null) {
                 int userC = Integer.parseInt(getUserClothes());
                 int reqC = Integer.parseInt(clothes);
@@ -142,19 +125,17 @@ public class GetAJob {
                 }
             }
         } catch (SQLException ex) {
-            return("failed to get clothing");
+            return ("failed to get clothing");
         }
 
         return null;
-
     }
 
     private String getUserClothes() {
-        String userName = user.getUser();
         try {
-            return users().getUserClothing(userName);
+            return users.getUserClothing(username);
         } catch (SQLException ex) {
-            return("Failed to Get User Clothes");
+            return ("Failed to Get User Clothes");
         }
     }
 
@@ -162,5 +143,4 @@ public class GetAJob {
     public String toString() {
         return "You work as a " + getJob() + " and Earn R" + getEarnings();
     }
-
 }

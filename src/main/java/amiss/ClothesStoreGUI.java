@@ -5,6 +5,11 @@
  */
 package amiss;
 
+import amiss.service.GameServices;
+import amiss.service.JobService;
+import amiss.service.StatsService;
+import amiss.service.TimeService;
+
 /**
  * The Clothes Store Screen
  * @author The Rourke
@@ -14,12 +19,12 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
     /**
      * Creates new form ClothesStoreGUI
      */
-    static User user;
-    static DB db;
+    User user;
+    DB db;
 
-    static CalcDuration dist = new CalcDuration();
-    static GetAJob job = new GetAJob();
-    static Stats stat = new Stats();
+    private TimeService dist;
+    private JobService job;
+    private StatsService stat;
 
     /**
      *
@@ -31,6 +36,10 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
 
         user = u;
         db = d;
+        GameServices services = new GameServices(u, d);
+        dist = services.time();
+        job = services.jobs();
+        stat = services.stats();
 
         lblTimer.setText(dist.getNewTime(0)); //displays the remaining time of the round
         lblMoney.setText(Integer.toString(stat.getCash())); //displays the users cash
@@ -141,7 +150,7 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
 
     private void btnCasualActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCasualActionPerformed
         int price = 0;
-        job.setClothes(Validation.parseIntOrDefault(evt.getActionCommand(), 0),txaNotification);
+        job.setClothes(Validation.parseIntOrDefault(evt.getActionCommand(), 0));
         switch (evt.getActionCommand()) { //gets the price of the clothing item
             case "1":
                 price = 20;
@@ -168,41 +177,6 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
             lblMoney.setText(Integer.toString(stat.getCash()));
         }
     }//GEN-LAST:event_btnCasualActionPerformed
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(ClothesStoreGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(ClothesStoreGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(ClothesStoreGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(ClothesStoreGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new ClothesStoreGUI(user, db).setVisible(true);
-            }
-        });
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnCasual;

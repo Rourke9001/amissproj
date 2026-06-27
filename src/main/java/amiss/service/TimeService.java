@@ -1,46 +1,34 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package amiss;
+package amiss.service;
 
-import static amiss.MainGameGUI.user;
 import amiss.repository.UserRepository;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Class that updates the time whenever a user does an action
- * @author The Rourke
+ * Time, board position and round bookkeeping for the current player (was
+ * {@code CalcDuration}). Swing-free and constructor-injected with its repository and the
+ * current username; persistence failures are logged, never surfaced to the UI.
  */
-public class CalcDuration {
+public class TimeService {
 
-    private static final Logger log = LoggerFactory.getLogger(CalcDuration.class);
+    private static final Logger log = LoggerFactory.getLogger(TimeService.class);
 
-    /**
-     * Updates the time whenever a user does an action
-     */
-    public CalcDuration() {
+    private final UserRepository users;
+    private final String username;
+
+    public TimeService(UserRepository users, String username) {
+        this.users = users;
+        this.username = username;
     }
 
-    private UserRepository users() {
-        return new UserRepository(MainGameGUI.db);
-    }
-
-    
-
-    
     /**
      * Returns the x-coord
      * @return Returns the x-coord
      */
-        public int getX() {
-        String userName = user.getUser();
-
+    public int getX() {
         try {
-            return users().getXpos(userName);
+            return users.getXpos(username);
         } catch (SQLException ex) {
             log.warn("Failed to get x-pos", ex);
         }
@@ -52,10 +40,8 @@ public class CalcDuration {
      * @return Returns the y-coord
      */
     public int getY() {
-        String userName = user.getUser();
-
         try {
-            return users().getYpos(userName);
+            return users.getYpos(username);
         } catch (SQLException ex) {
             log.warn("Failed to get y-pos", ex);
         }
@@ -63,12 +49,11 @@ public class CalcDuration {
     }
 
     /**
-     * Calculates the distance between 2 locations 
+     * Calculates the distance between 2 locations
      * @param xpos users x pos
      * @param ypos users y pos
      * @return returns the distance between two locations
      */
-    
     public int getMulti(int xpos, int ypos) {
         int row = xpos;
         int col = ypos;
@@ -94,16 +79,11 @@ public class CalcDuration {
      * @param ypos users y pos
      */
     public void setPos(int xpos, int ypos) {
-        int row = xpos;
-        int col = ypos;
-        String userName = user.getUser();
-
         try {
-            users().updatePosition(userName, row, col);
+            users.updatePosition(username, xpos, ypos);
         } catch (SQLException ex) {
             log.warn("Failed to update position", ex);
         }
-
     }
 
     /**
@@ -111,11 +91,8 @@ public class CalcDuration {
      * @param tm value used to set time
      */
     public void setTime(int tm) {
-        int time = tm;
-        String userName = user.getUser();
         try {
-            users().updateTime(userName, time);
-
+            users.updateTime(username, tm);
         } catch (SQLException ex) {
             log.warn("Failed to update time", ex);
         }
@@ -127,16 +104,14 @@ public class CalcDuration {
      * @return Return the users current time
      */
     public String getNewTime(int mult) {
-
         int multi = mult;
-        String userName = user.getUser();
         int time;
         int hours = -1;
         int mins = -1;
         String min = "0";
 
         try {
-            time = users().getTime(userName);
+            time = users.getTime(username);
             if (time != -1) {
 
                 for (int i = 0; i < multi; i++) {
@@ -171,10 +146,8 @@ public class CalcDuration {
      * @return Returns the round the user is on
      */
     public String getRound() {
-        String userName = user.getUser();
-
         try {
-            int round = users().getRound(userName);
+            int round = users.getRound(username);
             if (round != -1) {
                 return round + "";
             }
@@ -188,10 +161,9 @@ public class CalcDuration {
      * Updates the data base to set the current round of the user
      */
     public void setRound() {
-        String userName = user.getUser();
         int round = Integer.parseInt(getRound()) + 1;
         try {
-            users().updateRound(userName, round);
+            users.updateRound(username, round);
         } catch (SQLException ex) {
             log.warn("Failed to update round", ex);
         }
@@ -201,5 +173,4 @@ public class CalcDuration {
     public String toString() {
         return getX() + ":" + getY();
     }
-
 }

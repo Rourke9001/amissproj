@@ -5,6 +5,11 @@
  */
 package amiss;
 
+import amiss.service.EducationService;
+import amiss.service.FoodService;
+import amiss.service.GameServices;
+import amiss.service.StatsService;
+import amiss.service.TimeService;
 import java.awt.Color;
 
 /**
@@ -16,15 +21,15 @@ public class MainGameGUI extends javax.swing.JFrame {
     /**
      * Creates new form MainGameGUI
      */
-    static User user;
-    static DB db;
+    User user;
+    DB db;
 
     TwoDGrid tdg = new TwoDGrid();
-    CalcDuration dist = new CalcDuration();
+    private TimeService dist;
     OpenLocation loc = new OpenLocation();
-    Food eat = new Food();
-    Stats stat = new Stats();
-    University uni = new University();
+    private FoodService eat;
+    private StatsService stat;
+    private EducationService uni;
 
     javax.swing.JButton[][] btnArr;
 
@@ -37,6 +42,11 @@ public class MainGameGUI extends javax.swing.JFrame {
         initComponents();
         user = u;
         db = d;
+        GameServices services = new GameServices(u, d);
+        dist = services.time();
+        eat = services.food();
+        stat = services.stats();
+        uni = services.education();
 
         String userName = user.getUser();
         btnNewRound.setVisible(false);
@@ -44,13 +54,13 @@ public class MainGameGUI extends javax.swing.JFrame {
 
         String time = dist.getNewTime(0); // time is 0 when user saved and exit
         if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0:00")) {
-            stat.setDebt(txaNotification, 80);
-            stat.setRent(txaNotification, 1);
+            stat.setDebt(80);
+            stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0:00")) {
-            stat.setRent(txaNotification, 1);
+            stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
             txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
-            stat.setRent(txaNotification, 1);
+            stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0)){
             txaNotification.setText(txaNotification.getText() +"\nThank You for Paying Your Rent");
         } 
@@ -64,7 +74,7 @@ public class MainGameGUI extends javax.swing.JFrame {
             btnStartNewGame.setVisible(true);
             txaNotification.setText("congratulations, You have Completed the Game!");
         } else {
-            txaNotification.setText(txaNotification.getText() + "\nWelcome " + userName + "\nThe Aim of the Game is to complete the goals in the least amount of time possible\n\nYour Current Stats Are as Follows\nCash: \n" + cashG + "/1000\nHappiness: \n" + happyG + "/200\nWork Experience: \n" + workG + "/200\nAnd Education: \n" + eduG + "/8\nWeeks of Food Stored:\n" + eat.getFood(txaNotification));
+            txaNotification.setText(txaNotification.getText() + "\nWelcome " + userName + "\nThe Aim of the Game is to complete the goals in the least amount of time possible\n\nYour Current Stats Are as Follows\nCash: \n" + cashG + "/1000\nHappiness: \n" + happyG + "/200\nWork Experience: \n" + workG + "/200\nAnd Education: \n" + eduG + "/8\nWeeks of Food Stored:\n" + eat.getFood());
 
         }
         
@@ -250,7 +260,7 @@ public class MainGameGUI extends javax.swing.JFrame {
         btnNewRound.setVisible(false);
         btnPanel.setVisible(true);
         
-        boolean eaten = eat.getEat(txaNotification);
+        boolean eaten = eat.getEat();
         if (eaten == false) { //checks if the user ate last round
             dist.setTime(600);
             lblTimer.setText("10:00");
@@ -264,13 +274,13 @@ public class MainGameGUI extends javax.swing.JFrame {
         
         String time = dist.getNewTime(0); // time is 0 when user saved and exit
         if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0:00")) {
-            stat.setDebt(txaNotification, 80);
-            stat.setRent(txaNotification, 1);
+            stat.setDebt(80);
+            stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0:00")) {
-            stat.setRent(txaNotification, 1);
+            stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
             txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
-            stat.setRent(txaNotification, 1);
+            stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0)){
             txaNotification.setText(txaNotification.getText() +"\nThank You for Paying Your Rent");
         } 
@@ -288,7 +298,7 @@ public class MainGameGUI extends javax.swing.JFrame {
             btnStartNewGame.setVisible(true);
             txaNotification.setText("congratulations, You have Completed the Game!"); //message guide to user
         } else {
-            txaNotification.setText("Your Current Stats Are as Follows\nCash: \n" + cashG + "/1000\nHappiness: \n" + happyG + "/200\nWork Experience: \n" + workG + "/200\nAnd Education: \n" + eduG + "/8\n\nWeeks of Food Stored:\n" + eat.getFood(txaNotification));
+            txaNotification.setText("Your Current Stats Are as Follows\nCash: \n" + cashG + "/1000\nHappiness: \n" + happyG + "/200\nWork Experience: \n" + workG + "/200\nAnd Education: \n" + eduG + "/8\n\nWeeks of Food Stored:\n" + eat.getFood());
 
         }
     }//GEN-LAST:event_btnNewRoundActionPerformed
@@ -302,51 +312,10 @@ public class MainGameGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnHelpActionPerformed
 
     private void btnStartNewGameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStartNewGameActionPerformed
-        stat.reset(txaNotification);
+        stat.reset();
         new MainGameGUI(user, db).setVisible(true);
         this.dispose(); //closes the screen and restarts
     }//GEN-LAST:event_btnStartNewGameActionPerformed
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(MainGameGUI.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(MainGameGUI.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(MainGameGUI.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(MainGameGUI.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new MainGameGUI(user, db).setVisible(true);
-            }
-        });
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnHelp;
