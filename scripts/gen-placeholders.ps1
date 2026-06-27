@@ -1,16 +1,16 @@
 # Generates the placeholder background art for every screen into
-# src\amiss\resources\ (committed; bundled into the jar by scripts\build.ps1).
+# src\main\resources\amiss\resources\ (committed; bundled into the jar by Maven).
 #
 # These are deliberately plain, license-clean placeholders that give every screen a
 # consistent look. To use real artwork instead, just overwrite the PNGs of the same
-# name in src\amiss\resources\ and rebuild -- no code change needed.
+# name in src\main\resources\amiss\resources\ and rebuild -- no code change needed.
 #
 #   powershell -File scripts\gen-placeholders.ps1
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 $proj = Split-Path $PSScriptRoot -Parent
-$res  = Join-Path $proj 'src\amiss\resources'
+$res  = Join-Path $proj 'src\main\resources\amiss\resources'
 New-Item -ItemType Directory -Force (Join-Path $res 'screens') | Out-Null
 
 # Shared palette (matches the existing Swing Color(135, 204, 250) light blue).
