@@ -133,3 +133,31 @@ is a 30-line headless program that runs the game logic against MySQL with no Swi
 at all — which is exactly what makes the logic unit-testable and portable into a Spring
 backend later. I kept it safe by mapping every method 1:1 and checking that none of the
 generated UI layout code changed in the diff."*
+
+### Unit-test the game logic (JUnit 5 + Mockito)
+- Wrote an **87-test JUnit 5** suite over the game-rule service layer, run through **Maven
+  Surefire** with `./mvnw clean test` — the project's first automated tests.
+- **Mocked the repository (DAO) layer with Mockito** so the rules are unit-tested in
+  complete isolation from MySQL: the tests are deterministic, run in ~1s, and need no
+  database — which means the upcoming CI can run them on any runner with zero setup.
+- Measured coverage with **JaCoCo**: ≈**88% instruction / 82% line / 78% branch** of the
+  service layer (100% of the validation helper), focused on the real decision logic —
+  board-distance maths, time/wage formatting, and the buy/eat/work branches.
+- Wrote them as **characterization tests** (lock current behaviour before later change),
+  which surfaced two genuine defects I documented rather than silently changed: a
+  minutes-formatting bug (`"2:5"` instead of `"2:05"`) and a **provably dead `else if`
+  branch** in the distance calculation.
+- Tested the cross-service `workMain`/`eatMain` orchestration with **real collaborators
+  over mocked repositories** (mirroring the production composition root) because the code
+  calls `toString()` on a collaborator, which a mock can't stub — choosing the right test
+  double per case rather than mocking dogmatically.
+
+**Talking point:** *"I deliberately mocked the repositories rather than spinning up an
+in-memory database. The thing I'm testing is the game rules, not JDBC — and the `DB` class
+is hardcoded to connect to MySQL, so a real/in-memory DB would have meant refactoring
+production code just to test it. Mocking keeps the tests hermetic and CI-friendly. The
+nice payoff of writing them as characterization tests is that they immediately caught two
+bugs — a minute that prints as `2:5`, and an `else if` whose condition is a subset of the
+`if` above it, so it can literally never run. I left both as documented findings, each with
+a passing test that pins the current (quirky) behaviour, because the task was 'add tests
+without changing behaviour' — fixing them is a separate, intentional commit."*

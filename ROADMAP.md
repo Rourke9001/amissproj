@@ -80,7 +80,13 @@ the difference between "wrote some Java" and "engineers software".*
       or an `ActionResult`; dropped the `MainGameGUI.db/user` ambient statics via
       constructor injection; the GUIs are thin callers. Verified headless against live
       MySQL with a no-Swing probe.)*
-- [ ] **JUnit 5** unit tests for the game logic; aim for meaningful coverage
+- [x] **JUnit 5** unit tests for the game logic; aim for meaningful coverage
+      *(June 2026: 87 tests over the `amiss.service` rules, run via Maven Surefire.
+      Mockito mocks the `amiss.repository` DAOs so the rules are unit-tested with no
+      MySQL — fast, deterministic, CI-ready. JaCoCo reports ≈88% instruction / 82% line
+      / 78% branch coverage of `amiss.service` (Validation 100%). Characterization tests
+      lock current behaviour and documented two quirks — the `getNewTime` single-digit
+      minute (`"2:5"` not `"2:05"`) and a dead `getMulti` branch.)*
 - [ ] **GitHub Actions CI**: compile + run tests on every push / PR
 - [ ] Flyway (or Liquibase) DB migrations to version the schema (replaces `setup.sql`)
 

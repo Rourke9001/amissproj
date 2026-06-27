@@ -110,6 +110,47 @@ Add to this after any correction or non-obvious gotcha.
   then stats). Each screen holds a single `GameServices` instead of `new`-ing five rules classes,
   so the dependency graph lives in exactly one place.
 
+## Phase 2 / JUnit 5 + Mockito tests
+- **Default Maven (pre-3.x Surefire) does not run JUnit 5.** Pin
+  `maven-surefire-plugin` 3.x explicitly (we use 3.2.5) so the JUnit Platform engine is
+  discovered. Maven 3.9.9's default is already 3.x, but pinning makes the test run
+  reproducible across Maven versions / CI runners. Align the Jupiter artifacts with the
+  `org.junit:junit-bom` import rather than versioning each one.
+- **`maven.compiler.release=8` is fine with Mockito 5 / JUnit 5.** `--release 8` only
+  restricts the *JDK platform* API to 8; it does not stop compiling test code against
+  third-party jars whose bytecode is newer (Mockito 5 is Java 11 bytecode). Mockito 5
+  needs a Java 11+ *runtime*, which is satisfied because tests run on the installed JDK 20
+  even though `main` targets Java 8. So no need to drop to Mockito 4.
+- **`JAVA_HOME` is not set in this shell, and PATH `java` is the Oracle javapath shim**
+  (`C:\Program Files\Common Files\Oracle\Java\javapath`), whose parent is NOT a JDK home —
+  so `mvnw` aborts with "JAVA_HOME not found". Set it to the real JDK for the command:
+  `$env:JAVA_HOME = 'C:\Program Files\Java\jdk-20'` before `.\mvnw.cmd`.
+- **Run `mvnw` via the PowerShell tool, not `cmd /c "mvnw.cmd ..."` from Git Bash** — the
+  latter just printed the cmd banner and ran nothing here. `.\mvnw.cmd test` in PowerShell
+  works (the tool captures stderr for you; don't add `2>&1`).
+- **MockitoExtension defaults to STRICT_STUBS**: every `when(...)` stub must actually be
+  used by that test or it throws `UnnecessaryStubbingException`. Stub only what a given
+  path touches (e.g. the "Not Enough Time" branch must not stub `getCash`/`getSalary`,
+  because it short-circuits before reaching them). Multiple *uses* of one stub are fine.
+- **You can't mock `toString()`/`equals()`/`hashCode()` with Mockito.** `StatsService.workMain`
+  calls `job.toString()`, so the work/eat orchestration is tested with **real** collaborator
+  services (`JobService`/`TimeService`/`FoodService`) built over **mocked repositories**,
+  mirroring the `GameServices` wiring — not with mocked services.
+- **Stub a void repo method to throw with `doThrow(...).when(mock).method(args)`** (not
+  `when(...).thenThrow`), to cover the services' `catch (SQLException)` fallback branches
+  (e.g. `buy` → "failed to purchase", `setCash` → "failed to update cash").
+- **Silence expected-exception log noise with `src/test/resources/logback-test.xml`.**
+  Tests that make repos throw `SQLException` hit the services' `log.warn("...", ex)` lines,
+  which dump stack traces all over Surefire output. Logback prefers `logback-test.xml` on
+  the test classpath over the main `logback.xml`, so set `<logger name="amiss" level="OFF"/>`
+  there — the main logging config is untouched. (Verified: 0 stack traces, build still green.)
+- **Characterization-test findings (documented, not fixed — fixing changes behaviour):**
+  (1) `TimeService.getNewTime` only zero-pads `mins == 0` (→ `"00"`), so a single-digit
+  minute renders unpadded — 2h 5m is `"2:5"`, not `"2:05"`. (2) `TimeService.getMulti`'s
+  third `else if` is **dead code**: its condition (`|oldCol-col|==3 && row!=oldRow` with both
+  rows interior) is a strict subset of the first `if`, which always fires first — so 100%
+  branch coverage of `getMulti` is unreachable, and that's expected, not a gap to chase.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an
