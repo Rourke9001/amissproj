@@ -5,6 +5,8 @@
  */
 package amiss;
 
+import amiss.repository.UserRepository;
+import amiss.repository.UserStatsRepository;
 import java.sql.SQLException;
 import java.util.Optional;
 
@@ -25,6 +27,8 @@ public class LoginGUI extends javax.swing.JFrame {
 
     }
     DB db = new DB();
+    UserRepository users = new UserRepository(db);
+    UserStatsRepository userStats = new UserStatsRepository(db);
     String user, passwrd;
 
     /**
@@ -112,24 +116,14 @@ public class LoginGUI extends javax.swing.JFrame {
             user = txfUserName.getText().trim();
             passwrd = pwdPassword.getText();
             if (Validation.isValidUsername(user) && passwrd.length() != 0) { //checks the fields hold a valid username + a password
-                Optional<String> storedPassword = db.queryForObject(
-                        "SELECT password FROM tbluser WHERE name = ?",
-                        rs -> rs.getString("password"), user); //fetches the stored hash for the username
+                Optional<String> storedPassword = users.findPasswordHash(user); //fetches the stored hash for the username
                 if (storedPassword.isPresent()) { //checks if user exists in database
                     String stored = storedPassword.get();
                     if (PasswordHasher.matches(passwrd, stored)) { //verifies the password against the stored hash
                         if (PasswordHasher.needsRehash(stored)) { //transparently upgrade a legacy plaintext password
-                            db.update("UPDATE tbluser SET password = ? WHERE name = ?",
-                                    PasswordHasher.hash(passwrd), user);
+                            users.updatePassword(user, PasswordHasher.hash(passwrd));
                         }
-                        User newUser = db.queryForObject(
-                                "SELECT * FROM tbluser WHERE name = ?",
-                                rs -> new User(user,
-                                        rs.getInt("xpos"), rs.getInt("ypos"), rs.getInt("time"),
-                                        rs.getInt("cash"), rs.getInt("round"), rs.getString("job"),
-                                        rs.getInt("clothing"), rs.getInt("rent"), rs.getInt("eat"),
-                                        rs.getInt("debt")),
-                                user).get(); //loads the player's saved state
+                        User newUser = users.findByName(user).get(); //loads the player's saved state
                         new MainGameGUI(newUser, db).setVisible(true);
                         this.dispose(); //closes the login GUI
                     } else {
@@ -156,8 +150,8 @@ public class LoginGUI extends javax.swing.JFrame {
             if (!Validation.isValidPassword(passwrd)) {
                 lblError.setText("Password must be at least " + Validation.MIN_PASSWORD_LENGTH + " characters");
             } else if (conf.equals(passwrd)) { //Checks if both passwords entered by the user match
-                db.update("INSERT INTO tbluser VALUES (?,?,0,0,720,100,1,'Unemployed',1,1,0,0)", user, PasswordHasher.hash(passwrd)); //creates the new user with a hashed password
-                db.update("INSERT INTO tbluserstats VALUES (?,0,0,0,0)", user);
+                users.insertNewUser(user, PasswordHasher.hash(passwrd)); //creates the new user with a hashed password
+                userStats.insertNewStats(user);
                 lblError.setText("User Added");//message guide to the user
                 User newUser = new User(user, 0, 0, 720, 100, 1, "Unemployed", 1, 1, 0, 0);//create new user object
                 UserGoals newUserGoals = new UserGoals(user, 0, 0, 0, 0);//creates new userGoal object

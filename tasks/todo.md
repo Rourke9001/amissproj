@@ -91,3 +91,39 @@ unchanged vs `main` — same game, same `amiss.LoginGUI` entry point.
 Remaining Phase 2 items (each its own branch/PR): layered architecture + decouple rules
 from Swing (combined), JUnit 5 tests, GitHub Actions CI, Flyway migrations. The
 `HelpGUI` `descip`→`description` bug will be fixed within the Flyway/repository work.
+
+### Item 2 — Layered architecture, PR A: persistence layer  (branch `feat/phase2-persistence-layer`)
+The "layered architecture + decouple rules from Swing" item, split into two PRs. PR A is
+the low-risk persistence half; PR B adds the service layer and removes the statics.
+Plan:
+- [x] New `amiss.repository` package: `UserRepository` / `UserStatsRepository` /
+      `JobRepository` / `HelpRepository`, each constructor-injected with a `DB`, Swing-free
+- [x] Route every inline SQL call through the repos — game logic (`Stats`, `GetAJob`,
+      `CalcDuration`, `Food`, `University`) via a private repo accessor over the still-static
+      `MainGameGUI.db`; Swing screens (`LoginGUI`, `HighScoreGUI`, `HelpGUI`) via repo fields
+- [x] Reads keep each caller's historical default; `Optional` for the may-not-exist lookups
+- [x] Fix the `HelpGUI` `descip`→`description` bug (Help broken since the schema rebuild)
+- [x] Verify: `./mvnw clean package` green; launch against live MySQL logs
+      `Connection Successful`; DB-level check confirms `SELECT description` works and the old
+      `descip` errors; Swing `initComponents` untouched in the diff
+
+### Review — Item 2 PR A (persistence layer)
+Moved ~40 inline SQL statements out of ten classes and behind four repositories in a new
+`amiss.repository` package, leaving no SQL in the game rules or the Swing screens. The
+repositories wrap the existing JdbcTemplate-style `DB` helper, take their data source by
+constructor, and have no Swing/static dependency — so they already run headless, which is
+the setup PR B needs for a Swing-free service layer. The refactor is behaviour-preserving
+by construction: the SQL strings and per-column defaults are unchanged, and each call site
+is a 1:1 swap (game-logic classes build a repo from the still-static `MainGameGUI.db` via a
+small private accessor; PR B turns those into injected fields and deletes the statics).
+Consolidating the Help query surfaced and fixed a real bug — the screen had queried column
+`descip` while the schema column is `description`, so every Help topic had thrown
+`SQLException` ("Can't Load Help") since the schema reconstruction. Verified end-to-end:
+green Maven package, the uber-jar connects to live MySQL and opens the login screen, and a
+direct DB check confirms `SELECT description ... = 'Controls'` returns the text while
+`SELECT descip ...` errors with "Unknown column 'descip'". `git diff main` shows only the
+eight intended files plus the new package; no Swing layout code changed.
+
+PR B (next): extract the game rules into Swing-free services returning result objects, drop
+the `MainGameGUI.db`/`MainGameGUI.user` statics via constructor injection, leave the GUIs as
+thin callers.

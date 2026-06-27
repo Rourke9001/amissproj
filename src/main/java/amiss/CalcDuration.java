@@ -5,8 +5,8 @@
  */
 package amiss;
 
-import static amiss.MainGameGUI.db;
 import static amiss.MainGameGUI.user;
+import amiss.repository.UserRepository;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +25,10 @@ public class CalcDuration {
     public CalcDuration() {
     }
 
+    private UserRepository users() {
+        return new UserRepository(MainGameGUI.db);
+    }
+
     
 
     
@@ -36,7 +40,7 @@ public class CalcDuration {
         String userName = user.getUser();
 
         try {
-            return db.queryForInt("SELECT xpos FROM tbluser WHERE name = ?", 0, userName);
+            return users().getXpos(userName);
         } catch (SQLException ex) {
             log.warn("Failed to get x-pos", ex);
         }
@@ -51,7 +55,7 @@ public class CalcDuration {
         String userName = user.getUser();
 
         try {
-            return db.queryForInt("SELECT ypos FROM tbluser WHERE name = ?", 0, userName);
+            return users().getYpos(userName);
         } catch (SQLException ex) {
             log.warn("Failed to get y-pos", ex);
         }
@@ -95,7 +99,7 @@ public class CalcDuration {
         String userName = user.getUser();
 
         try {
-            db.update("UPDATE tbluser SET xpos = ?, ypos = ? WHERE name = ?", row, col, userName);
+            users().updatePosition(userName, row, col);
         } catch (SQLException ex) {
             log.warn("Failed to update position", ex);
         }
@@ -110,7 +114,7 @@ public class CalcDuration {
         int time = tm;
         String userName = user.getUser();
         try {
-            db.update("update tbluser set time = ? WHERE name = ?", time, userName);
+            users().updateTime(userName, time);
 
         } catch (SQLException ex) {
             log.warn("Failed to update time", ex);
@@ -132,7 +136,7 @@ public class CalcDuration {
         String min = "0";
 
         try {
-            time = db.queryForInt("SELECT time FROM tbluser WHERE name = ?", -1, userName);
+            time = users().getTime(userName);
             if (time != -1) {
 
                 for (int i = 0; i < multi; i++) {
@@ -170,7 +174,7 @@ public class CalcDuration {
         String userName = user.getUser();
 
         try {
-            int round = db.queryForInt("SELECT round FROM tbluser WHERE name = ?", -1, userName);
+            int round = users().getRound(userName);
             if (round != -1) {
                 return round + "";
             }
@@ -187,7 +191,7 @@ public class CalcDuration {
         String userName = user.getUser();
         int round = Integer.parseInt(getRound()) + 1;
         try {
-            db.update("update tbluser set round = ? WHERE name = ?", round, userName);
+            users().updateRound(userName, round);
         } catch (SQLException ex) {
             log.warn("Failed to update round", ex);
         }

@@ -5,7 +5,9 @@
  */
 package amiss;
 
+import amiss.repository.HelpRepository;
 import java.sql.SQLException;
+import java.util.Optional;
 
 /**
  * The Help Screen
@@ -20,6 +22,7 @@ public class HelpGUI extends javax.swing.JFrame {
         initComponents();
     }
     DB db = new DB();
+    HelpRepository help = new HelpRepository(db);
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -143,12 +146,8 @@ public class HelpGUI extends javax.swing.JFrame {
     private void btnLoadGameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoadGameActionPerformed
         try {
             String topic = evt.getActionCommand();
-            String temp = "";
-            for (String[] row : db.query("SELECT * FROM tblhelp WHERE topic = ?",
-                    rs -> new String[]{rs.getString("topic"), rs.getString("descip")}, topic)) {
-                temp = temp + row[0] + "\n\n" + row[1] + "\n";
-            }
-            txaNotification.setText(temp); //sets the text field with the description
+            Optional<String> description = help.findDescription(topic);
+            txaNotification.setText(description.map(desc -> topic + "\n\n" + desc + "\n").orElse("")); //sets the text field with the description
         } catch (SQLException ex) {
             txaNotification.setText("Can't Load Help"); //message guide to the user
         }

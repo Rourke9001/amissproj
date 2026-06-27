@@ -5,6 +5,7 @@
  */
 package amiss;
 
+import amiss.repository.UserRepository;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ public class HighScoreGUI extends javax.swing.JFrame {
         initComponents();
     }
     DB db = new DB();
+    UserRepository users = new UserRepository(db);
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -81,8 +83,7 @@ public class HighScoreGUI extends javax.swing.JFrame {
     private void btnShowHighScoreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShowHighScoreActionPerformed
         try {
             String temp = "";
-            for (String[] row : db.query("SELECT name, round FROM tbluser ORDER BY round DESC",
-                    rs -> new String[]{rs.getString("name"), Integer.toString(rs.getInt("round"))})) {
+            for (String[] row : users.highScores()) {
                 temp = temp + row[0] + "\t\t\t" + row[1] + "\n";
             }
             txaHighScore.setText(temp);
