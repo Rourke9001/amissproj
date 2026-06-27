@@ -5,8 +5,8 @@
  */
 package amiss;
 
-import static amiss.MainGameGUI.db;
 import static amiss.MainGameGUI.user;
+import amiss.repository.UserStatsRepository;
 import java.sql.SQLException;
 import javax.swing.JTextArea;
 
@@ -22,6 +22,10 @@ public class University {
     public University() {
     }
 
+    private UserStatsRepository stats() {
+        return new UserStatsRepository(MainGameGUI.db);
+    }
+
     /**
      * returns the users education 
      * @return returns the users education progress
@@ -31,7 +35,7 @@ public class University {
         String userName = user.getUser();
 
         try {
-            return db.queryForInt("SELECT education from tbluserstats where name = ?", -1, userName);
+            return stats().getEducation(userName);
         } catch (SQLException ex) {
             return(-1);
         }
@@ -47,7 +51,7 @@ public class University {
         String userName = user.getUser();
 
         try {
-            db.update("UPDATE tbluserstats set education = ? where name = ?", edu, userName);
+            stats().updateEducation(userName, edu);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nfailed to update education");
         }
@@ -77,7 +81,7 @@ public class University {
 
         String userName = user.getUser();
         try {
-            return db.queryForInt("SELECT eduprog from tbluserstats where name = ?", -1, userName);
+            return stats().getEduprog(userName);
         } catch (SQLException ex) {
             return(-1);
         }
@@ -94,7 +98,7 @@ public class University {
         String userName = user.getUser();
 
         try {
-            db.update("Update tbluserstats set eduprog = ? where name = ?", currProg, userName);
+            stats().updateEduprog(userName, currProg);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nfailed to set progress");
         }

@@ -5,8 +5,8 @@
  */
 package amiss;
 
-import static amiss.MainGameGUI.db;
 import static amiss.MainGameGUI.user;
+import amiss.repository.UserRepository;
 import java.sql.SQLException;
 import javax.swing.JTextArea;
 
@@ -20,6 +20,10 @@ public class Food {
      *Updates the users food items and stored food
      */
     public Food() {
+    }
+
+    private UserRepository users() {
+        return new UserRepository(MainGameGUI.db);
     }
 
     /**
@@ -41,7 +45,7 @@ public class Food {
         }
 
         try {
-            db.update("UPDATE tbluser SET eat = ? WHERE name = ?", eat, userName);
+            users().updateEat(userName, eat);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nfailed to update food");
         }
@@ -58,7 +62,7 @@ public class Food {
         String userName = user.getUser();
 
         try {
-            return db.queryForInt("SELECT eat FROM tbluser WHERE name = ?", 0, userName);
+            return users().getEat(userName);
         } catch (SQLException ex) {
             txaNotification.setText(txaNotification.getText() + "\nfailed to get has eaten");
         }
@@ -78,7 +82,7 @@ public class Food {
         boolean eaten = false;
 
         try {
-            int num = db.queryForInt("SELECT eat FROM tbluser WHERE name = ?", -1, userName);
+            int num = users().getEat(userName);
             if (num != -1) {
                 if (num == 0) {
                     eaten = false;
