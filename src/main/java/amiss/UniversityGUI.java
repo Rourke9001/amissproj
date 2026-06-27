@@ -5,6 +5,11 @@
  */
 package amiss;
 
+import amiss.service.EducationService;
+import amiss.service.GameServices;
+import amiss.service.StatsService;
+import amiss.service.TimeService;
+
 /**
  * The University Screen
  * @author The Rourke
@@ -14,12 +19,12 @@ public class UniversityGUI extends javax.swing.JFrame {
     /**
      * Creates new form UniversityGUI
      */
-    static User user;
-    static DB db;
+    User user;
+    DB db;
 
-    CalcDuration dist = new CalcDuration();
-    Stats stat = new Stats();
-    University uni = new University();
+    private TimeService dist;
+    private StatsService stat;
+    private EducationService uni;
 
     static String[] studyArr = {"Junior College", "Academic", "Year 3", "Year 4", "Graduate School", "Post Doctoral", "Research", "Publishing"}; //Array of degrees the user studies
 
@@ -33,6 +38,10 @@ public class UniversityGUI extends javax.swing.JFrame {
 
         user = u;
         db = d;
+        GameServices services = new GameServices(u, d);
+        dist = services.time();
+        stat = services.stats();
+        uni = services.education();
 
         lblTimer.setText(dist.getNewTime(0)); //gets the time left in the round
 
@@ -164,15 +173,15 @@ public class UniversityGUI extends javax.swing.JFrame {
                 lblTimer.setText(time);
 
                 prog += 1;
-                uni.setProg(prog,txaNotification);
+                uni.setProg(prog);
 
                 txfProg.setText(prog - 1 + "/10");
                 if (prog == 11) {
                     txaNotification.setText(txaNotification.getText() + "\n\nWell Done You have Completed: " + studyArr[uni.getEducation()]);
-                    uni.setEducation(txaNotification);
+                    uni.setEducation();
                     btnEnroll.setVisible(true);
                     btnStudy.setVisible(false);
-                    uni.setProg(0,txaNotification);
+                    uni.setProg(0);
                     txfProg.setText("0/10");
 
                     if (uni.getEducation() == 8 && prog == 11) {
@@ -206,7 +215,7 @@ public class UniversityGUI extends javax.swing.JFrame {
                 txaNotification.setText(txaNotification.getText() + "\n\n" + cash);
                 if (degree < 8) {
                     //uni.setEducation();
-                    uni.setProg(1,txaNotification);
+                    uni.setProg(1);
                     lblTimer.setText(time);
                     btnEnroll.setVisible(false);
                     btnStudy.setVisible(true);
@@ -215,41 +224,6 @@ public class UniversityGUI extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_btnEnrollActionPerformed
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(UniversityGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(UniversityGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(UniversityGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(UniversityGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new UniversityGUI(user, db).setVisible(true);
-            }
-        });
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnroll;

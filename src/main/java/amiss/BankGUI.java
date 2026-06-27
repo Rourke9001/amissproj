@@ -5,6 +5,12 @@
  */
 package amiss;
 
+import amiss.service.ActionResult;
+import amiss.service.GameServices;
+import amiss.service.JobService;
+import amiss.service.StatsService;
+import amiss.service.TimeService;
+
 /**
  * The Bank Screen
  * @author The Rourke
@@ -14,12 +20,12 @@ public class BankGUI extends javax.swing.JFrame {
     /**
      * Creates new form BankGUI
      */
-    static User user;
-    static DB db;
+    User user;
+    DB db;
 
-    static CalcDuration dist = new CalcDuration();
-    static GetAJob job = new GetAJob();
-    static Stats stat = new Stats();
+    private TimeService dist;
+    private JobService job;
+    private StatsService stat;
 
     /**
      *
@@ -31,6 +37,10 @@ public class BankGUI extends javax.swing.JFrame {
 
         user = u;
         db = d;
+        GameServices services = new GameServices(u, d);
+        dist = services.time();
+        job = services.jobs();
+        stat = services.stats();
 
        lblTimer.setText(dist.getNewTime(0)); //gets the time left in the round
         lblMoney.setText(Integer.toString(stat.getCash())); //gets the users cash
@@ -112,43 +122,15 @@ public class BankGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnExitActionPerformed
 
     private void btnWorkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnWorkActionPerformed
-        stat.workMain(txaNotification, lblTimer, lblMoney); //checks if the user has enough time to work and updated their cash
-    }//GEN-LAST:event_btnWorkActionPerformed
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(BankGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(BankGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(BankGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(BankGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        ActionResult result = stat.workMain(); //checks if the user has enough time to work and updates their cash
+        txaNotification.setText(txaNotification.getText() + result.message());
+        if (result.timer() != null) {
+            lblTimer.setText(result.timer());
         }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new BankGUI(user, db).setVisible(true);
-            }
-        });
-    }
+        if (result.money() != null) {
+            lblMoney.setText(result.money());
+        }
+    }//GEN-LAST:event_btnWorkActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnExit;

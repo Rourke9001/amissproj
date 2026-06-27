@@ -5,6 +5,10 @@
  */
 package amiss;
 
+import amiss.service.GameServices;
+import amiss.service.JobService;
+import amiss.service.TimeService;
+
 /**
  * The Employment Office Screen
  * @author The Rourke
@@ -14,11 +18,11 @@ public class EmploymentGUI extends javax.swing.JFrame {
     /**
      * Creates new form EmploymentGUI
      */
-    static User user;
-    static DB db;
+    User user;
+    DB db;
 
-    static CalcDuration dist = new CalcDuration();
-    static GetAJob job = new GetAJob();
+    private TimeService dist;
+    private JobService job;
 
     /**
      *
@@ -30,6 +34,9 @@ public class EmploymentGUI extends javax.swing.JFrame {
 
         user = u;
         db = d;
+        GameServices services = new GameServices(u, d);
+        dist = services.time();
+        job = services.jobs();
 
         lblTimer.setText(dist.getNewTime(0));
     }
@@ -313,7 +320,7 @@ public class EmploymentGUI extends javax.swing.JFrame {
             txaNotification.setText(txaNotification.getText() + "\n\nRound Has Ended");
         } else { //checks if the user has enough education for a job
             lblTimer.setText(dist.getNewTime(1));
-            String jb = job.applyForJob(evt.getActionCommand(),txaNotification);
+            String jb = job.applyForJob(evt.getActionCommand());
             txaNotification.setText(txaNotification.getText() + "\n\n" + jb);
         }
     }//GEN-LAST:event_btnCookActionPerformed
@@ -323,41 +330,6 @@ public class EmploymentGUI extends javax.swing.JFrame {
         EmploymentGUI.this.dispose();
 
     }//GEN-LAST:event_btnExitActionPerformed
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(EmploymentGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(EmploymentGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(EmploymentGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(EmploymentGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new EmploymentGUI(user, db).setVisible(true);
-            }
-        });
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnApartmentManager;

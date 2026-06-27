@@ -5,6 +5,12 @@
  */
 package amiss;
 
+import amiss.service.ActionResult;
+import amiss.service.GameServices;
+import amiss.service.JobService;
+import amiss.service.StatsService;
+import amiss.service.TimeService;
+
 /**
  * The Fast Food Place Screen
  * @author The Rourke
@@ -14,13 +20,12 @@ public class FastFoodGUI extends javax.swing.JFrame {
     /**
      * Creates new form FastFoodGUI
      */
-    static User user;
-    static DB db;
+    User user;
+    DB db;
 
-    static CalcDuration dist = new CalcDuration();
-    static GetAJob job = new GetAJob();
-    static Stats stat = new Stats();
-    static Food eat = new Food();
+    private TimeService dist;
+    private JobService job;
+    private StatsService stat;
 
     /**
      *
@@ -32,6 +37,10 @@ public class FastFoodGUI extends javax.swing.JFrame {
 
         user = u;
         db = d;
+        GameServices services = new GameServices(u, d);
+        dist = services.time();
+        job = services.jobs();
+        stat = services.stats();
 
         lblTimer.setText(dist.getNewTime(0)); //gets the time left in the round
         lblMoney.setText(Integer.toString(stat.getCash())); //gets the users cash
@@ -194,7 +203,14 @@ public class FastFoodGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnBugerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBugerActionPerformed
-        stat.eatMain(txaNotification, lblTimer, lblMoney, Validation.parseIntOrDefault(evt.getActionCommand(), 0)); //checks if the user has enough time and money to purcahse item
+        ActionResult result = stat.eatMain(Validation.parseIntOrDefault(evt.getActionCommand(), 0)); //checks if the user has enough time and money to purcahse item
+        txaNotification.setText(txaNotification.getText() + result.message());
+        if (result.timer() != null) {
+            lblTimer.setText(result.timer());
+        }
+        if (result.money() != null) {
+            lblMoney.setText(result.money());
+        }
     }//GEN-LAST:event_btnBugerActionPerformed
 
     private void btnExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExitActionPerformed
@@ -204,27 +220,15 @@ public class FastFoodGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnExitActionPerformed
 
     private void btnWorkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnWorkActionPerformed
-        stat.workMain(txaNotification, lblTimer, lblMoney); //checks if the user has enough time to work and updated their cash
+        ActionResult result = stat.workMain(); //checks if the user has enough time to work and updates their cash
+        txaNotification.setText(txaNotification.getText() + result.message());
+        if (result.timer() != null) {
+            lblTimer.setText(result.timer());
+        }
+        if (result.money() != null) {
+            lblMoney.setText(result.money());
+        }
     }//GEN-LAST:event_btnWorkActionPerformed
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new FastFoodGUI(user, db).setVisible(true);
-            }
-        });
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnBuger;

@@ -5,6 +5,10 @@
  */
 package amiss;
 
+import amiss.service.GameServices;
+import amiss.service.StatsService;
+import amiss.service.TimeService;
+
 /**
  * The Public Pool Screen
  * @author The Rourke
@@ -14,11 +18,11 @@ public class PublicPoolGUI extends javax.swing.JFrame {
     /**
      * Creates new form PublicPoolGUI
      */
-    static User user;
-    static DB db;
+    User user;
+    DB db;
 
-    CalcDuration dist = new CalcDuration();
-    static Stats stat = new Stats();
+    private TimeService dist;
+    private StatsService stat;
 
     /**
      *
@@ -30,6 +34,9 @@ public class PublicPoolGUI extends javax.swing.JFrame {
 
         user = u;
         db = d;
+        GameServices services = new GameServices(u, d);
+        dist = services.time();
+        stat = services.stats();
         lblTimer.setText(dist.getNewTime(0)); //gets the amount of time the user has this round
     }
 
@@ -98,7 +105,7 @@ public class PublicPoolGUI extends javax.swing.JFrame {
             txaNotification.setText(txaNotification.getText() + "\n\n" + time);
         } else {
             txaNotification.setText(txaNotification.getText() + "\nOne Point in Happiness");
-            stat.updateHappiness(txaNotification);
+            stat.updateHappiness();
             lblTimer.setText(time);
         }
     }//GEN-LAST:event_btnRelaxActionPerformed
@@ -107,41 +114,6 @@ public class PublicPoolGUI extends javax.swing.JFrame {
         new MainGameGUI(user, db).setVisible(true);
         PublicPoolGUI.this.dispose();
     }//GEN-LAST:event_btnExitActionPerformed
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(PublicPoolGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(PublicPoolGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(PublicPoolGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(PublicPoolGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new PublicPoolGUI(user, db).setVisible(true);
-            }
-        });
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnExit;
