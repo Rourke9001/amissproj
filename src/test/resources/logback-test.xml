@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Test-scope logging config (Logback prefers logback-test.xml over logback.xml when
+  it is on the test classpath, so the main config is untouched).
+
+  Several unit tests deliberately make the mocked repositories throw SQLException to
+  exercise the services' catch/log/fallback branches. Those expected exceptions are
+  logged at WARN by the services, which would otherwise dump stack traces all over the
+  Surefire output. The tests assert on return values and interactions, not on logs, so
+  we silence the amiss logger here to keep the test run output clean.
+-->
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{24} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Suppress the expected, deliberately-triggered SQLException warnings. -->
+    <logger name="amiss" level="OFF"/>
+
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>
