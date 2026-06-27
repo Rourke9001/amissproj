@@ -50,6 +50,36 @@ Add to this after any correction or non-obvious gotcha.
 - Managing the MySQL service (`net start/stop MySQL97`) needs an elevated shell;
   a normal shell returns `System error 5: Access is denied`.
 
+## Phase 2 / Maven build migration
+- **No global Maven on this machine (only the JDK).** Don't assume `mvn` exists — add the
+  **Maven Wrapper** so the build is self-contained. Without `mvn` you can't run
+  `wrapper:wrapper`, so bootstrap it by unzipping the official
+  `org.apache.maven.wrapper:maven-wrapper-distribution:<ver>-bin.zip` (mvnw, mvnw.cmd,
+  `.mvn/wrapper/maven-wrapper.jar`) and hand-writing `maven-wrapper.properties`
+  (`distributionUrl` + `wrapperUrl`). First `./mvnw` downloads Maven into `~/.m2/wrapper`.
+- **Shading an uber-jar silently breaks `ServiceLoader` discovery.** SLF4J 2.x finds its
+  backend via `META-INF/services/org.slf4j.spi.SLF4JServiceProvider` and JDBC finds the
+  driver via `META-INF/services/java.sql.Driver`. maven-shade overwrites same-named files
+  unless you add `ServicesResourceTransformer` to **merge** them — otherwise logging goes
+  no-op and/or the MySQL driver isn't found, with no build error. Pair it with
+  `ManifestResourceTransformer` for the `Main-Class`.
+- **Shade vs signed / multi-release jars.** Exclude `META-INF/*.SF|*.DSA|*.RSA` (else the
+  JVM rejects the repackaged jar: "Invalid signature file digest") and `module-info.class`
+  (multi-release deps like mysql-connector-j) in a shade `<filter>`.
+- **Vendoring a jar that isn't on Maven Central** (NetBeans `AbsoluteLayout`): install it
+  into a *project-local* repo with `install:install-file ... -DlocalRepositoryPath=vendor-repo`
+  (this does NOT pollute `~/.m2`, so the build genuinely tests resolution from the repo),
+  and reference it via `<url>${project.baseUri}vendor-repo</url>` — `project.baseUri` emits
+  a valid `file:///C:/...` URL on Windows. Delete the `_remote.repositories` and
+  `maven-metadata-local.xml` files it drops; they're local-repo bookkeeping and aren't
+  needed to resolve an exact pinned version from a file repo.
+- **Maven resource path must match `getResource`.** Code loads art from
+  `/amiss/resources/...`, so assets belong at `src/main/resources/amiss/resources/`
+  (NOT `src/main/resources/amiss/`); `application.properties`/`logback.xml` sit at the
+  resources root. Easy to drop a directory level when moving `src/amiss/resources`.
+- **`beansbinding` was a dead NetBeans default dep** (zero imports) — dropped it rather
+  than porting it to Maven. Grep for actual imports before re-declaring inherited jars.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an
