@@ -82,3 +82,26 @@ shading the uber-jar broke service discovery until I merged the `META-INF/servic
 files, and one dependency wasn't on Maven Central, so I vendored it through a project-local
 repo rather than committing a jar onto the classpath. The wrapper means CI needs zero
 setup."*
+
+### Introduce a persistence (DAO/repository) layer
+- Extracted ~40 inline SQL statements scattered across ten classes (game logic + Swing
+  screens) into a dedicated `amiss.repository` package — `UserRepository`,
+  `UserStatsRepository`, `JobRepository`, `HelpRepository` — each a thin, testable DAO
+  over the existing JdbcTemplate-style `DB` helper, with no SQL left in the UI or rules.
+- Designed the repositories Swing-free and constructor-injected with their data source,
+  so they already run headless — deliberate groundwork for the service layer and unit
+  tests that follow in Phase 2.
+- Modelled "row may not exist" honestly with `Optional` (`findByName` / `findPasswordHash`
+  / `findDescription`) while keeping each call site's historical default, so the refactor
+  is behaviour-preserving by construction.
+- Fixed a latent production bug uncovered while consolidating the SQL: the in-game Help
+  queried a non-existent column (`descip` vs the schema's `description`), so every Help
+  topic had silently thrown `SQLException` since the schema was rebuilt. Verified the fix
+  against live MySQL.
+
+**Talking point:** *"This is the first slice of a layered architecture — domain → DAO →
+service → UI. I kept it deliberately small and behaviour-preserving: move the SQL behind
+repositories first, prove identical behaviour, then decouple the rules from Swing in a
+second PR. Consolidating the queries also surfaced a real bug — a wrong column name that
+had broken the Help screen — which is exactly the kind of thing that hides in copy-pasted
+SQL and disappears once there's one place that owns each query."*
