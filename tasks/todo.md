@@ -127,3 +127,42 @@ eight intended files plus the new package; no Swing layout code changed.
 PR B (next): extract the game rules into Swing-free services returning result objects, drop
 the `MainGameGUI.db`/`MainGameGUI.user` statics via constructor injection, leave the GUIs as
 thin callers.
+
+### Item 2 — Layered architecture, PR B: service layer + headless decoupling  (branch `feat/phase2-service-layer`)
+The second half of the "layered architecture + decouple rules from Swing" item.
+Plan:
+- [x] New `amiss.service` package: rename the five rules → `TimeService`/`EducationService`/
+      `FoodService`/`JobService`/`StatsService`, Swing-free and constructor-injected with
+      their repositories + the current username (no `MainGameGUI` statics)
+- [x] `GameServices` composition root wires the repos + services from a `(User, DB)`; each
+      screen holds one and reaches the rules through it
+- [x] `ActionResult` result object for the two orchestration methods (`workMain`/`eatMain`)
+      so the rules return notification text + timer/money instead of mutating widgets
+- [x] Drop the `JTextArea`/`JLabel` params from the rules; persistence failures log via
+      SLF4J (matching `CalcDuration`'s old precedent) — normal play byte-identical
+- [x] Kill the `MainGameGUI.db/user` statics: `user`/`db` become instance fields across the
+      screens; delete each screen's dead NetBeans `main()` stub (entry point is `LoginGUI`)
+- [x] Verify: `./mvnw clean package` green; launch logs `Connection Successful`; a no-Swing
+      probe drives `GameServices` against live MySQL; `git diff` shows zero `initComponents()`
+      changes
+
+### Review — Item 2 PR B (service layer + headless decoupling)
+Extracted the game rules from five Swing-coupled classes (`CalcDuration`/`University`/`Food`/
+`GetAJob`/`Stats`) into a new `amiss.service` package of intention-named, constructor-injected
+services, with a `GameServices` composition root doing the wiring. The rules no longer take
+`JTextArea`/`JLabel`; the work/eat orchestration returns an immutable `ActionResult` the screen
+renders, and other methods return plain values. The `MainGameGUI.db`/`user` ambient statics are
+gone — every screen now holds `user`/`db` as instance fields and builds its services locally —
+and the dead NetBeans `main()` stubs were removed (real entry point: `amiss.LoginGUI`). The
+refactor is behaviour-preserving by construction: each method maps 1:1, side-effect ordering is
+unchanged, and the only deliberate delta is that mid-game persistence-failure messages now go to
+`logs/amiss.log` instead of the notification area (normal play is byte-identical — no control
+flow branches on that text). Verified end-to-end: `./mvnw clean package` is green and builds the
+shaded jar; the jar launches and logs `Connection Successful`; a 30-line **no-Swing probe**
+constructs `GameServices` and reads a live player's full state through every service against
+MySQL (the headless capability this PR unlocks); and `git diff main` shows no change inside any
+generated `initComponents()` block — only field decls, constructors and button handlers moved.
+
+Phase 2 "layered architecture + decouple rules from Swing" is now complete (PR A + PR B). Next
+Phase 2 items: JUnit 5 tests over the now-headless services, then GitHub Actions CI, then Flyway
+migrations.

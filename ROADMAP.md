@@ -68,14 +68,18 @@ the difference between "wrote some Java" and "engineers software".*
       runnable `target/AmissProj.jar`. Dropped the committed `dist/lib` jars and the dead
       `beansbinding` dep; vendored the one non-Central jar (NetBeans `AbsoluteLayout`)
       into a project-local repo; removed the NetBeans/Ant leftovers.
-- [ ] Introduce a layered architecture: domain model → DAO/repository → service → UI
-      *(PR A, June 2026: DAO/repository layer shipped — `amiss.repository`
+- [x] Introduce a layered architecture: domain model → DAO/repository → service → UI
+      *(PR A, June 2026: DAO/repository layer — `amiss.repository`
       {User,UserStats,Job,Help}Repository over the `DB` helper; all ~40 scattered SQL
-      statements now routed through it. Also fixed the long-standing `HelpGUI`
-      `descip`→`description` column bug. Service layer still to come in PR B.)*
-- [ ] Decouple the game rules from Swing so they can run headless
-      *(PR B — next: extract Swing-free services, drop the `MainGameGUI.db/user` statics
-      via constructor injection.)*
+      statements routed through it; fixed the long-standing `HelpGUI`
+      `descip`→`description` column bug. PR B, June 2026: the `amiss.service` layer —
+      {Time,Education,Food,Job,Stats}Service + a `GameServices` composition root, so the
+      stack is now domain → DAO → service → UI.)*
+- [x] Decouple the game rules from Swing so they can run headless
+      *(PR B, June 2026: extracted the rules into Swing-free services that return values
+      or an `ActionResult`; dropped the `MainGameGUI.db/user` ambient statics via
+      constructor injection; the GUIs are thin callers. Verified headless against live
+      MySQL with a no-Swing probe.)*
 - [ ] **JUnit 5** unit tests for the game logic; aim for meaningful coverage
 - [ ] **GitHub Actions CI**: compile + run tests on every push / PR
 - [ ] Flyway (or Liquibase) DB migrations to version the schema (replaces `setup.sql`)

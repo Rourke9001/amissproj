@@ -80,6 +80,36 @@ Add to this after any correction or non-obvious gotcha.
 - **`beansbinding` was a dead NetBeans default dep** (zero imports) — dropped it rather
   than porting it to Maven. Grep for actual imports before re-declaring inherited jars.
 
+## Phase 2 / service layer (PR B)
+- **The IDE shows false-positive errors for the Maven `src/main/java` layout.** The VSCode
+  Java extension (folder-based "invisible project") reports *"The declared package
+  `amiss.service` does not match the expected package `main.java.amiss.service`"* and
+  *"import amiss cannot be resolved" / "TimeService cannot be resolved to a type"* for
+  brand-new/edited files until it reindexes. None of it is real — `./mvnw clean package`
+  compiles clean. Same root cause as the old `org.netbeans`/`org.slf4j` squiggles. **Trust
+  the build, not the diagnostics**; don't "fix" code to satisfy them.
+- **Behaviour-preserving Swing refactor → keep `initComponents()` byte-identical.** Reopening
+  a GUI in NetBeans regenerates `initComponents()` from the `.form`, so never hand-edit it.
+  Prove you didn't: `git diff main --unified=0 -- 'src/main/java/amiss/*GUI.java' | grep -E
+  'AbsoluteConstraints|\.setBounds|GroupLayout|initComponents|new javax\.swing\.'` must be
+  **empty**. Edit only the field decls, constructor and button handlers.
+- **Each GUI's generated `main()` is a dead stub** (the real entry point is `amiss.LoginGUI`;
+  the shaded jar's `Main-Class` is set from pom `main.class`). Those stubs are the only thing
+  forcing the per-screen `static User user; static DB db;` — delete the stub and the fields
+  can become instance. When deleting the stub by exact match, note the source files are **LF**
+  and the NetBeans look-and-feel comment line ending in `.../plaf.html ` carries a **trailing
+  space** (confirm bytes with `sed -n … | cat -A`, not the editor view, which hides it).
+- **Decouple "rules write to the UI" by returning a result object, not by passing widgets in.**
+  Methods that mutated three widgets (`workMain`/`eatMain`) now return an immutable
+  `ActionResult { message, timer, money }` (null = leave that label unchanged) and the screen
+  applies it. Methods that only wrote a `"\nfailed…"` error string to a text area now **log via
+  SLF4J** instead (matching the existing `CalcDuration` precedent) — normal play is unaffected
+  since those branches only fire on a DB exception, and nothing branches on the error text.
+- **Wire injected services through one composition root.** A `GameServices(User, DB)` builds the
+  repositories once and constructs the services in dependency order (education → job; time, food;
+  then stats). Each screen holds a single `GameServices` instead of `new`-ing five rules classes,
+  so the dependency graph lives in exactly one place.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an

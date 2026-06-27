@@ -105,3 +105,31 @@ repositories first, prove identical behaviour, then decouple the rules from Swin
 second PR. Consolidating the queries also surfaced a real bug — a wrong column name that
 had broken the Help screen — which is exactly the kind of thing that hides in copy-pasted
 SQL and disappears once there's one place that owns each query."*
+
+### Decouple the game rules into a headless service layer
+- Extracted the game rules out of five Swing-coupled classes into a Swing-free
+  **`amiss.service`** layer (`TimeService`, `EducationService`, `FoodService`,
+  `JobService`, `StatsService`) — the rules no longer take `JTextArea`/`JLabel`
+  parameters; they return values and a small immutable `ActionResult` (notification
+  text + new timer/money) that the screen renders.
+- Removed a global mutable bus: the rules previously reached into static
+  `MainGameGUI.db` / `MainGameGUI.user` fields. Replaced it with **constructor
+  injection** behind a single `GameServices` **composition root** that wires each
+  service to its repositories and the current user — no statics, no Swing dependency.
+- Refactor was **behaviour-preserving by construction** (1:1 method mapping, unchanged
+  side-effect ordering); persistence-failure messages now go to the SLF4J log instead of
+  the UI (normal play is byte-identical). Verified the generated NetBeans
+  `initComponents()` layout code was untouched in the diff.
+- Proved the payoff directly: a **no-Swing probe** builds `GameServices` and reads a live
+  player's full state through the services against MySQL — the rules now run headless,
+  which is the groundwork for the JUnit suite and the eventual Spring Boot extraction.
+
+**Talking point:** *"The rules used to be welded to the UI — methods took a text area and
+a couple of labels and wrote messages straight into them, and they read the DB and the
+current user out of static fields on the main window. I turned that into a real service
+layer: the services take their dependencies by constructor, return plain values or a tiny
+result object, and a `GameServices` composition root does the wiring. The proof it worked
+is a 30-line headless program that runs the game logic against MySQL with no Swing loaded
+at all — which is exactly what makes the logic unit-testable and portable into a Spring
+backend later. I kept it safe by mapping every method 1:1 and checking that none of the
+generated UI layout code changed in the diff."*
