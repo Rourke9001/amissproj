@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.rourke9001</groupId>
+    <artifactId>amissproj</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>AmissProj</name>
+    <description>Java Swing remake of "Jones in the Fast Lane", persisted in MySQL.</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>8</maven.compiler.release>
+        <main.class>amiss.LoginGUI</main.class>
+    </properties>
+
+    <!--
+      AbsoluteLayout is a NetBeans Swing helper that is not published to Maven
+      Central. We vendor our committed copy (vendor/AbsoluteLayout.jar) into a
+      project-local Maven repository (vendor-repo/, populated via
+      `mvn install:install-file ... -DlocalRepositoryPath=vendor-repo`) so the
+      build stays reproducible and offline-capable without committing the jar
+      onto the classpath by hand. project.baseUri yields a valid file:/// URL on
+      Windows and *nix alike.
+    -->
+    <repositories>
+        <repository>
+            <id>project-vendor</id>
+            <name>Project-local vendored jars</name>
+            <url>${project.baseUri}vendor-repo</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <!-- MySQL JDBC driver (Community build from Maven Central). -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>9.7.0</version>
+        </dependency>
+
+        <!-- Logging: SLF4J facade + Logback backend (Java 8 1.3.x line). -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.13</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.3.14</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.3.14</version>
+        </dependency>
+
+        <!-- BCrypt password hashing. -->
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
+        </dependency>
+
+        <!-- Vendored NetBeans Swing layout helper (see <repositories> above). -->
+        <dependency>
+            <groupId>org.netbeans.lib</groupId>
+            <artifactId>absolutelayout</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>AmissProj</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+
+            <!--
+              Package a single runnable uber-jar: target/AmissProj.jar.
+              - ManifestResourceTransformer sets the Main-Class.
+              - ServicesResourceTransformer MERGES META-INF/services so the
+                SLF4J 2.x provider (logback) AND the JDBC java.sql.Driver are
+                discovered from inside the shaded jar. Without it logging and/or
+                the MySQL driver silently fail to load.
+              - The filter strips dependency jar signatures (else the JVM rejects
+                the repackaged jar) and module-info from multi-release jars.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>${main.class}</mainClass>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

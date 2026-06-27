@@ -1,0 +1,10 @@
+# Keep the Maven wrapper shell script LF so it runs on Linux/CI runners.
+mvnw text eol=lf
+
+# Windows-only scripts stay CRLF.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+
+# Binaries: never apply text/EOL conversion.
+*.jar binary
+*.png binary

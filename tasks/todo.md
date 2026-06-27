@@ -54,3 +54,40 @@ passwords are validated. Verified end-to-end against live MySQL as `amiss`
 Found-but-deferred (for the backlog, out of scope here): `HelpGUI` reads column
 `descip` while `setup.sql` defines `description`, so in-game Help has been broken
 since the schema reconstruction — a one-line fix that belongs in its own commit.
+
+---
+
+## Goal 3: Phase 2 — Architecture, testing & build tooling  (ROADMAP Phase 2)
+Tackled one branch + PR per item. CV bullets for each shipped item live in
+`tasks/cv-highlights.md`.
+
+### Item 1 — Migrate the build to Maven  (branch `chore/maven-build`)
+Plan:
+- [x] Move sources to the Maven standard layout (`src/main/java`, `src/main/resources`)
+      via `git mv` (resources kept at `/amiss/resources/...` so `getResource` resolves)
+- [x] Vendor the one non-Central jar (NetBeans `AbsoluteLayout`) → `vendor/` +
+      project-local `vendor-repo/` (`install:install-file -DlocalRepositoryPath`)
+- [x] `pom.xml`: managed deps (drop dead `beansbinding`), `release 8`,
+      `maven-shade-plugin` uber-jar with manifest + **services** transformers
+- [x] Add the Maven Wrapper (`mvnw`) — no global Maven on this box
+- [x] Rewire `scripts/*.ps1`, `.gitignore`, drop `.vscode/settings.json`; update
+      README/SETUP/ROADMAP and `Assets`/`gen-placeholders` resource paths
+- [x] Delete NetBeans/Ant leftovers (`build.xml`, `nbproject/`, `manifest.mf`, `build/`,
+      `dist/`)
+- [x] Verify: `./mvnw clean package` → `target/AmissProj.jar`; `java -jar` launches and
+      logs `Connection Successful`
+
+### Review — Item 1 (Maven migration)
+Build migrated from hand-rolled `scripts/build.ps1` + 7 committed jars to a declarative
+Maven build with the `mvnw` wrapper (reproducible, no global Maven). `maven-shade-plugin`
+produces one runnable `target/AmissProj.jar`; the `ServicesResourceTransformer` was
+essential so the shaded SLF4J/Logback provider and JDBC `java.sql.Driver` still resolve.
+Dropped the unused `beansbinding`; vendored `AbsoluteLayout` (not on Central) via a
+committed project-local repo. Verified end-to-end against live MySQL: the uber-jar
+launches the GUI and logs `Connection Successful` to console + `logs/amiss.log`, proving
+logging, config and the MySQL driver all load from inside the single jar. Behaviour is
+unchanged vs `main` — same game, same `amiss.LoginGUI` entry point.
+
+Remaining Phase 2 items (each its own branch/PR): layered architecture + decouple rules
+from Swing (combined), JUnit 5 tests, GitHub Actions CI, Flyway migrations. The
+`HelpGUI` `descip`→`description` bug will be fixed within the Flyway/repository work.

@@ -16,11 +16,11 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 |---|---|
 | Language / UI | Java 8 source, Swing (`amiss` package) |
 | Database | MySQL 8.4+ / 9.x (`amissdb`); app runs as least-privilege `amiss` user |
-| JDBC driver | MySQL Connector/J 9.7 (`dist/lib/`) |
+| JDBC driver | MySQL Connector/J 9.7 (Maven-managed) |
 | Security | BCrypt password hashing (jbcrypt) + parameterised JDBC throughout |
-| Logging | SLF4J + Logback (`src/logback.xml`) |
-| Config | `src/application.properties`, overridable via `AMISS_DB_*` env vars |
-| Build | plain `javac` + `jar` via `scripts\build.ps1` (no NetBeans/Ant needed) |
+| Logging | SLF4J + Logback (`src/main/resources/logback.xml`) |
+| Config | `src/main/resources/application.properties`, overridable via `AMISS_DB_*` env vars |
+| Build | Maven via the committed `mvnw` wrapper (no global Maven needed); one shaded runnable jar |
 | Entry point | `amiss.LoginGUI` |
 
 ## Prerequisites
@@ -39,10 +39,14 @@ mysql -u root -p < db\setup.sql
 #    $env:AMISS_DB_USER / $env:AMISS_DB_PASSWORD / $env:AMISS_DB_URL.
 #    Defaults (amiss / amisspw / localhost:3306) live in src\application.properties.
 
-# 3. Build and run.
-powershell -File scripts\build.ps1
-powershell -File scripts\run.ps1
+# 3. Build and run. The mvnw wrapper downloads a pinned Maven on first run -
+#    no global Maven install required.
+.\mvnw clean package
+java -jar target\AmissProj.jar
 ```
+
+> The PowerShell helpers `scripts\build.ps1` / `scripts\run.ps1` still work and
+> simply delegate to `mvnw` / the packaged jar.
 
 On launch the console prints `Connection Successful`. In the login window, type a
 username + password and click **Logging In** — it offers to create the user. Once
@@ -83,7 +87,7 @@ Get-Service MySQL97
 (You can also use the **Services** app — run `services.msc`, find *MySQL97*, Start/Stop.)
 
 ### The game
-- **Start:** double-click `dist\AmissProj.jar`, or run `powershell -File scripts\run.ps1`.
+- **Start:** double-click `target\AmissProj.jar`, or run `powershell -File scripts\run.ps1`.
 - **Stop:** close the game window. If a window is left over, end it with:
   ```powershell
   Stop-Process -Name javaw     # closes the running game (Java GUI process)
@@ -94,27 +98,29 @@ Get-Service MySQL97
 ## Build from source
 
 ```powershell
-powershell -File scripts\build.ps1   # compiles src\ -> build\classes and rebuilds dist\AmissProj.jar
-powershell -File scripts\run.ps1     # runs from the freshly compiled classes
+.\mvnw clean package                 # compiles + tests + builds target\AmissProj.jar (shaded)
+java -jar target\AmissProj.jar       # runs the packaged jar
 ```
-`build.ps1` finds the JDK automatically and packages the jar with the right
-classpath — no NetBeans or Ant required.
+The wrapper (`mvnw`) downloads a pinned Maven on first run, so no global Maven,
+NetBeans or Ant is required. `maven-shade-plugin` bundles all dependencies into
+one runnable jar.
 
 ## Project structure
 
 ```
-src/amiss/            Java source (Swing GUIs + game logic + DB/Config/Validation/PasswordHasher)
-src/amiss/resources/  bundled UI images (screen backgrounds + game board)
-src/application.properties  DB connection settings (overridable via AMISS_DB_* env vars)
-src/logback.xml       logging config (console + rolling file under logs/)
-db/setup.sql          Database schema + seed data + least-privilege amiss user
-scripts/              build.ps1 (compile+package), run.ps1 (launch),
-                      gen-placeholders.ps1 (regenerate placeholder art)
-dist/lib/             third-party jars (committed; all redistributable)
-nbproject/            leftover NetBeans Ant files (unused; build is scripts\build.ps1)
-.vscode/              shared editor config (Java classpath -> dist/lib)
-SETUP.md              detailed setup & troubleshooting guide
-tasks/todo.md         roadmap & progress
+pom.xml                       Maven build (managed dependencies, shaded runnable jar)
+mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install needed)
+src/main/java/amiss/          Java source (Swing GUIs + game logic + DB/Config/Validation/PasswordHasher)
+src/main/resources/amiss/resources/   bundled UI images (screen backgrounds + game board)
+src/main/resources/application.properties  DB connection settings (overridable via AMISS_DB_* env vars)
+src/main/resources/logback.xml  logging config (console + rolling file under logs/)
+db/setup.sql                  Database schema + seed data + least-privilege amiss user
+scripts/                      build.ps1 (mvnw wrapper), run.ps1 (launch),
+                              gen-placeholders.ps1 (regenerate placeholder art)
+vendor/AbsoluteLayout.jar     the one dependency not on Maven Central (NetBeans layout helper)
+vendor-repo/                  project-local Maven repo holding the vendored AbsoluteLayout
+SETUP.md                      detailed setup & troubleshooting guide
+tasks/                        roadmap progress, lessons, CV highlights
 ```
 
 ## Roadmap

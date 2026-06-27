@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
  * Loads bundled image assets from the classpath so they work both from
  * {@code build/classes} and from inside {@code AmissProj.jar}.
  *
- * <p>Assets live under {@code src/amiss/resources/} (packaged to
+ * <p>Assets live under {@code src/main/resources/amiss/resources/} (packaged to
  * {@code /amiss/resources/} on the classpath). Replacing the placeholder art is
  * just a matter of dropping new PNGs in there with the same names and rebuilding;
  * see {@code scripts/gen-placeholders.ps1}.

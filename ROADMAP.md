@@ -63,7 +63,11 @@ These are the fixes an interviewer will look for first.*
 ## Phase 2 — Architecture, testing & build tooling
 *Why (CV): demonstrates clean architecture, testing discipline and a modern build —
 the difference between "wrote some Java" and "engineers software".*
-- [ ] **Migrate the build to Maven** (managed dependencies; drop the committed jars)
+- [x] **Migrate the build to Maven** (June 2026) — `pom.xml` with managed dependencies
+      + the `mvnw` wrapper (no global Maven needed); `maven-shade-plugin` builds one
+      runnable `target/AmissProj.jar`. Dropped the committed `dist/lib` jars and the dead
+      `beansbinding` dep; vendored the one non-Central jar (NetBeans `AbsoluteLayout`)
+      into a project-local repo; removed the NetBeans/Ant leftovers.
 - [ ] Introduce a layered architecture: domain model → DAO/repository → service → UI
 - [ ] Decouple the game rules from Swing so they can run headless
 - [ ] **JUnit 5** unit tests for the game logic; aim for meaningful coverage
