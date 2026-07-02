@@ -15,7 +15,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>8</maven.compiler.release>
-        <main.class>amiss.LoginGUI</main.class>
+        <main.class>amiss.presentation.ui.LoginGUI</main.class>
 
         <!-- Test toolchain (test scope only; runs on the JDK 20 runtime). -->
         <junit.version>5.10.2</junit.version>

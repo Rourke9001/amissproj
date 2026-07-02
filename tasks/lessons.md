@@ -151,6 +151,28 @@ Add to this after any correction or non-obvious gotcha.
   rows interior) is a strict subset of the first `if`, which always fires first — so 100%
   branch coverage of `getMulti` is unreachable, and that's expected, not a gap to chase.
 
+## Phase 3 / clean-architecture refactor (PR1)
+- **Bulk package restructure: `git mv` + a path-derived `package` sweep.** After moving files,
+  rewrite every declaration in one pass — for each `*.java`, derive the package from its
+  directory (`dirname | sed 's|src/main/java/||; s|/|.|g'`) and `sed -i -E "0,/^package .*;/s//package X;/"`.
+  Fixes ~40 files' packages deterministically; then only class-renames/imports need real logic.
+- **Ports keep the test mocks valid for free.** The service tests `@Mock` the repository *type* and
+  pass it to the service constructor. Turning each repo into an interface (`amiss.application.port`)
+  with a `Jdbc*` adapter means Mockito now mocks the **interface** — still assignable, so all 87
+  tests compiled with only an import change. Keep `throws SQLException` on the ports so the services'
+  existing `catch` branches (and the tests asserting them) stay byte-valid; map it to a neutral
+  exception later, not now.
+- **`.form` files are gone, so `amiss.Assets.icon(...)` FQNs inside `initComponents()` are safe to
+  rewrite.** Moving `Assets` to `presentation.assets` required editing those fully-qualified calls;
+  since NetBeans no longer regenerates `initComponents`, a pure reference update there is fine.
+- **Shade transformers survive a Main-Class package move — but re-verify.** After moving
+  `LoginGUI`, update pom `<main.class>` and confirm the shaded jar still has the right `Main-Class`
+  **and** merged `META-INF/services/{java.sql.Driver,org.slf4j.spi.SLF4JServiceProvider}`
+  (`unzip -p target/AmissProj.jar META-INF/...`). Smoke-launch logs `Jdbc - Connection Successful`.
+- **The composition root belongs in `infrastructure` (`GameContext`), not `application`.** It's the
+  one place that names concrete adapters + opens the connection; services take ports only, so a
+  Spring/JPA swap is a new context + adapters with the rules untouched.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an

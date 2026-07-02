@@ -93,6 +93,11 @@ the difference between "wrote some Java" and "engineers software".*
 ## Phase 3 — Go full-stack
 *Why (CV): the headline. A real Spring backend + web frontend is exactly what Java
 banking roles hire for.*
+- [x] **Clean-architecture groundwork** (July 2026) — restructured the flat `amiss` package
+      into layered `domain` / `application` / `infrastructure` / `presentation` packages with
+      repository **ports** (interfaces) and JDBC **adapters**, a `GameContext` composition root,
+      and no JDBC types in the UI. Behaviour-preserving (all 87 tests green); makes the Spring
+      swap below a drop-in. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - [ ] Extract the game logic into a **Spring Boot REST API**
 - [ ] Persistence via **Spring Data JPA / Hibernate** (entities replace raw JDBC)
 - [ ] **Spring Security** auth (hashed credentials, sessions or JWT)
