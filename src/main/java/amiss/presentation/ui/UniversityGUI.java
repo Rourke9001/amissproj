@@ -59,7 +59,7 @@ public class UniversityGUI extends javax.swing.JFrame {
             txfProg.setVisible(false);
             lblProgress.setVisible(false);
             lblCurrDegree.setVisible(false);
-            txaNotification.setText("You have finished University!");
+            txaNotification.setText("You have finished Hi-Tech U!");
         } else if (prog == 1) {
             btnEnroll.setVisible(false);
             btnStudy.setVisible(true);
@@ -185,7 +185,7 @@ public class UniversityGUI extends javax.swing.JFrame {
                     txfProg.setText("0/10");
 
                     if (uni.getEducation() == 8 && prog == 11) {
-                        txaNotification.setText("You have completed university");
+                        txaNotification.setText("You have completed Hi-Tech U");
                         lblCurrDegree.setVisible(false);
                         btnEnroll.setVisible(false);
                         lblFee.setVisible(false);
@@ -202,7 +202,7 @@ public class UniversityGUI extends javax.swing.JFrame {
     private void btnEnrollActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnrollActionPerformed
 
         String cash = stat.buy("50");
-        String time = dist.getNewTime(1);
+        String time = dist.getNewTime(0);
         if (time.equals("Not Enough Time")) {
             txaNotification.setText(txaNotification.getText() + "\n" + time);
         } else {

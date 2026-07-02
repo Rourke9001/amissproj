@@ -72,7 +72,7 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
         lblBackground = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Clothes Store");
+        setTitle("QT Clothing");
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         btnCasual.setText("1");
@@ -166,13 +166,13 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
                 txaNotification.setText("An Error occured"); //message guide to user
                 break;
         }
-        if (dist.getNewTime(0).equals("0:0")) { //checks if the user has enough time and cash to purchase an item
+        if (dist.getNewTime(0).equals("0h")) { //checks if the user has enough time and cash to purchase an item
             txaNotification.setText(txaNotification.getText() + "\nRound Has Ended");
         } else if (stat.getCash() < price) {
             txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash,\n You only have R" + stat.getCash());
             lblMoney.setText(Integer.toString(stat.getCash()));
         } else {
-            lblTimer.setText(dist.getNewTime(1));
+            lblTimer.setText(dist.getNewTime(0));
 
             txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(Integer.toString(price)));
             lblMoney.setText(Integer.toString(stat.getCash()));

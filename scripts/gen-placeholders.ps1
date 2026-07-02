@@ -25,19 +25,20 @@ $assets = @(
     @{ Name = 'screens\MainGame.png';        W = 660; H = 380; Title = 'Jones in the Fast Lane'; Board = $false }
     @{ Name = 'board.png';                   W = 380; H = 340; Title = 'GAME BOARD';             Board = $true  }
     @{ Name = 'screens\Bank.png';            W = 290; H = 350; Title = 'Bank';                   Board = $false }
-    @{ Name = 'screens\ApplianceStore.png';  W = 290; H = 350; Title = 'Appliance Store';        Board = $false }
-    @{ Name = 'screens\ClothesStore.png';    W = 520; H = 300; Title = 'Clothes Store';          Board = $false }
-    @{ Name = 'screens\FastFood.png';        W = 540; H = 320; Title = 'Fast Food';              Board = $false }
+    @{ Name = 'screens\ApplianceStore.png';  W = 290; H = 350; Title = 'Socket City';            Board = $false }
+    @{ Name = 'screens\ClothesStore.png';    W = 520; H = 300; Title = 'QT Clothing';            Board = $false }
+    @{ Name = 'screens\FastFood.png';        W = 540; H = 320; Title = 'Monolith Burgers';       Board = $false }
     @{ Name = 'screens\Employment.png';      W = 800; H = 460; Title = 'Employment Office';      Board = $false }
     @{ Name = 'screens\Factory.png';         W = 290; H = 350; Title = 'Factory';                Board = $false }
-    @{ Name = 'screens\Market.png';          W = 490; H = 280; Title = 'Market';                 Board = $false }
+    @{ Name = 'screens\Market.png';          W = 490; H = 280; Title = "Black's Market";         Board = $false }
     @{ Name = 'screens\Help.png';            W = 550; H = 300; Title = 'Help';                   Board = $false }
     @{ Name = 'screens\HighScore.png';       W = 480; H = 400; Title = 'High Scores';            Board = $false }
-    @{ Name = 'screens\Pizza.png';           W = 530; H = 330; Title = 'Pizza Palace';           Board = $false }
-    @{ Name = 'screens\PublicPool.png';      W = 280; H = 300; Title = 'Public Pool';            Board = $false }
+    @{ Name = 'screens\PawnShop.png';        W = 290; H = 350; Title = 'Pawn Shop';              Board = $false }
+    @{ Name = 'screens\ZMart.png';           W = 290; H = 350; Title = 'Z-Mart';                 Board = $false }
+    @{ Name = 'screens\LeSecurity.png';      W = 290; H = 350; Title = 'Le Security Apartments'; Board = $false }
     @{ Name = 'screens\RentOffice.png';      W = 320; H = 330; Title = 'Rent Office';            Board = $false }
-    @{ Name = 'screens\Residence.png';       W = 210; H = 300; Title = 'Residence';              Board = $false }
-    @{ Name = 'screens\University.png';       W = 500; H = 320; Title = 'University';             Board = $false }
+    @{ Name = 'screens\Residence.png';       W = 300; H = 300; Title = 'Home';                   Board = $false }
+    @{ Name = 'screens\University.png';       W = 500; H = 320; Title = 'Hi-Tech U';              Board = $false }
 )
 
 foreach ($a in $assets) {

@@ -25,42 +25,46 @@ public class OpenLocation {
 
         String location = pos;
 
+        // Cells map to the 13-stop clockwise loop (see amiss.domain.board.Board).
         switch (location) {
-            case "0:0":
+            case "0:0": // Low-Cost Housing (start)
                 new LowClassResidenceGUI(user, services).setVisible(true);
                 break;
-            case "1:0":
-                new PublicPoolGUI(user, services).setVisible(true);
+            case "0:1": // Pawn Shop
+                new PawnShopGUI(user, services).setVisible(true);
                 break;
-            case "2:0":
+            case "0:2": // Z-Mart
+                new ZMartGUI(user, services).setVisible(true);
+                break;
+            case "0:3": // Monolith Burgers
                 new FastFoodGUI(user, services).setVisible(true);
                 break;
-            case "3:0":
-                new UniversityGUI(user, services).setVisible(true);
-                break;
-            case "0:1":
-                new RentOfficeGUI(user, services).setVisible(true);
-                break;
-            case "3:1":
-                new EmploymentGUI(user, services).setVisible(true);
-                break;
-            case "0:2":
-                new BankGUI(user, services).setVisible(true);
-                break;
-            case "3:2":
-                new ApplianceStoreGUI(user, services).setVisible(true);
-                break;
-            case "0:3":
-                new PizzaPalaceGUI(user, services).setVisible(true);
-                break;
-            case "1:3":
-                new MarketGUI(user, services).setVisible(true);
-                break;
-            case "2:3":
+            case "0:4": // QT Clothing
                 new ClothesStoreGUI(user, services).setVisible(true);
                 break;
-            case "3:3":
+            case "1:4": // Socket City
+                new ApplianceStoreGUI(user, services).setVisible(true);
+                break;
+            case "2:4": // Hi-Tech U
+                new UniversityGUI(user, services).setVisible(true);
+                break;
+            case "3:4": // Employment Office
+                new EmploymentGUI(user, services).setVisible(true);
+                break;
+            case "3:3": // Factory
                 new FactoryGUI(user, services).setVisible(true);
+                break;
+            case "3:1": // Bank
+                new BankGUI(user, services).setVisible(true);
+                break;
+            case "3:0": // Black's Market
+                new MarketGUI(user, services).setVisible(true);
+                break;
+            case "2:0": // Le Security Apartments
+                new LeSecurityApartmentsGUI(user, services).setVisible(true);
+                break;
+            case "1:0": // Rent Office
+                new RentOfficeGUI(user, services).setVisible(true);
                 break;
             default:
                 break;

@@ -52,7 +52,7 @@ public class MarketGUI extends javax.swing.JFrame {
         btnWork.setVisible(false);
 
         String loc = job.getLocation(); //checks if the user works at this location
-        if (loc.equals("Market")) {
+        if (loc.equals("Black's Market")) {
             btnWork.setVisible(true);
         }
     }
@@ -86,7 +86,7 @@ public class MarketGUI extends javax.swing.JFrame {
         lblBackground = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Market");
+        setTitle("Black's Market");
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         lblTime.setText("Time");
@@ -107,7 +107,7 @@ public class MarketGUI extends javax.swing.JFrame {
         txaNotification.setEditable(false);
         txaNotification.setColumns(20);
         txaNotification.setRows(5);
-        txaNotification.setText("Welcome to the Market");
+        txaNotification.setText("Welcome to Black's Market");
         pnlDisplay.setViewportView(txaNotification);
 
         getContentPane().add(pnlDisplay, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 84, 270, 129));
@@ -212,7 +212,7 @@ public class MarketGUI extends javax.swing.JFrame {
                 break;
         }
         
-        String time = dist.getNewTime(1); //checks if the user has enough time and cash to pay for item
+        String time = dist.getNewTime(0); //checks if the user has enough time and cash to pay for item
         if (time.equals("Not Enough Time")) {
             txaNotification.setText(txaNotification.getText() + "\n" + time);
         } else if (stat.getCash() < Validation.parseIntOrDefault(evt.getActionCommand(), 0)) {

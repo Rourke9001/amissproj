@@ -49,7 +49,7 @@ public class FastFoodGUI extends javax.swing.JFrame {
         btnWork.setVisible(false);
 
         String loc = job.getLocation(); //checks if the user works at this location
-        if (loc.equals("Fast Food Place")) {
+        if (loc.equals("Monolith Burgers")) {
             btnWork.setVisible(true);
         }
     }
@@ -87,7 +87,7 @@ public class FastFoodGUI extends javax.swing.JFrame {
         lblBackground = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Fast Food");
+        setTitle("Monolith Burgers");
         setMinimumSize(new java.awt.Dimension(400, 360));
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -132,7 +132,7 @@ public class FastFoodGUI extends javax.swing.JFrame {
         txaNotification.setEditable(false);
         txaNotification.setColumns(20);
         txaNotification.setRows(5);
-        txaNotification.setText("Welcome to the Fast Foods.\nWhere our patties arent fried\nor boilded, but poached");
+        txaNotification.setText("Welcome to Monolith Burgers.\nWhere our patties arent fried\nor boilded, but poached");
         txaNotification.setWrapStyleWord(true);
         pnlDisplay.setViewportView(txaNotification);
 

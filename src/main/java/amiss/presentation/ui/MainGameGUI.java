@@ -5,7 +5,7 @@
  */
 package amiss.presentation.ui;
 import amiss.domain.model.User;
-import amiss.domain.board.TwoDGrid;
+import amiss.domain.board.Board;
 
 import amiss.application.service.EducationService;
 import amiss.application.service.FoodService;
@@ -23,10 +23,13 @@ public class MainGameGUI extends javax.swing.JFrame {
     /**
      * Creates new form MainGameGUI
      */
+    /** Flat time cost, in hours, to enter any building (added to the walking distance). */
+    private static final int ENTER_BUILDING_HOURS = 2;
+
     User user;
     GameServices services;
 
-    TwoDGrid tdg = new TwoDGrid();
+    Board board = new Board();
     private TimeService dist;
     OpenLocation loc = new OpenLocation();
     private FoodService eat;
@@ -54,10 +57,10 @@ public class MainGameGUI extends javax.swing.JFrame {
         lblCurrRound.setText(dist.getRound());
 
         String time = dist.getNewTime(0); // time is 0 when user saved and exit
-        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0:00")) {
+        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0h")) {
             stat.setDebt(80);
             stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0:00")) {
+        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0h")) {
             stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
             txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
@@ -81,7 +84,7 @@ public class MainGameGUI extends javax.swing.JFrame {
         
         
         
-        if (time.equals("0:00")) {
+        if (time.equals("0h")) {
             btnNewRound.setVisible(true);
             btnPanel.setVisible(false);
             txaNotification.setText("Round has Ended");
@@ -89,22 +92,33 @@ public class MainGameGUI extends javax.swing.JFrame {
             lblTimer.setText(time);
         }
 
-        btnArr = new javax.swing.JButton[4][4];
+        // Any stale/invalid saved position (e.g. from the old 4x4 board) snaps back home.
+        if (!board.isStop(dist.getX(), dist.getY())) {
+            dist.setPos(0, 0);
+        }
 
-        tdg.toString(); //creates the board for the user to play on
+        btnArr = new javax.swing.JButton[Board.ROWS][Board.COLS];
 
-        for (int r = 0; r < 4; r++) {
-            for (int c = 0; c < 4; c++) {
-                if ((r == 1 || r == 2) && (c == 1 || c == 2)) {
-
-                } else {
+        for (int r = 0; r < Board.ROWS; r++) {
+            for (int c = 0; c < Board.COLS; c++) {
+                if (board.isTimerCell(r, c)) {
+                    // The bottom-middle cell shows the turn timer instead of a stop.
+                    lblTimer.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                    lblTimer.setFont(new java.awt.Font("Tahoma", 1, 16));
+                    lblTimer.setOpaque(true);
+                    lblTimer.setBackground(Color.WHITE);
+                    lblTimer.setBorder(javax.swing.BorderFactory.createLineBorder(Color.DARK_GRAY));
+                    btnPanel.add(lblTimer, new org.netbeans.lib.awtextra.AbsoluteConstraints(c * 76, r * 85, 76, 85), 0);
+                } else if (board.isStop(r, c)) {
                     btnArr[r][c] = new javax.swing.JButton();
-
-                    btnPanel.add(btnArr[r][c], new org.netbeans.lib.awtextra.AbsoluteConstraints(95 * r, 85 * c, 95, 85));
+                    btnPanel.add(btnArr[r][c], new org.netbeans.lib.awtextra.AbsoluteConstraints(c * 76, r * 85, 76, 85), 0);
 
                     btnArr[r][c].setVisible(true);
                     btnArr[r][c].setBackground(Color.blue);
-
+                    btnArr[r][c].setFont(new java.awt.Font("Tahoma", 0, 9));
+                    btnArr[r][c].setMargin(new java.awt.Insets(1, 1, 1, 1));
+                    btnArr[r][c].setText("<html><center>"
+                            + board.locationAt(r, c).displayName().replace(" ", "<br>") + "</center></html>");
                     btnArr[r][c].setActionCommand("" + r + c);
 
                     btnArr[r][c].addActionListener(
@@ -115,20 +129,20 @@ public class MainGameGUI extends javax.swing.JFrame {
                                     int oldRow = dist.getX();
                                     int oldCol = dist.getY();
 
-                                    char ch = evt.getActionCommand().charAt(0);
-                                    int row = Integer.parseInt("" + ch);
+                                    int row = Integer.parseInt("" + evt.getActionCommand().charAt(0));
                                     int col = Integer.parseInt("" + evt.getActionCommand().charAt(1));
 
-                                    int multi = dist.getMulti(row, col); //gets the distance between two locations
-                                    String time = dist.getNewTime(multi);
+                                    int walk = board.ringDistanceBetween(oldRow, oldCol, row, col);
+                                    int cost = walk + ENTER_BUILDING_HOURS; // walking hours + 2h to enter
+                                    String time = dist.getNewTime(cost);
 
                                     switch (time) {
                                         case "Not Enough Time":
                                             txaNotification.setText(txaNotification.getText() + "\nNot Enough Time"); //message guide to user
                                             break;
-                                        case "0:0":
+                                        case "0h":
                                             txaNotification.setText(txaNotification.getText() + "\nRound has Ended"); //message guide to user
-                                            lblTimer.setText(time + "0");
+                                            lblTimer.setText("0h");
                                             btnNewRound.setVisible(true);
 
                                             btnArr[oldRow][oldCol].setBackground(Color.BLUE);
@@ -137,7 +151,8 @@ public class MainGameGUI extends javax.swing.JFrame {
                                             btnPanel.setVisible(false);
                                             break;
                                         default:
-                                            txaNotification.setText(txaNotification.getText() + "\nMoved " + multi + " blocks.");
+                                            txaNotification.setText(txaNotification.getText()
+                                                    + "\nWalked " + walk + " blocks (+2h to enter).");
                                             lblTimer.setText(time);
                                             dist.setPos(row, col);
                                             btnArr[row][col].setBackground(Color.YELLOW);
@@ -147,7 +162,6 @@ public class MainGameGUI extends javax.swing.JFrame {
                                             loc.openLocation(dist.toString(), user, services); //opens location when the user clicks on it
                                             break;
                                     }
-                                    //}
                                 }
                             }
                     );
@@ -262,22 +276,22 @@ public class MainGameGUI extends javax.swing.JFrame {
         btnPanel.setVisible(true);
         
         boolean eaten = eat.getEat();
-        if (eaten == false) { //checks if the user ate last round
-            dist.setTime(600);
-            lblTimer.setText("10:00");
+        if (eaten == false) { //did not eat last round -> hungry, start with fewer hours
+            dist.setTime(60);
+            lblTimer.setText("60h");
         } else {
-            dist.setTime(720);
-            lblTimer.setText("12:00");
+            dist.setTime(72);
+            lblTimer.setText("72h");
         }
         btnArr[dist.getX()][dist.getY()].setBackground(Color.BLUE); //updates the new location on the board
         dist.setPos(0, 0);
         dist.setRound();
         
         String time = dist.getNewTime(0); // time is 0 when user saved and exit
-        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0:00")) {
+        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0h")) {
             stat.setDebt(80);
             stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0:00")) {
+        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0h")) {
             stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
             txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
