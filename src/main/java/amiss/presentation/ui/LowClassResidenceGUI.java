@@ -7,6 +7,7 @@ package amiss.presentation.ui;
 import amiss.domain.model.User;
 
 import amiss.application.service.GameServices;
+import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
 
 /**
@@ -22,18 +23,20 @@ public class LowClassResidenceGUI extends javax.swing.JFrame {
     GameServices services;
     
     private TimeService dist;
-    
+    private StatsService stat;
+
     /**
      *
      * @param u user object
-     * @param d db object
+     * @param services the wired game services for the current player
      */
     public LowClassResidenceGUI(User u, GameServices services) {
         initComponents();
-        
+
         user = u;
         this.services = services;
         dist = services.time();
+        stat = services.stats();
 
         lblTimer.setText(dist.getNewTime(0)); //gets the time left in the round
         
@@ -52,6 +55,7 @@ public class LowClassResidenceGUI extends javax.swing.JFrame {
         lblTimer = new javax.swing.JLabel();
         btnStartNewRound = new javax.swing.JButton();
         btnExit = new javax.swing.JButton();
+        btnRelax = new javax.swing.JButton();
         pnlDisplay = new javax.swing.JScrollPane();
         txaNotification = new javax.swing.JTextArea();
         lblBackground = new javax.swing.JLabel();
@@ -80,6 +84,14 @@ public class LowClassResidenceGUI extends javax.swing.JFrame {
         });
         getContentPane().add(btnExit, new org.netbeans.lib.awtextra.AbsoluteConstraints(76, 262, -1, -1));
 
+        btnRelax.setText("Relax (6h)");
+        btnRelax.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRelaxActionPerformed(evt);
+            }
+        });
+        getContentPane().add(btnRelax, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 262, -1, -1));
+
         txaNotification.setEditable(false);
         txaNotification.setColumns(10);
         txaNotification.setLineWrap(true);
@@ -92,7 +104,7 @@ public class LowClassResidenceGUI extends javax.swing.JFrame {
         getContentPane().add(pnlDisplay, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 66, 163, 141));
 
         lblBackground.setIcon(amiss.presentation.assets.Assets.icon("screens/Residence.png"));
-        getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 210, 300));
+        getContentPane().add(lblBackground, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 300, 300));
 
         pack();
         setLocationRelativeTo(null);
@@ -108,11 +120,23 @@ public class LowClassResidenceGUI extends javax.swing.JFrame {
         dist.setTime(0); //retunrs the user back to the game screen to start next round
         new MainGameGUI(user, services).setVisible(true);
         LowClassResidenceGUI.this.dispose();
-        
+
     }//GEN-LAST:event_btnStartNewRoundActionPerformed
+
+    private void btnRelaxActionPerformed(java.awt.event.ActionEvent evt) {
+        String time = dist.getNewTime(6); //relaxing at home costs 6 hours
+        if (time.equals("Not Enough Time")) {
+            txaNotification.setText(txaNotification.getText() + "\n\n" + time);
+        } else {
+            txaNotification.setText(txaNotification.getText() + "\nYou relax at home. One point in Happiness.");
+            stat.updateHappiness();
+            lblTimer.setText(time);
+        }
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnExit;
+    private javax.swing.JButton btnRelax;
     private javax.swing.JButton btnStartNewRound;
     private javax.swing.JLabel lblBackground;
     private javax.swing.JLabel lblTime;

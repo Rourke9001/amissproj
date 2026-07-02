@@ -103,11 +103,11 @@ public class EmploymentGUI extends javax.swing.JFrame {
         getContentPane().add(lblHeading);
         lblHeading.setBounds(170, 20, 181, 43);
 
-        lblFastFoodPlace.setText("Fast Food Place");
+        lblFastFoodPlace.setText("Monolith Burgers");
         getContentPane().add(lblFastFoodPlace);
         lblFastFoodPlace.setBounds(12, 62, 90, 16);
 
-        lblApplianceStore.setText("Appliance Store");
+        lblApplianceStore.setText("Socket City");
         getContentPane().add(lblApplianceStore);
         lblApplianceStore.setBounds(12, 117, 90, 16);
 
@@ -115,7 +115,7 @@ public class EmploymentGUI extends javax.swing.JFrame {
         getContentPane().add(lblFactory);
         lblFactory.setBounds(14, 172, 90, 16);
 
-        lblMarket.setText("Market");
+        lblMarket.setText("Black's Market");
         getContentPane().add(lblMarket);
         lblMarket.setBounds(12, 227, 90, 16);
 
@@ -284,7 +284,7 @@ public class EmploymentGUI extends javax.swing.JFrame {
         txaNotification.setColumns(20);
         txaNotification.setLineWrap(true);
         txaNotification.setRows(5);
-        txaNotification.setText("Welcome to the Employment Office. Here is where you will be able to select a Job and start earing money. \n\nPick your Career wisely as takes 10 minutes everytime you select one.\n\nIf you know you don't have qualification for a career don't try select it as it will say you dont have enough education. Once you complete a degree at University you will be told what jobs you can apply to.\n\nThe safest option if you looking for you 1st job will be a Janitor. ");
+        txaNotification.setText("Welcome to the Employment Office. Here is where you will be able to select a Job and start earing money. \n\nPick your Career wisely as takes 4 hours everytime you apply.\n\nIf you know you don't have qualification for a career don't try select it as it will say you dont have enough education. Once you complete a degree at University you will be told what jobs you can apply to.\n\nThe safest option if you looking for you 1st job will be a Janitor. ");
         txaNotification.setWrapStyleWord(true);
         pnlDisplay.setViewportView(txaNotification);
 
@@ -316,10 +316,10 @@ public class EmploymentGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnCookActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCookActionPerformed
-        if (dist.getNewTime(0).equals("0:0")) { //checks if the user enough time to apply for a job
+        if (dist.getNewTime(0).equals("0h")) { //checks if the user enough time to apply for a job
             txaNotification.setText(txaNotification.getText() + "\n\nRound Has Ended");
         } else { //checks if the user has enough education for a job
-            lblTimer.setText(dist.getNewTime(1));
+            lblTimer.setText(dist.getNewTime(4));
             String jb = job.applyForJob(evt.getActionCommand());
             txaNotification.setText(txaNotification.getText() + "\n\n" + jb);
         }

@@ -151,6 +151,30 @@ Add to this after any correction or non-obvious gotcha.
   rows interior) is a strict subset of the first `if`, which always fires first — so 100%
   branch coverage of `getMulti` is unreachable, and that's expected, not a gap to chase.
 
+## Phase 3 / board & turn-timer rework (PR2)
+- **Model the loop as a ring, not a grid + special-cases.** `domain.board.Board` holds the 13
+  stops in clockwise order; movement cost = `min(cw, ccw)` ring steps. This deleted `TwoDGrid`
+  and `TimeService.getMulti`'s hard-coded 4×4 wrap tolls (incl. its dead branch) in one move and
+  scales to any stop count. The 5×4 render keeps `(row,col)` in `xpos/ypos` (no DB migration) and
+  the constructor clamps any stale/invalid saved cell back to home `(0,0)`.
+- **Relabel the time unit instead of rescaling.** The old model's `getNewTime(6)` for work etc.
+  already matched the reference's 6h once you read the stored `time` as **hours** not 10-min
+  blocks. So the timer rework was: budget 600/720→**60/72**, format `"H:MM"`→`"Nh"` (round-end
+  `"0:00"`→`"0h"`), keep `"Not Enough Time"`, add the **+2h building-entry** on each move, and
+  re-cost only the actions that differ (apply-job 1→4, shopping 1→0). New-user seed 720→72 in
+  `JdbcUserRepository` **and** `db/setup.sql`.
+- **Rename sync is load-bearing.** A work screen shows its Work button only if
+  `loc.equals(<name>)` matches `tbljobs.location` verbatim. Renaming Fast Food/Appliance/Market
+  meant editing the GUI `loc.equals` **and** the SQL in lockstep, then reloading `setup.sql` as
+  root. Verified against live MySQL with a headless probe (Cook→"Monolith Burgers", etc.).
+- **`sed` an SQL apostrophe with a double-quoted program.** `"Black's Market"` in SQL is
+  `'Black''s Market'`; run `sed -i "s/'Market'/'Black''s Market'/g"` (double quotes so the
+  single quotes are literal — no `$`/backtick in the expression to worry about).
+- **Verify a Swing change by constructing the frame headlessly-ish.** A tiny probe on the shaded
+  jar's classpath (`new MainGameGUI(user, services)` then `dispose()`, guarded for
+  `HeadlessException`) exercises the real 5×4 board-building loop against live data without
+  needing to click — catches NPEs/clamp/wiring bugs that unit tests on `Board` alone can't.
+
 ## Phase 3 / clean-architecture refactor (PR1)
 - **Bulk package restructure: `git mv` + a path-derived `package` sweep.** After moving files,
   rewrite every declaration in one pass — for each `*.java`, derive the package from its

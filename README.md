@@ -110,7 +110,7 @@ one runnable jar.
 ```
 pom.xml                       Maven build (managed dependencies, shaded runnable jar)
 mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install needed)
-src/main/java/amiss/          Java source (Swing GUIs + game logic + DB/Config/Validation/PasswordHasher)
+src/main/java/amiss/          Java source, layered into domain / application / infrastructure / presentation (see docs/ARCHITECTURE.md)
 src/main/resources/amiss/resources/   bundled UI images (screen backgrounds + game board)
 src/main/resources/application.properties  DB connection settings (overridable via AMISS_DB_* env vars)
 src/main/resources/logback.xml  logging config (console + rolling file under logs/)

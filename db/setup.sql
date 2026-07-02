@@ -31,13 +31,13 @@ USE amissdb;
 -- ---------------------------------------------------------------------------
 
 -- Column order matters: LoginGUI inserts positionally (password is a BCrypt hash)
---   INSERT INTO tbluser VALUES ('name','<bcrypt-hash>',0,0,720,100,1,'Unemployed',1,1,0,0)
+--   INSERT INTO tbluser VALUES ('name','<bcrypt-hash>',0,0,72,100,1,'Unemployed',1,1,0,0)
 CREATE TABLE IF NOT EXISTS tbluser (
     name      VARCHAR(50)  NOT NULL,
     password  VARCHAR(60)  NOT NULL,   -- BCrypt hash is always 60 chars
     xpos      INT          NOT NULL DEFAULT 0,
     ypos      INT          NOT NULL DEFAULT 0,
-    `time`    INT          NOT NULL DEFAULT 720,   -- minutes left in the round (12h)
+    `time`    INT          NOT NULL DEFAULT 72,   -- hours left in the round (60, or 72 if fed)
     cash      INT          NOT NULL DEFAULT 100,
     round     INT          NOT NULL DEFAULT 1,
     job       VARCHAR(50)  NOT NULL DEFAULT 'Unemployed',
@@ -82,13 +82,13 @@ CREATE TABLE tbljobs (
 -- location strings below are required verbatim by the *GUI classes
 -- (e.g. BankGUI checks loc.equals("Bank")).
 INSERT INTO tbljobs (job, education, salary, location, clothing) VALUES
-    ('Cook',                   0,  6, 'Fast Food Place', 1),
+    ('Cook',                   0,  6, 'Monolith Burgers', 1),
 
-    ('Clerk',                  1, 10, 'Appliance Store', 2),
-    ('SalesPerson',            1, 12, 'Appliance Store', 2),
-    ('Repairsman',             2, 16, 'Appliance Store', 2),
-    ('Assistant Manager',      2, 20, 'Appliance Store', 3),
-    ('Store Manager',          3, 28, 'Appliance Store', 3),
+    ('Clerk',                  1, 10, 'Socket City', 2),
+    ('SalesPerson',            1, 12, 'Socket City', 2),
+    ('Repairsman',             2, 16, 'Socket City', 2),
+    ('Assistant Manager',      2, 20, 'Socket City', 3),
+    ('Store Manager',          3, 28, 'Socket City', 3),
 
     ('Secretary',              1, 12, 'Factory',         2),
     ('Machinist',              2, 18, 'Factory',         2),
@@ -98,9 +98,9 @@ INSERT INTO tbljobs (job, education, salary, location, clothing) VALUES
     ('Bank Assistant Manager', 3, 30, 'Bank',            3),
     ('Broker',                 3, 40, 'Bank',            3),
 
-    ('Market Janitor',         0,  6, 'Market',          1),
-    ('Checker',                1, 10, 'Market',          2),
-    ('Butcher',                2, 16, 'Market',          2),
+    ('Market Janitor',         0,  6, 'Black''s Market',          1),
+    ('Checker',                1, 10, 'Black''s Market',          2),
+    ('Butcher',                2, 16, 'Black''s Market',          2),
 
     ('Rent Office Janitor',    0,  6, 'Rent Office',     1),
     ('Apartment Manager',      3, 30, 'Rent Office',     3);
@@ -117,7 +117,7 @@ INSERT INTO tblhelp (topic, description) VALUES
     ('Controls',
      'Move around the city by clicking the grid squares on the main screen. '
      'Step onto a building to enter it. Each move and each activity uses up '
-     'time from your 12-hour day (720 minutes). When the clock runs out the '
+     'time from your 60-72 hour work week. When the clock runs out the '
      'round ends - click New Round to start the next day. Use Save And Exit '
      'to store your progress and quit; log back in with the same username to '
      'resume.'),

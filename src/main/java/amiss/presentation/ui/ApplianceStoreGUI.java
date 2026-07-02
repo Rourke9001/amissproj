@@ -48,7 +48,7 @@ public class ApplianceStoreGUI extends javax.swing.JFrame {
         btnWork.setVisible(false);
 
         String loc = job.getLocation(); //checks if the user works at this location
-        if (loc.equals("Appliance Store")) {
+        if (loc.equals("Socket City")) {
             btnWork.setVisible(true);
         }
     }
@@ -73,7 +73,7 @@ public class ApplianceStoreGUI extends javax.swing.JFrame {
         lblBackground = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Appliance Store");
+        setTitle("Socket City");
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         lblTime.setText("Time");
@@ -94,7 +94,7 @@ public class ApplianceStoreGUI extends javax.swing.JFrame {
         txaNotification.setEditable(false);
         txaNotification.setColumns(20);
         txaNotification.setRows(5);
-        txaNotification.setText("Welcome to the Appliance Store ");
+        txaNotification.setText("Welcome to Socket City ");
         txaNotification.setWrapStyleWord(true);
         pnlDisplay.setViewportView(txaNotification);
 

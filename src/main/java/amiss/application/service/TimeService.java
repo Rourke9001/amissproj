@@ -49,31 +49,6 @@ public class TimeService {
     }
 
     /**
-     * Calculates the distance between 2 locations
-     * @param xpos users x pos
-     * @param ypos users y pos
-     * @return returns the distance between two locations
-     */
-    public int getMulti(int xpos, int ypos) {
-        int row = xpos;
-        int col = ypos;
-        int oldRow = getX();
-        int oldCol = getY();
-
-        int multi = Math.abs(oldRow - row) + Math.abs(oldCol - col);
-
-        if ((Math.abs(row - oldRow) == 1 && Math.abs(col - oldCol) == 3) && (row != 3 && row != 0 && oldRow != 3 && oldRow != 0) || (Math.abs(col - oldCol) == 1 && Math.abs(row - oldRow) == 3) && (col != 3 && col != 0 && oldCol != 3 && oldCol != 0)) {
-            multi = multi + 2;
-        } else if ((Math.abs(row - oldRow) == 3 && col == oldCol && (col != 0 && col != 3)) || (Math.abs(col - oldCol) == 3 && row == oldRow && (row != 0 && row != 3))) {
-            multi = multi + 2;
-        } else if (Math.abs(oldCol - col) == 3 && row != oldRow && !((row == 0 || row == 3) || (oldRow == 0 || oldRow == 3))) {
-            multi = multi + 2;
-        }
-
-        return multi;
-    }
-
-    /**
      * Updates the database to set the users position
      * @param xpos users x pos
      * @param ypos users y pos
@@ -99,40 +74,24 @@ public class TimeService {
     }
 
     /**
-     * Gets the users remaining time from the database
-     * @param mult the amount of time taken to complete an action
-     * @return Return the users current time
+     * Spends {@code cost} hours of the player's remaining weekly time and returns the new
+     * remaining time formatted for the timer label, e.g. {@code "54h"}. Pass {@code 0} to read
+     * the current time without spending any. Returns {@code "Not Enough Time"} (and spends
+     * nothing) if the action would overrun the week; {@code "0h"} means the week is used up.
+     *
+     * @param cost the whole hours the action takes (0 to just read the clock)
+     * @return the remaining time as {@code "Nh"}, or {@code "Not Enough Time"}
      */
-    public String getNewTime(int mult) {
-        int multi = mult;
-        int time;
-        int hours = -1;
-        int mins = -1;
-        String min = "0";
-
+    public String getNewTime(int cost) {
         try {
-            time = users.getTime(username);
+            int time = users.getTime(username);
             if (time != -1) {
-
-                for (int i = 0; i < multi; i++) {
-                    time = time - 10;
-                }
-
+                time = time - cost;
                 if (time < 0) {
                     return "Not Enough Time";
-                } else {
-                    hours = time / 60;
-                    mins = time % 60;
-                    setTime(time);
-
-                    if (mins == 0) {
-                        min = "00";
-                    } else {
-                        min = Integer.toString(mins);
-                    }
-                    return (hours + ":" + min);
-
                 }
+                setTime(time);
+                return time + "h";
             }
         } catch (SQLException ex) {
             log.warn("Failed to get time", ex);

@@ -147,13 +147,13 @@ public class RentOfficeGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnWorkActionPerformed
 
     private void btnRentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRentActionPerformed
-        if (dist.getNewTime(0).equals("0:0")) {
+        if (dist.getNewTime(0).equals("0h")) {
             txaNotification.setText(txaNotification.getText() + "\nRound Has Ended");
         } else if (stat.getCash() < 80) {
             txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash, You only have R" + stat.getCash());
             lblMoney.setText(Integer.toString(stat.getCash()));
         } else {
-            lblTimer.setText(dist.getNewTime(1));
+            lblTimer.setText(dist.getNewTime(2));
             stat.setRent(0);
             txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(Integer.toString(80)) + "\nThank you for paying your rent");
             lblMoney.setText(Integer.toString(stat.getCash()));
