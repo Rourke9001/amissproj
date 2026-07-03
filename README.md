@@ -20,6 +20,7 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 |---|---|
 | Language / UI | Java 8 source, Swing (`amiss` package) |
 | Database | MySQL 8.4+ / 9.x (`amissdb`); app runs as least-privilege `amiss` user |
+| Migrations | Flyway 11 — versioned SQL in `src/main/resources/db/migration`, applied automatically at app start (by a dedicated `amiss_migrator` account) |
 | JDBC driver | MySQL Connector/J 9.7 (Maven-managed) |
 | Security | BCrypt password hashing (jbcrypt) + parameterised JDBC throughout |
 | Logging | SLF4J + Logback (`src/main/resources/logback.xml`) |
@@ -29,15 +30,17 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 
 ## Prerequisites
 
-- A **JDK 8 or newer** (developed on JDK 20).
+- A **JDK 17 or newer** (developed on JDK 20) — the Flyway engine that migrates
+  the schema at startup needs 17+. (The source itself still targets Java 8.)
 - **MySQL Server 8.4 LTS or 9.x**, running locally on port `3306`.
 
 ## Quick start
 
 ```powershell
-# 1. Create the database + the least-privilege 'amiss' user (one-time).
+# 1. Create the database + the MySQL accounts (one-time). The tables and
+#    seed data are applied by Flyway migrations at first launch.
 #    Enter your MySQL root password when asked.
-mysql -u root -p < db\setup.sql
+mysql -u root -p < db\bootstrap.sql
 
 # 2. (Optional) If your DB differs from the defaults, override at runtime:
 #    $env:AMISS_DB_USER / $env:AMISS_DB_PASSWORD / $env:AMISS_DB_URL.
@@ -52,7 +55,9 @@ java -jar target\AmissProj.jar
 > The PowerShell helpers `scripts\build.ps1` / `scripts\run.ps1` still work and
 > simply delegate to `mvnw` / the packaged jar.
 
-On launch the console prints `Connection Successful`. In the login window, type a
+On launch the game first brings the schema up to date (Flyway logs
+`Database schema up to date`), then the console prints `Connection Successful`.
+In the login window, type a
 username + password and click **Logging In** — it offers to create the user. Once
 created, the city screen opens. (Tip: take a *Janitor* job first — it needs no
 education or special clothes.)
@@ -117,9 +122,11 @@ mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install nee
 .github/workflows/ci.yml      GitHub Actions CI (build + tests + coverage badges on push/PR)
 src/main/java/amiss/          Java source, layered into domain / application / infrastructure / presentation (see docs/ARCHITECTURE.md)
 src/main/resources/amiss/resources/   bundled UI images (screen backgrounds + game board)
+src/main/resources/db/migration/      Flyway versioned schema + seed data (applied at app start)
 src/main/resources/application.properties  DB connection settings (overridable via AMISS_DB_* env vars)
 src/main/resources/logback.xml  logging config (console + rolling file under logs/)
-db/setup.sql                  Database schema + seed data + least-privilege amiss user
+db/bootstrap.sql              One-time bootstrap: database + the two MySQL accounts
+                              (schema itself lives in the Flyway migrations)
 scripts/                      build.ps1 (mvnw wrapper), run.ps1 (launch),
                               gen-placeholders.ps1 (regenerate placeholder art)
 vendor/AbsoluteLayout.jar     the one dependency not on Maven Central (NetBeans layout helper)

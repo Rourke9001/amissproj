@@ -22,7 +22,9 @@ database the login window still opens, but you cannot create or load a player.
 
 ## 2. Prerequisites
 
-1. **A JDK** — already installed (`C:\Program Files\Java\jdk-20`). Any JDK 8+ works.
+1. **A JDK** — already installed (`C:\Program Files\Java\jdk-20`). Any JDK 17+
+   works (the Flyway engine that migrates the schema at startup needs 17+; the
+   source itself still targets Java 8).
 2. **MySQL Community Server 8.x or 9.x** — see step 3.
 
 > **Driver note:** the project originally shipped MySQL Connector/J **5.1.22 (2012)**,
@@ -44,11 +46,14 @@ database the login window still opens, but you cannot create or load a player.
    - Keep **port `3306`** and run it **as a Windows Service** (starts on boot).
    - Authentication: **"Use Strong Password Encryption"** (the default) is fine.
    - **Set a root password and remember it.** On this machine it is `password`.
-     Root is only used to run `db\setup.sql` (below); the game itself connects as
-     a least-privilege **`amiss`** user that the script creates. App connection
-     settings live in [`src/application.properties`](src/application.properties)
-     and can be overridden at runtime with the `AMISS_DB_URL` / `AMISS_DB_USER` /
-     `AMISS_DB_PASSWORD` environment variables — no need to edit Java or rebuild.
+     Root is only used to run `db\bootstrap.sql` (below); the game itself connects
+     as a least-privilege **`amiss`** user that the script creates (plus a
+     DDL-capable **`amiss_migrator`** account used only while Flyway applies the
+     schema migrations at startup). App connection settings live in
+     `src/main/resources/application.properties` and can be overridden at runtime
+     with the `AMISS_DB_URL` / `AMISS_DB_USER` / `AMISS_DB_PASSWORD` /
+     `AMISS_DB_MIGRATOR_USER` / `AMISS_DB_MIGRATOR_PASSWORD` environment
+     variables — no need to edit Java or rebuild.
 
 Verify the service is up:
 
@@ -58,28 +63,37 @@ Get-Service | Where-Object Name -match 'mysql'   # STATUS should be Running
 
 ---
 
-## 4. Create the database (one-time)
+## 4. Bootstrap the database (one-time)
 
-The schema + the game's reference data (jobs, help text) are in
-[`db/setup.sql`](db/setup.sql). Load it once. Pick whichever is easiest:
+[`db/bootstrap.sql`](db/bootstrap.sql) creates only what Flyway can't create for
+itself: the `amissdb` database and the two MySQL accounts. The tables and seed
+data live in **versioned Flyway migrations**
+(`src/main/resources/db/migration/`), which the game applies automatically the
+first time it starts. Run it once, whichever way is easiest:
 
 **Option A — command line** (the MySQL Installer adds `mysql` to PATH; if not,
 use the full path shown):
 
 ```powershell
-mysql -u root -p < db\setup.sql
+mysql -u root -p < db\bootstrap.sql
 # if 'mysql' isn't found:
-& "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u root -p < db\setup.sql
+& "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u root -p < db\bootstrap.sql
 ```
 
 Enter the root password (`password`) when prompted.
 
-**Option B — MySQL Workbench:** File ▸ Open SQL Script ▸ `db\setup.sql` ▸ run (⚡).
+**Option B — MySQL Workbench:** File ▸ Open SQL Script ▸ `db\bootstrap.sql` ▸ run (⚡).
 
-This creates database `amissdb` with four tables, seeds `tbljobs` / `tblhelp`, and
-creates the least-privilege **`amiss`@`localhost`** user the game logs in as
-(password `amisspw`; granted only SELECT/INSERT/UPDATE on `amissdb`). It is safe to
-re-run — it preserves saved players and only re-seeds reference data.
+This creates database `amissdb` plus two accounts: the least-privilege
+**`amiss`@`localhost`** user the game plays as (password `amisspw`; only
+SELECT/INSERT/UPDATE on `amissdb`) and **`amiss_migrator`@`localhost`**
+(password `amissmigratorpw`; DDL + DML on `amissdb`), which is used only while
+the startup migrations run. It is safe to re-run — everything is
+`IF NOT EXISTS`, and saved players are never touched.
+
+> **Upgrading from a pre-Flyway install?** Just re-run `db\bootstrap.sql` once
+> (it adds the missing `amiss_migrator` account). On the next launch Flyway
+> *baselines* the existing schema — saves are kept — and takes over from there.
 
 ---
 
@@ -106,8 +120,9 @@ the main city screen opens.
 | Console / symptom | Cause & fix |
 |---|---|
 | `Cannot connect to database: Communications link failure` | MySQL isn't running. Start it: `net start MySQL84` (service name may differ) or via *services.msc*. |
-| `Cannot connect to database: Access denied for user 'amiss'` | The `amiss` user/password don't match. Re-run `db\setup.sql` as root to (re)create the user, or set `AMISS_DB_USER` / `AMISS_DB_PASSWORD` to the right values. |
-| `Cannot connect to database: Unknown database 'amissdb'` | You haven't loaded the schema — do step 4. |
+| `Cannot connect to database: Access denied for user 'amiss'` | The `amiss` user/password don't match. Re-run `db\bootstrap.sql` as root to (re)create the user, or set `AMISS_DB_USER` / `AMISS_DB_PASSWORD` to the right values. |
+| `Cannot connect to database: Unknown database 'amissdb'` | You haven't bootstrapped the database — do step 4. |
+| `Schema migration failed` in the console | Flyway couldn't connect as `amiss_migrator` — typically a pre-Flyway install. Re-run `db\bootstrap.sql` as root (it adds the account), or set `AMISS_DB_MIGRATOR_USER` / `AMISS_DB_MIGRATOR_PASSWORD`. |
 | `Public Key Retrieval is not allowed` | Shouldn't happen (the JDBC URL sets `allowPublicKeyRetrieval=true`). If it does, confirm `DB.java` URL wasn't reverted. |
 | `Cannot load driver` | The MySQL driver didn't resolve — rebuild with `.\mvnw clean package` so the connector is on the classpath. |
 | A screen has no background image | Backgrounds load from bundled resources in `src/main/resources/amiss/resources/`. If one is blank the console prints `Asset missing on classpath: ...` — regenerate them with `powershell -File scripts\gen-placeholders.ps1`, then rebuild. |
@@ -144,15 +159,20 @@ the main city screen opens.
   non-Central jar — NetBeans `AbsoluteLayout` — is vendored into a project-local Maven
   repo (`vendor/` + `vendor-repo/`). NetBeans leftovers (`build.xml`, `nbproject/`,
   `manifest.mf`) were removed.
+- **Phase 2 — Flyway migrations** — the schema + seed data moved from the
+  hand-maintained `db/setup.sql` (retired) into versioned migrations under
+  `src/main/resources/db/migration/`, applied automatically at startup by a
+  dedicated `amiss_migrator` account; `db/bootstrap.sql` now only creates the
+  database + the two MySQL accounts. Existing pre-Flyway databases are
+  *baselined* on first launch (saves kept). Running the game now needs JDK 17+.
 
 ---
 
 ## 8. What's next
 
-Phases 1 and the first **Phase 2** item are **done**: backend hardening
-(parameterised SQL, try-with-resources, least-privilege `amiss` user, externalised
-config, BCrypt hashing, SLF4J/Logback logging, input validation) and the **Maven
-build migration**. See **[ROADMAP.md](ROADMAP.md)** for the full phased plan; the
-rest of **Phase 2** is next — a layered architecture that separates the game logic
-from Swing so the rules can be unit-tested without a GUI, then JUnit 5 tests,
-GitHub Actions CI and Flyway migrations.
+**Phases 0–2 are done**: revival, backend hardening (parameterised SQL,
+least-privilege users, BCrypt, logging, validation), the Maven build, the
+layered architecture with headless game rules, the 89-test JUnit 5 suite,
+GitHub Actions CI and Flyway schema migrations. See **[ROADMAP.md](ROADMAP.md)**
+for the full phased plan; next is **Phase 3** — extracting the game logic into a
+Spring Boot REST API with JPA persistence, Spring Security and a web frontend.
