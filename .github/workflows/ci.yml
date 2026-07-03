@@ -35,8 +35,10 @@ jobs:
           java-version: '21'
           cache: maven
 
+      # verify (not package) so the amiss-coverage module aggregates the
+      # per-module JaCoCo results into one report.
       - name: Build and test
-        run: ./mvnw -B clean package
+        run: ./mvnw -B clean verify
 
       # jacoco.csv columns: 4/5 = instructions missed/covered, 6/7 = branches,
       # 8/9 = lines. Sum across classes for the totals shown in the run summary.
@@ -50,7 +52,7 @@ jobs:
                 printf "| Instructions | %.1f%% |\n", 100*ic/(ic+im)
                 printf "| Branches | %.1f%% |\n", 100*bc/(bc+bm)
                 printf "| Lines | %.1f%% |\n", 100*lc/(lc+lm)
-              }' target/site/jacoco/jacoco.csv
+              }' amiss-coverage/target/site/jacoco-aggregate/jacoco.csv
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test results
@@ -58,14 +60,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: target/surefire-reports
+          path: '**/target/surefire-reports'
           if-no-files-found: ignore
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
-          path: target/site/jacoco
+          path: amiss-coverage/target/site/jacoco-aggregate
 
   coverage-badge:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -7,21 +7,49 @@
     <groupId>io.github.rourke9001</groupId>
     <artifactId>amissproj</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
     <name>AmissProj</name>
-    <description>Java Swing remake of "Jones in the Fast Lane", persisted in MySQL.</description>
+    <description>Remake of "Jones in the Fast Lane", persisted in MySQL: game rules
+        (amiss-core), the Swing desktop client (amiss-swing) and a Spring Boot REST
+        API (amiss-api).</description>
+
+    <!--
+      Reactor layout (ROADMAP Phase 3 / KAN-27):
+        amiss-core      game rules: domain + application + infrastructure, Flyway
+                        migrations, the whole unit-test suite. No UI dependencies.
+        amiss-swing     the original Swing desktop client; builds the shaded
+                        runnable AmissProj.jar.
+        amiss-coverage  aggregates the per-module JaCoCo reports for CI.
+      The Spring Boot amiss-api module joins the reactor on the next branch.
+    -->
+    <modules>
+        <module>amiss-core</module>
+        <module>amiss-swing</module>
+        <module>amiss-coverage</module>
+    </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>8</maven.compiler.release>
-        <main.class>amiss.presentation.ui.LoginGUI</main.class>
+        <!--
+          Java 21 LTS across the reactor: Spring Boot 3 needs 17+, CI already runs
+          Temurin 21, and one release number keeps the build easy to reason about.
+          (Until Phase 3 the sources targeted 8 on the grounds of "don't touch what
+          works"; the API module forced the decision.)
+        -->
+        <maven.compiler.release>21</maven.compiler.release>
 
         <mysql.connector.version>9.7.0</mysql.connector.version>
-        <!-- Flyway 11 needs a Java 17+ runtime; we develop/run on JDK 20. -->
         <flyway.version>11.8.2</flyway.version>
+        <!--
+          SLF4J/Logback aligned with the versions Spring Boot 3.5 manages, so the
+          API module never sees a conflicting logging stack via nearest-wins.
+        -->
+        <slf4j.version>2.0.17</slf4j.version>
+        <logback.version>1.5.18</logback.version>
+        <jbcrypt.version>0.4</jbcrypt.version>
 
-        <!-- Test toolchain (test scope only; runs on the JDK 20 runtime). -->
+        <!-- Test toolchain. -->
         <junit.version>5.10.2</junit.version>
         <mockito.version>5.11.0</mockito.version>
         <surefire.version>3.2.5</surefire.version>
@@ -29,27 +57,9 @@
     </properties>
 
     <!--
-      AbsoluteLayout is a NetBeans Swing helper that is not published to Maven
-      Central. We vendor our committed copy (vendor/AbsoluteLayout.jar) into a
-      project-local Maven repository (vendor-repo/, populated via
-      `mvn install:install-file ... -DlocalRepositoryPath=vendor-repo`) so the
-      build stays reproducible and offline-capable without committing the jar
-      onto the classpath by hand. project.baseUri yields a valid file:/// URL on
-      Windows and *nix alike.
-    -->
-    <repositories>
-        <repository>
-            <id>project-vendor</id>
-            <name>Project-local vendored jars</name>
-            <url>${project.baseUri}vendor-repo</url>
-            <releases><enabled>true</enabled></releases>
-            <snapshots><enabled>false</enabled></snapshots>
-        </repository>
-    </repositories>
-
-    <!--
-      Align all JUnit 5 artifacts (jupiter API/engine, platform) on one version
-      via the official BOM, so we never have to pin them individually.
+      One place for every third-party version; modules declare dependencies
+      version-less. JUnit artifacts (jupiter API/params/engine, platform) are
+      aligned via the official BOM.
     -->
     <dependencyManagement>
         <dependencies>
@@ -60,103 +70,86 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <dependency>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
+                <version>${mysql.connector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-mysql</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mindrot</groupId>
+                <artifactId>jbcrypt</artifactId>
+                <version>${jbcrypt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.netbeans.lib</groupId>
+                <artifactId>absolutelayout</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mockito.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <dependencies>
-        <!-- MySQL JDBC driver (Community build from Maven Central). -->
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <version>${mysql.connector.version}</version>
-        </dependency>
-
-        <!--
-          Flyway versioned schema migrations (classpath:db/migration), applied at
-          app start by FlywayMigrator as the amiss_migrator user (the runtime
-          amiss user has no DDL rights). flyway-mysql is the MySQL support module.
-        -->
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-            <version>${flyway.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-mysql</artifactId>
-            <version>${flyway.version}</version>
-        </dependency>
-
-        <!-- Logging: SLF4J facade + Logback backend (Java 8 1.3.x line). -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>2.0.13</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.3.14</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>1.3.14</version>
-        </dependency>
-
-        <!-- BCrypt password hashing. -->
-        <dependency>
-            <groupId>org.mindrot</groupId>
-            <artifactId>jbcrypt</artifactId>
-            <version>0.4</version>
-        </dependency>
-
-        <!-- Vendored NetBeans Swing layout helper (see <repositories> above). -->
-        <dependency>
-            <groupId>org.netbeans.lib</groupId>
-            <artifactId>absolutelayout</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-
-        <!-- ===== Test scope ===== -->
-        <!-- JUnit 5 (Jupiter aggregator: API + params + engine), version from the BOM. -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!--
-          Mockito to mock the amiss.repository DAOs so the service rules are unit-tested
-          in isolation from MySQL. mockito-junit-jupiter provides MockitoExtension.
-        -->
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
     <build>
-        <finalName>AmissProj</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-            </plugin>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.6.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.flywaydb</groupId>
+                    <artifactId>flyway-maven-plugin</artifactId>
+                    <version>${flyway.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
 
+        <plugins>
             <!--
-              Pin Surefire 3.x so the JUnit 5 (JUnit Platform) engine is discovered
-              and run. Maven 3.9.9's default is already 3.x, but we pin it explicitly
-              so the test run is reproducible across Maven versions / CI.
+              Pin Surefire 3.x in every module so the JUnit 5 (JUnit Platform)
+              engine is discovered and the test run is reproducible across Maven
+              versions / CI runners.
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -165,9 +158,9 @@
             </plugin>
 
             <!--
-              JaCoCo line/branch coverage. prepare-agent wires the coverage agent into
-              the Surefire JVM; the report goal (bound to test) writes
-              target/site/jacoco/index.html after the tests run.
+              JaCoCo per-module coverage. prepare-agent wires the agent into the
+              Surefire JVM; each module writes its own target/jacoco.exec, and the
+              amiss-coverage module aggregates them for CI.
             -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -182,78 +175,6 @@
                         <id>jacoco-report</id>
                         <phase>test</phase>
                         <goals><goal>report</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!--
-              Flyway CLI-style goals (flyway:migrate / flyway:info) for CI and
-              local ops, pointed straight at the migration sources so no compile
-              is needed. Connection settings come from -Dflyway.url/user/password.
-              The MySQL support module + JDBC driver must be on the *plugin*
-              classpath, hence the plugin-level dependencies.
-            -->
-            <plugin>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-maven-plugin</artifactId>
-                <version>${flyway.version}</version>
-                <configuration>
-                    <locations>
-                        <location>filesystem:src/main/resources/db/migration</location>
-                    </locations>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.flywaydb</groupId>
-                        <artifactId>flyway-mysql</artifactId>
-                        <version>${flyway.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>com.mysql</groupId>
-                        <artifactId>mysql-connector-j</artifactId>
-                        <version>${mysql.connector.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-
-            <!--
-              Package a single runnable uber-jar: target/AmissProj.jar.
-              - ManifestResourceTransformer sets the Main-Class.
-              - ServicesResourceTransformer MERGES META-INF/services so the
-                SLF4J 2.x provider (logback) AND the JDBC java.sql.Driver are
-                discovered from inside the shaded jar. Without it logging and/or
-                the MySQL driver silently fail to load.
-              - The filter strips dependency jar signatures (else the JVM rejects
-                the repackaged jar) and module-info from multi-release jars.
-            -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals><goal>shade</goal></goals>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>module-info.class</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>${main.class}</mainClass>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                            </transformers>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

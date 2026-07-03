@@ -9,7 +9,7 @@ You move around a small city, get a job, earn and spend money, study at universi
 pay rent and chase your goals across rounds. All game state is persisted in **MySQL**.
 
 > Originally built as a high-school project in NetBeans. This repo revives it on a
-> modern toolchain (JDK 20 + MySQL 9 + Connector/J 9) and is being incrementally
+> modern toolchain (JDK 21 + MySQL 9 + Connector/J 9) and is being incrementally
 > cleaned up as a Java refresher / portfolio piece.
 
 ---
@@ -18,20 +18,21 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 
 | | |
 |---|---|
-| Language / UI | Java 8 source, Swing (`amiss` package) |
+| Language / UI | Java 21, Swing (`amiss.presentation` in `amiss-swing`) |
+| Modules | Maven reactor: `amiss-core` (rules + persistence + migrations), `amiss-swing` (desktop client), `amiss-coverage` (JaCoCo aggregate) |
 | Database | MySQL 8.4+ / 9.x (`amissdb`); app runs as least-privilege `amiss` user |
-| Migrations | Flyway 11 — versioned SQL in `src/main/resources/db/migration`, applied automatically at app start (by a dedicated `amiss_migrator` account) |
+| Migrations | Flyway 11 — versioned SQL in `amiss-core/src/main/resources/db/migration`, applied automatically at app start (by a dedicated `amiss_migrator` account) |
 | JDBC driver | MySQL Connector/J 9.7 (Maven-managed) |
 | Security | BCrypt password hashing (jbcrypt) + parameterised JDBC throughout |
-| Logging | SLF4J + Logback (`src/main/resources/logback.xml`) |
-| Config | `src/main/resources/application.properties`, overridable via `AMISS_DB_*` env vars |
-| Build | Maven via the committed `mvnw` wrapper (no global Maven needed); one shaded runnable jar |
-| Entry point | `amiss.LoginGUI` |
+| Logging | SLF4J + Logback (`amiss-swing/src/main/resources/logback.xml`) |
+| Config | `amiss-swing/src/main/resources/application.properties`, overridable via `AMISS_DB_*` env vars |
+| Build | Maven via the committed `mvnw` wrapper (no global Maven needed); the Swing client ships as one shaded runnable jar |
+| Entry point | `amiss.presentation.ui.LoginGUI` |
 
 ## Prerequisites
 
-- A **JDK 17 or newer** (developed on JDK 20) — the Flyway engine that migrates
-  the schema at startup needs 17+. (The source itself still targets Java 8.)
+- A **JDK 21 or newer** (developed on Temurin 21 LTS) — the whole build targets
+  Java 21 since Phase 3.
 - **MySQL Server 8.4 LTS or 9.x**, running locally on port `3306`.
 
 ## Quick start
@@ -49,7 +50,7 @@ mysql -u root -p < db\bootstrap.sql
 # 3. Build and run. The mvnw wrapper downloads a pinned Maven on first run -
 #    no global Maven install required.
 .\mvnw clean package
-java -jar target\AmissProj.jar
+java -jar amiss-swing\target\AmissProj.jar
 ```
 
 > The PowerShell helpers `scripts\build.ps1` / `scripts\run.ps1` still work and
@@ -96,7 +97,7 @@ Get-Service MySQL97
 (You can also use the **Services** app — run `services.msc`, find *MySQL97*, Start/Stop.)
 
 ### The game
-- **Start:** double-click `target\AmissProj.jar`, or run `powershell -File scripts\run.ps1`.
+- **Start:** double-click `amiss-swing\target\AmissProj.jar`, or run `powershell -File scripts\run.ps1`.
 - **Stop:** close the game window. If a window is left over, end it with:
   ```powershell
   Stop-Process -Name javaw     # closes the running game (Java GUI process)
@@ -107,8 +108,8 @@ Get-Service MySQL97
 ## Build from source
 
 ```powershell
-.\mvnw clean package                 # compiles + tests + builds target\AmissProj.jar (shaded)
-java -jar target\AmissProj.jar       # runs the packaged jar
+.\mvnw clean package                          # compiles + tests + builds amiss-swing\target\AmissProj.jar (shaded)
+java -jar amiss-swing\target\AmissProj.jar    # runs the packaged jar
 ```
 The wrapper (`mvnw`) downloads a pinned Maven on first run, so no global Maven,
 NetBeans or Ant is required. `maven-shade-plugin` bundles all dependencies into
@@ -117,14 +118,16 @@ one runnable jar.
 ## Project structure
 
 ```
-pom.xml                       Maven build (managed dependencies, shaded runnable jar)
+pom.xml                       Reactor parent (module list, managed versions, shared plugins)
+amiss-core/                   Game rules: domain / application / infrastructure layers,
+                              Flyway migrations (src/main/resources/db/migration/),
+                              and the whole JUnit 5 test suite (see docs/ARCHITECTURE.md)
+amiss-swing/                  The Swing desktop client (amiss.presentation), bundled UI
+                              images, application.properties + logback.xml; shades the
+                              runnable amiss-swing/target/AmissProj.jar
+amiss-coverage/               Aggregates per-module JaCoCo coverage for CI
 mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install needed)
 .github/workflows/ci.yml      GitHub Actions CI (build + tests + coverage badges on push/PR)
-src/main/java/amiss/          Java source, layered into domain / application / infrastructure / presentation (see docs/ARCHITECTURE.md)
-src/main/resources/amiss/resources/   bundled UI images (screen backgrounds + game board)
-src/main/resources/db/migration/      Flyway versioned schema + seed data (applied at app start)
-src/main/resources/application.properties  DB connection settings (overridable via AMISS_DB_* env vars)
-src/main/resources/logback.xml  logging config (console + rolling file under logs/)
 db/bootstrap.sql              One-time bootstrap: database + the two MySQL accounts
                               (schema itself lives in the Flyway migrations)
 scripts/                      build.ps1 (mvnw wrapper), run.ps1 (launch),
