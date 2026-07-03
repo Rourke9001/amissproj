@@ -126,6 +126,7 @@ the main city screen opens.
 | `Schema migration failed` in the console | Flyway couldn't connect as `amiss_migrator` — typically a pre-Flyway install. Re-run `db\bootstrap.sql` as root (it adds the account), or set `AMISS_DB_MIGRATOR_USER` / `AMISS_DB_MIGRATOR_PASSWORD`. |
 | `Public Key Retrieval is not allowed` | Shouldn't happen (the JDBC URL sets `allowPublicKeyRetrieval=true`). If it does, confirm `DB.java` URL wasn't reverted. |
 | `Cannot load driver` | The MySQL driver didn't resolve — rebuild with `.\mvnw clean package` so the connector is on the classpath. |
+| The window never opens on double-click, or `java -jar` dies instantly with `UnsupportedClassVersionError` | The default `java` on PATH is older than 21 (e.g. the old JDK 20 shim). Launch via `powershell -File scripts\run.ps1` (it finds the Temurin 21 install itself), or point `JAVA_HOME`/PATH at a JDK 21+. |
 | A screen has no background image | Backgrounds load from bundled resources in `amiss-swing/src/main/resources/amiss/resources/`. If one is blank the console prints `Asset missing on classpath: ...` — regenerate them with `powershell -File scripts\gen-placeholders.ps1`, then rebuild. |
 
 ---

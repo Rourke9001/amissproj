@@ -9,6 +9,12 @@
 # definition lives in the pom.xml files (reactor root + one per module).
 $ErrorActionPreference = 'Stop'
 $proj = Split-Path $PSScriptRoot -Parent
+
+# mvnw needs JAVA_HOME, and the build targets Java 21 — if the shell's JAVA_HOME
+# is missing or older than 21, point it at a 21+ JDK for this build.
+. (Join-Path $PSScriptRoot 'find-java21.ps1')
+$env:JAVA_HOME = Split-Path (Split-Path (Find-Java21) -Parent) -Parent
+
 & (Join-Path $proj 'mvnw.cmd') -f (Join-Path $proj 'pom.xml') clean package
 if ($LASTEXITCODE -ne 0) { throw "Build FAILED (mvnw exit $LASTEXITCODE)" }
 Write-Host "Packaged -> $(Join-Path $proj 'amiss-swing\target\AmissProj.jar')"

@@ -197,6 +197,36 @@ Add to this after any correction or non-obvious gotcha.
   one place that names concrete adapters + opens the connection; services take ports only, so a
   Spring/JPA swap is a new context + adapters with the rules untouched.
 
+## Phase 3 / multi-module reactor + Java 21 (KAN-27 PR1)
+- **Installing Temurin 21 via winget does NOT make it the default `java` — and the machine
+  had `JAVA_HOME=C:\Program Files\Java\jdk-20` set globally.** The Oracle javapath shim
+  (JDK 20) stays first on PATH, so a release=21 jar dies instantly with
+  `UnsupportedClassVersionError` — silently when double-clicked (no console). Worse,
+  "prefer JAVA_HOME" script logic faithfully picks the stale jdk-20. Fixes: user-level
+  `JAVA_HOME` now points at Temurin 21 (user-level overrides machine-level), and
+  `scripts/find-java21.ps1` picks a JDK by parsing its `release` file for
+  `JAVA_VERSION="(\d+)` — never trust JAVA_HOME/PATH without checking the major version.
+- **Never blanket `Stop-Process -Name java,javaw`.** The VS Code Java language server and
+  SonarLint both run as `java.exe`; a name-based kill knifes the IDE tooling (it silently
+  restarts, losing state). Match the target instead:
+  `Get-CimInstance Win32_Process | Where CommandLine -match 'AmissProj\.jar'` → stop by Id.
+- **Truncating a log file an open FileAppender holds writes garbage.** `Clear-Content` on
+  `logs/amiss.log` while an (orphaned) JVM still held it made subsequent reads look empty.
+  Kill the writer first, or `Remove-Item` the log so the appender recreates it.
+- **Root-anchored `.gitignore` entries don't cover module dirs.** `/target/` only ignores
+  the root target; after the reactor split it must be `target/` (unanchored) or every
+  module's build output shows up as untracked.
+- **`${project.baseUri}` resolves per-module.** The vendored-jar repository URL moved from
+  `${project.baseUri}vendor-repo` (root pom) to `${project.baseUri}../vendor-repo` in
+  amiss-swing — a parent-declared URL would point each module at a different directory.
+- **Keep the logging backend out of the shared core module.** amiss-core exposes only
+  slf4j-api (logback-classic in test scope for logback-test.xml); amiss-swing carries
+  logback at runtime scope. This kills the nearest-wins clash with Spring Boot's managed
+  logback before it exists, instead of version-pinning around it.
+- **Invoking a single-module plugin goal reactor-wide re-runs it per module** — the
+  Migrations workflow's `./mvnw flyway:migrate` needed `-pl amiss-core` once the flyway
+  plugin/config moved into that module.
+
 ## Phase 2 / GitHub Actions CI + Flyway migrations
 - **`mvnw.cmd` mangles `&` inside `-D` args.** PowerShell passes the quoted arg fine, but
   the `.cmd` batch layer re-parses it: `-Dflyway.url=jdbc:...?useSSL=false&allow...` splits
