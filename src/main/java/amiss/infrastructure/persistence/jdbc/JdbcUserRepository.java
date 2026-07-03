@@ -139,13 +139,13 @@ public class JdbcUserRepository implements UserRepository {
 
     /** Inserts a brand-new player with the game's starting values (positional INSERT). */
     public void insertNewUser(String name, String passwordHash) throws SQLException {
-        db.update("INSERT INTO tbluser VALUES (?,?,0,0,72,100,1,'Unemployed',1,1,0,0)",
+        db.update("INSERT INTO tbluser VALUES (?,?,0,2,72,100,1,'Unemployed',1,1,0,0)",
                 name, passwordHash);
     }
 
     /** Resets the player's saved row to the game's starting values (the tbluser half of a game reset). */
     public void resetUser(String name) throws SQLException {
-        db.update("UPDATE amissdb.tbluser SET `xpos` = 0, `ypos` = 0, `time` = 72, `cash` = 100, "
+        db.update("UPDATE amissdb.tbluser SET `xpos` = 0, `ypos` = 2, `time` = 72, `cash` = 100, "
                 + "`round` = 1, `job` = 'Unemployed', `clothing` = 1,`eat` = 0, `rent` = 1, `debt` = 0 "
                 + "WHERE name = ?", name);
     }

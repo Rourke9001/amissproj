@@ -18,24 +18,25 @@ class BoardTest {
 
     @Test
     void startCellIsLowCostHousing() {
-        assertEquals(Location.LOW_COST_HOUSING, board.locationAt(0, 0));
-        assertEquals(0, board.ringIndex(0, 0));
+        // Start sits at top-middle (0,2) — 12 o'clock on the clock-face layout.
+        assertEquals(Location.LOW_COST_HOUSING, board.locationAt(0, 2));
+        assertEquals(0, board.ringIndex(0, 2));
     }
 
     @Test
     void mapsStopsToTheOriginalClockwiseOrder() {
-        assertEquals(Location.PAWN_SHOP, board.locationAt(0, 1));
-        assertEquals(Location.Z_MART, board.locationAt(0, 2));
-        assertEquals(Location.MONOLITH_BURGERS, board.locationAt(0, 3));
-        assertEquals(Location.QT_CLOTHING, board.locationAt(0, 4));
-        assertEquals(Location.SOCKET_CITY, board.locationAt(1, 4));
-        assertEquals(Location.HI_TECH_U, board.locationAt(2, 4));
-        assertEquals(Location.EMPLOYMENT_OFFICE, board.locationAt(3, 4));
-        assertEquals(Location.FACTORY, board.locationAt(3, 3));
-        assertEquals(Location.BANK, board.locationAt(3, 1));
-        assertEquals(Location.BLACKS_MARKET, board.locationAt(3, 0));
-        assertEquals(Location.LE_SECURITY_APARTMENTS, board.locationAt(2, 0));
-        assertEquals(Location.RENT_OFFICE, board.locationAt(1, 0));
+        assertEquals(Location.PAWN_SHOP, board.locationAt(0, 3));
+        assertEquals(Location.Z_MART, board.locationAt(0, 4));
+        assertEquals(Location.MONOLITH_BURGERS, board.locationAt(1, 4));
+        assertEquals(Location.QT_CLOTHING, board.locationAt(2, 4));
+        assertEquals(Location.SOCKET_CITY, board.locationAt(3, 4));
+        assertEquals(Location.HI_TECH_U, board.locationAt(3, 3));
+        assertEquals(Location.EMPLOYMENT_OFFICE, board.locationAt(3, 1));
+        assertEquals(Location.FACTORY, board.locationAt(3, 0));
+        assertEquals(Location.BANK, board.locationAt(2, 0));
+        assertEquals(Location.BLACKS_MARKET, board.locationAt(1, 0));
+        assertEquals(Location.LE_SECURITY_APARTMENTS, board.locationAt(0, 0));
+        assertEquals(Location.RENT_OFFICE, board.locationAt(0, 1));
     }
 
     @Test
@@ -65,14 +66,14 @@ class BoardTest {
 
     @Test
     void ringDistanceBetweenCells() {
-        // (0,0) start -> (3,3) Factory: indices 0 and 8 -> min(8, 5) = 5
+        // (0,0) Le Security Apartments -> (3,3) Hi-Tech U: indices 11 and 6 -> min(5, 8) = 5
         assertEquals(5, board.ringDistanceBetween(0, 0, 3, 3));
-        // (0,0) -> (1,0) Rent Office: indices 0 and 12 -> 1
+        // (0,0) -> (1,0) Black's Market: indices 11 and 10 -> 1
         assertEquals(1, board.ringDistanceBetween(0, 0, 1, 0));
     }
 
     @Test
     void distanceToANonStopCellIsZero() {
-        assertEquals(0, board.ringDistanceBetween(0, 0, 3, 2)); // to timer cell
+        assertEquals(0, board.ringDistanceBetween(0, 2, 3, 2)); // start to timer cell
     }
 }
