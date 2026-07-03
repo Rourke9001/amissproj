@@ -1,0 +1,73 @@
+# Migrations — proves a clean database is built purely from the versioned
+# Flyway migrations (ROADMAP Phase 2 / KAN-15): boots a throwaway MySQL 9,
+# provisions the database + accounts with db/bootstrap.sql, migrates as the
+# amiss_migrator account and then verifies the seed data as the
+# least-privilege runtime user.
+name: Migrations
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+concurrency:
+  group: migrations-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:9
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -pci-root"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # bootstrap.sql creates the accounts as 'localhost' only. Connections
+      # to a service container arrive from the Docker bridge, not localhost,
+      # so mirror the two accounts for any host — same passwords, same grants.
+      - name: Provision database and accounts (db/bootstrap.sql)
+        run: |
+          mysql -h 127.0.0.1 -uroot -pci-root < db/bootstrap.sql
+          mysql -h 127.0.0.1 -uroot -pci-root <<'SQL'
+          CREATE USER 'amiss'@'%' IDENTIFIED BY 'amisspw';
+          GRANT SELECT, INSERT, UPDATE ON amissdb.* TO 'amiss'@'%';
+          CREATE USER 'amiss_migrator'@'%' IDENTIFIED BY 'amissmigratorpw';
+          GRANT CREATE, ALTER, DROP, INDEX, REFERENCES,
+                SELECT, INSERT, UPDATE, DELETE
+              ON amissdb.* TO 'amiss_migrator'@'%';
+          SQL
+
+      - name: Migrate as amiss_migrator
+        run: >-
+          ./mvnw -B flyway:migrate flyway:info
+          "-Dflyway.url=jdbc:mysql://127.0.0.1:3306/amissdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+          -Dflyway.user=amiss_migrator
+          -Dflyway.password=amissmigratorpw
+
+      - name: Verify seed data as the least-privilege runtime user
+        run: |
+          jobs=$(mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -N -e 'SELECT COUNT(*) FROM tbljobs')
+          topics=$(mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -N -e 'SELECT COUNT(*) FROM tblhelp')
+          echo "tbljobs rows: $jobs (want 17); tblhelp rows: $topics (want 4)"
+          test "$jobs" -eq 17
+          test "$topics" -eq 4
