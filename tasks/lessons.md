@@ -197,6 +197,46 @@ Add to this after any correction or non-obvious gotcha.
   one place that names concrete adapters + opens the connection; services take ports only, so a
   Spring/JPA swap is a new context + adapters with the rules untouched.
 
+## Phase 2 / GitHub Actions CI + Flyway migrations
+- **`mvnw.cmd` mangles `&` inside `-D` args.** PowerShell passes the quoted arg fine, but
+  the `.cmd` batch layer re-parses it: `-Dflyway.url=jdbc:...?useSSL=false&allow...` splits
+  at each `&` ("'allowPublicKeyRetrieval' is not recognized..."), and Flyway sees user
+  `'null'`. Locally, drop the query params (a plain `jdbc:mysql://host/db` URL connects
+  fine); in CI the workflows run bash, where quoting works.
+- **`git add` aborts the ENTIRE add if any pathspec matches nothing.** Adding a list that
+  included the already-`git rm`-ed `db/setup.sql` failed with `fatal: pathspec ... did not
+  match` and staged none of the other files — the commit then silently contained only the
+  previously-staged deletion. Check `git status --short` before committing multi-path adds
+  (recovered via `git reset <base>` + redo, since nothing was pushed).
+- **Private-repo gotchas:** branch protection (rulesets AND classic) returns 403
+  "Upgrade to GitHub Pro or make this repository public" on the free plan — the intended
+  ruleset is committed at `.github/rulesets/protect-main.json`, apply when public/Pro.
+  Actions/raw badge images also won't render in a private README (camo can't fetch them).
+- **`mvnw` was committed non-executable (100644)** — Windows checkouts don't preserve the
+  bit, and ubuntu runners then fail at `./mvnw`. Fix it in the index once:
+  `git update-index --chmod=+x mvnw`.
+- **Coverage badges can't live on a protected main** — CI publishes the JaCoCo SVGs to an
+  orphan `badges` branch (`git switch --orphan` + force-push) and the README hotlinks the
+  raw URLs; the badge job runs only on pushes to main.
+- **Flyway 11 + MySQL 9.7 works with a warning** ("newer than this version of Flyway...
+  latest supported is 8.1") — older Flyway (9/10.x) hard-fails on MySQL 9. Flyway 11 needs
+  a **Java 17+ runtime** (the game now requires JDK 17+ to run) but compiles fine into a
+  `--release 8` build — same principle as the Mockito 5 lesson: newer dependency bytecode
+  is a runtime floor, not a compile blocker.
+- **Migrations run as a separate `amiss_migrator` account at startup** (DDL+DML), keeping
+  the runtime `amiss` user at SELECT/INSERT/UPDATE — the prod-style split of migration vs
+  runtime credentials. `baselineOnMigrate`/`baselineVersion=1` upgrades pre-Flyway installs
+  without touching saves; V2 reseeds reference data via DELETE+INSERT so it's identical on
+  clean and baselined DBs.
+- **MySQL service containers in Actions:** connections from the runner arrive via the
+  Docker bridge, NOT localhost — `'user'@'localhost'` accounts from bootstrap.sql won't
+  match; CI mirrors them as `'user'@'%'`. The ubuntu-latest image has a `mysql` client
+  preinstalled (no server needed — the container provides it).
+- **Stacked PRs:** base PR2 on PR1's branch so PR1's new workflows run on PR2 and the diff
+  stays clean; when PR1 merges and its branch is deleted, GitHub auto-retargets PR2 to the
+  original base. Merge with merge commits (this repo's norm) so the retargeted diff stays
+  empty of PR1's changes.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an
