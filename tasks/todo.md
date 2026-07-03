@@ -248,4 +248,23 @@ Plan:
 - [ ] JIRA: KAN-14/15 In Progress + PR-link comments (Done once the user merges)
 
 ### Review — Items 4+5
-(filled in at the end of the session)
+All plan items shipped (every checkbox above done except the plan-gated protection):
+**PR #9** (KAN-14, `feat/kan14-github-actions-ci` → `develop`) adds the CI workflow —
+verified green on the PR itself (`build` pass, 89/89 tests, coverage summary +
+artifacts; the badge job correctly skips on non-main events). **PR #10** (KAN-15,
+stacked on #9) moves the schema into Flyway 11 migrations applied at startup by a
+dedicated `amiss_migrator` account, retires `setup.sql` for a users-only
+`bootstrap.sql`, and adds a `Migrations` workflow — verified green in CI (clean
+MySQL 9 container built purely from migrations, seed counts asserted as the runtime
+user) **and** locally against MySQL 9.7.1: clean scratch DB from `flyway:migrate`
+alone; live `amissdb` baselined with the saved player intact; second run a no-op.
+Phase 2 is complete once both PRs merge (merge #9 first, delete its branch — #10
+auto-retargets to `develop`).
+
+Deviations/notes: (1) **`main` branch protection is plan-gated** — the repo is
+private and GitHub returns 403 "Upgrade to GitHub Pro or make this repository
+public" for both rulesets and classic protection. The ready-to-apply ruleset is
+committed at `.github/rulesets/protect-main.json` with apply instructions; revisit
+when the repo goes public (Phase 4 showcase) or gets Pro. (2) Running the game now
+needs a JDK 17+ runtime (Flyway 11); source still targets 8. (3) The test suite is
+89 tests (the board rework had grown it past the documented 87).
