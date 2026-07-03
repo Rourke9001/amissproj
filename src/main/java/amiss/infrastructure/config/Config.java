@@ -64,4 +64,18 @@ public final class Config {
     public static String dbPassword() {
         return resolve("db.password", "AMISS_DB_PASSWORD", "amisspw");
     }
+
+    /**
+     * Account used only to apply Flyway migrations at startup (needs DDL on
+     * amissdb, unlike the least-privilege runtime user). Override with
+     * {@code AMISS_DB_MIGRATOR_USER}.
+     */
+    public static String dbMigratorUser() {
+        return resolve("db.migrator.user", "AMISS_DB_MIGRATOR_USER", "amiss_migrator");
+    }
+
+    /** Migration account password. Override with {@code AMISS_DB_MIGRATOR_PASSWORD}. */
+    public static String dbMigratorPassword() {
+        return resolve("db.migrator.password", "AMISS_DB_MIGRATOR_PASSWORD", "amissmigratorpw");
+    }
 }

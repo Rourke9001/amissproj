@@ -6,6 +6,7 @@ import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
 import amiss.application.service.GameServices;
 import amiss.domain.model.User;
+import amiss.infrastructure.persistence.flyway.FlywayMigrator;
 import amiss.infrastructure.persistence.jdbc.Jdbc;
 import amiss.infrastructure.persistence.jdbc.JdbcHelpRepository;
 import amiss.infrastructure.persistence.jdbc.JdbcJobRepository;
@@ -31,6 +32,7 @@ public final class GameContext implements AutoCloseable {
     private final HelpRepository help;
 
     public GameContext() {
+        FlywayMigrator.migrate();
         this.jdbc = new Jdbc();
         this.users = new JdbcUserRepository(jdbc);
         this.userStats = new JdbcUserStatsRepository(jdbc);
