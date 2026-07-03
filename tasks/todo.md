@@ -210,3 +210,61 @@ mocked repos rather than mocked services, because `workMain` calls `job.toString
 can't stub — this also gives a more faithful end-to-end exercise of the decision tree. Build impact
 is additive only (test deps + Surefire pin + JaCoCo); `git diff main` touches no `src/main` file, so
 the game is byte-identical. Next Phase 2 item: GitHub Actions CI to run this suite on every push/PR.
+
+### Items 4+5 — GitHub Actions CI (KAN-14) + Flyway migrations (KAN-15), and the develop/main branching model  (2026-07-03)
+Finishes ROADMAP Phase 2. Also moves the repo to a gitflow-lite model per the user:
+`develop` integration branch, feature branches base off it, `main` protected.
+Plan:
+- [ ] Create `develop` off `main`, push. Feature branches now base off `develop`;
+      PRs target `develop`; `develop` → `main` via release PR when a milestone ships
+- [ ] **KAN-14 — CI** (branch `feat/kan14-github-actions-ci` off develop)
+  - [ ] Fix `mvnw` execute bit in the git index (Linux runners can't `./mvnw` otherwise)
+  - [ ] `.github/workflows/ci.yml`: `build` job — `./mvnw -B clean package`
+        (87 tests + JaCoCo) on push to main/develop + all PRs; surefire/JaCoCo
+        artifacts + coverage step-summary; `coverage-badge` job (push to main only)
+        publishes SVG badges to an orphan `badges` branch (main will be protected,
+        so CI can't commit badges there)
+  - [ ] README: CI + coverage badges; ROADMAP tick; document the develop-based
+        branching in CLAUDE.md + ROADMAP "how we work"
+  - [ ] PR → develop; verify the Actions run is green on the PR
+- [ ] **KAN-15 — Flyway** (branch `feat/kan15-flyway-migrations`, stacked on the
+      KAN-14 branch so its PR runs the new CI; auto-retargets when the CI PR merges)
+  - [ ] pom: `flyway-core`/`flyway-mysql` 11.8.2 + `flyway-maven-plugin`
+  - [ ] `src/main/resources/db/migration/`: `V1__baseline_schema.sql` (4 tables),
+        `V2__seed_reference_data.sql` (idempotent DELETE+INSERT of tbljobs/tblhelp)
+  - [ ] `db/bootstrap.sql` replaces `db/setup.sql`: DB + users only (runtime `amiss`
+        stays SELECT/INSERT/UPDATE; new `amiss_migrator` gets the DDL+DML Flyway needs)
+  - [ ] `FlywayMigrator` (infrastructure) run from `GameContext` before `Jdbc`;
+        `baselineOnMigrate` so existing installs keep saves; `Config` gains migrator
+        creds (`AMISS_DB_MIGRATOR_USER/_PASSWORD` overrides)
+  - [ ] `.github/workflows/migrations.yml`: MySQL 9 service container → bootstrap →
+        `flyway:migrate` as `amiss_migrator` → assert seed counts as the runtime user
+  - [ ] Docs: README/SETUP quick start (bootstrap + auto-migrate; running now needs
+        JDK 17+ for Flyway 11); ROADMAP tick → Phase 2 complete
+  - [ ] Verify locally: green build; a clean scratch DB built purely from migrations;
+        app-start baseline against the live `amissdb` keeps saves
+- [ ] **Protect `main`**: require PR + green `build` check, block force-push/deletion.
+      NOTE: repo is PRIVATE — GitHub may require a paid plan; attempt and report
+- [ ] JIRA: KAN-14/15 In Progress + PR-link comments (Done once the user merges)
+
+### Review — Items 4+5
+All plan items shipped (every checkbox above done except the plan-gated protection):
+**PR #9** (KAN-14, `feat/kan14-github-actions-ci` → `develop`) adds the CI workflow —
+verified green on the PR itself (`build` pass, 89/89 tests, coverage summary +
+artifacts; the badge job correctly skips on non-main events). **PR #10** (KAN-15,
+stacked on #9) moves the schema into Flyway 11 migrations applied at startup by a
+dedicated `amiss_migrator` account, retires `setup.sql` for a users-only
+`bootstrap.sql`, and adds a `Migrations` workflow — verified green in CI (clean
+MySQL 9 container built purely from migrations, seed counts asserted as the runtime
+user) **and** locally against MySQL 9.7.1: clean scratch DB from `flyway:migrate`
+alone; live `amissdb` baselined with the saved player intact; second run a no-op.
+Phase 2 is complete once both PRs merge (merge #9 first, delete its branch — #10
+auto-retargets to `develop`).
+
+Deviations/notes: (1) **`main` branch protection is plan-gated** — the repo is
+private and GitHub returns 403 "Upgrade to GitHub Pro or make this repository
+public" for both rulesets and classic protection. The ready-to-apply ruleset is
+committed at `.github/rulesets/protect-main.json` with apply instructions; revisit
+when the repo goes public (Phase 4 showcase) or gets Pro. (2) Running the game now
+needs a JDK 17+ runtime (Flyway 11); source still targets 8. (3) The test suite is
+89 tests (the board rework had grown it past the documented 87).

@@ -17,8 +17,10 @@ as portfolio signal, not just busywork.
    > *"Let's work on **<what you want to achieve>**. (Roadmap: Phase _ / <item>.)
    > Put it on a feature branch. Plan first, then implement."*
    Even shorter works: *"Start the SQL-injection fix on a branch."*
-3. **Branch per unit of work.** I cut a `feat/<name>` branch off `main`, work in small
-   commits, push it, and open a PR for you to review/merge. `main` stays runnable.
+3. **Branch per unit of work.** I cut a `feat/<name>` branch off **`develop`**, work in
+   small commits, push it, and open a PR into `develop` for you to review/merge. When a
+   milestone is ready, a release PR merges `develop` → `main`. `main` is protected
+   (PR + green CI build required) and always runnable.
 4. **Docs stay current.** Finishing an item includes ticking it off here and updating
    `SETUP.md`/`README.md` if behaviour changed.
 
@@ -31,7 +33,7 @@ Branch name prefixes: `feat/` (feature), `fix/` (bug), `chore/` (tooling/deps),
 
 - [x] **Phase 0 — Revival & version control** (June 2026)
 - [x] **Phase 1 — Backend hygiene & security** (June 2026)
-- [ ] **Phase 2 — Architecture, testing & build tooling**
+- [x] **Phase 2 — Architecture, testing & build tooling** (June–July 2026)
 - [ ] **Phase 3 — Go full-stack (Spring Boot API + web UI)**
 - [ ] **Phase 4 — Showcase & deploy**
 
@@ -60,7 +62,7 @@ These are the fixes an interviewer will look for first.*
 - [x] Replace `System.out` debugging with real logging (SLF4J + Logback)
 - [x] Basic input validation on usernames / form fields (`Validation`)
 
-## Phase 2 — Architecture, testing & build tooling
+## Phase 2 — Architecture, testing & build tooling ✅ (June–July 2026)
 *Why (CV): demonstrates clean architecture, testing discipline and a modern build —
 the difference between "wrote some Java" and "engineers software".*
 - [x] **Migrate the build to Maven** (June 2026) — `pom.xml` with managed dependencies
@@ -87,8 +89,22 @@ the difference between "wrote some Java" and "engineers software".*
       / 78% branch coverage of `amiss.service` (Validation 100%). Characterization tests
       lock current behaviour and documented two quirks — the `getNewTime` single-digit
       minute (`"2:5"` not `"2:05"`) and a dead `getMulti` branch.)*
-- [ ] **GitHub Actions CI**: compile + run tests on every push / PR
-- [ ] Flyway (or Liquibase) DB migrations to version the schema (replaces `setup.sql`)
+- [x] **GitHub Actions CI**: compile + run tests on every push / PR
+      *(July 2026: `.github/workflows/ci.yml` — `./mvnw -B clean package` (the
+      89-test JUnit suite + JaCoCo) on pushes to main/develop and on every PR; test + coverage reports
+      published as artifacts with a coverage table in the run summary; coverage badges
+      pushed to the orphan `badges` branch and wired into the README alongside the
+      build badge. The `build` job is the required status check that gates PRs into
+      the protected `main`.)*
+- [x] Flyway DB migrations to version the schema (replaces `setup.sql`)
+      *(July 2026: Flyway 11 — `V1__baseline_schema` + `V2__seed_reference_data`
+      under `src/main/resources/db/migration`, applied at app start by
+      `FlywayMigrator` as a dedicated `amiss_migrator` account, so the runtime
+      `amiss` user keeps zero DDL rights. `baselineOnMigrate` preserves
+      pre-Flyway saves; `db/setup.sql` retired for a users-only
+      `db/bootstrap.sql`; a Migrations CI workflow proves a clean MySQL 9
+      container is built purely from the migrations. Running the game now needs
+      a JDK 17+ runtime — Flyway 11's floor — while the source still targets 8.)*
 
 ## Phase 3 — Go full-stack
 *Why (CV): the headline. A real Spring backend + web frontend is exactly what Java
