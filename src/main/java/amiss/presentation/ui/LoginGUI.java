@@ -158,7 +158,7 @@ public class LoginGUI extends javax.swing.JFrame {
                 users.insertNewUser(user, PasswordHasher.hash(passwrd)); //creates the new user with a hashed password
                 userStats.insertNewStats(user);
                 lblError.setText("User Added");//message guide to the user
-                User newUser = new User(user, 0, 0, 72, 100, 1, "Unemployed", 1, 1, 0, 0);//create new user object
+                User newUser = new User(user, 0, 2, 72, 100, 1, "Unemployed", 1, 1, 0, 0);//create new user object
                 UserGoals newUserGoals = new UserGoals(user, 0, 0, 0, 0);//creates new userGoal object
                 new MainGameGUI(newUser, ctx.servicesFor(newUser)).setVisible(true);
                 this.dispose();

@@ -3,8 +3,10 @@ package amiss.domain.board;
 /**
  * The game board: a 5-wide by 4-tall grid whose perimeter forms a loop of 13 stops, with the
  * bottom-middle cell {@code (3,2)} reserved for the turn timer and the inner cells left blank
- * (they hold the board art and the notification area). The stops are ordered clockwise from
- * the starting apartment at top-left {@code (0,0)}.
+ * (they hold the board art and the notification area). Laid out like a clock face: the starting
+ * apartment, Low-Cost Housing, sits at top-middle {@code (0,2)} (12 o'clock) and the timer sits
+ * directly opposite at bottom-middle {@code (3,2)} (6 o'clock). The remaining stops are ordered
+ * clockwise from there.
  *
  * <p>This replaces the old {@code TwoDGrid} 4x4 model and the hard-coded distance maths in
  * {@code TimeService.getMulti}. Movement cost is a clean <em>ring distance</em> — the fewer of
@@ -27,23 +29,23 @@ public final class Board {
 
     /**
      * The 13 stops in clockwise ring order; index i sits at {@code CELLS[i] = {row, col}}.
-     * Note the loop steps straight from Factory {@code (3,3)} to Bank {@code (3,1)} — the
-     * timer cell {@code (3,2)} between them is not walkable.
+     * Note the loop steps straight from Hi-Tech U {@code (3,3)} to Employment Office
+     * {@code (3,1)} — the timer cell {@code (3,2)} between them is not walkable.
      */
     private static final int[][] CELLS = {
-        {0, 0}, // 0  Low-Cost Housing (start)
-        {0, 1}, // 1  Pawn Shop
-        {0, 2}, // 2  Z-Mart
-        {0, 3}, // 3  Monolith Burgers
-        {0, 4}, // 4  QT Clothing
-        {1, 4}, // 5  Socket City
-        {2, 4}, // 6  Hi-Tech U
-        {3, 4}, // 7  Employment Office
-        {3, 3}, // 8  Factory
-        {3, 1}, // 9  Bank
-        {3, 0}, // 10 Black's Market
-        {2, 0}, // 11 Le Security Apartments
-        {1, 0}, // 12 Rent Office
+        {0, 2}, // 0  Low-Cost Housing (start) — 12 o'clock
+        {0, 3}, // 1  Pawn Shop
+        {0, 4}, // 2  Z-Mart
+        {1, 4}, // 3  Monolith Burgers
+        {2, 4}, // 4  QT Clothing
+        {3, 4}, // 5  Socket City
+        {3, 3}, // 6  Hi-Tech U
+        {3, 1}, // 7  Employment Office
+        {3, 0}, // 8  Factory
+        {2, 0}, // 9  Bank
+        {1, 0}, // 10 Black's Market
+        {0, 0}, // 11 Le Security Apartments
+        {0, 1}, // 12 Rent Office
     };
 
     private static final Location[] STOPS = {

@@ -94,7 +94,7 @@ public class MainGameGUI extends javax.swing.JFrame {
 
         // Any stale/invalid saved position (e.g. from the old 4x4 board) snaps back home.
         if (!board.isStop(dist.getX(), dist.getY())) {
-            dist.setPos(0, 0);
+            dist.setPos(0, 2);
         }
 
         btnArr = new javax.swing.JButton[Board.ROWS][Board.COLS];
@@ -146,7 +146,7 @@ public class MainGameGUI extends javax.swing.JFrame {
                                             btnNewRound.setVisible(true);
 
                                             btnArr[oldRow][oldCol].setBackground(Color.BLUE);
-                                            btnArr[0][0].setBackground(Color.YELLOW);
+                                            btnArr[0][2].setBackground(Color.YELLOW);
 
                                             btnPanel.setVisible(false);
                                             break;
@@ -284,7 +284,7 @@ public class MainGameGUI extends javax.swing.JFrame {
             lblTimer.setText("72h");
         }
         btnArr[dist.getX()][dist.getY()].setBackground(Color.BLUE); //updates the new location on the board
-        dist.setPos(0, 0);
+        dist.setPos(0, 2);
         dist.setRound();
         
         String time = dist.getNewTime(0); // time is 0 when user saved and exit
