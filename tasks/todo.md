@@ -268,3 +268,26 @@ committed at `.github/rulesets/protect-main.json` with apply instructions; revis
 when the repo goes public (Phase 4 showcase) or gets Pro. (2) Running the game now
 needs a JDK 17+ runtime (Flyway 11); source still targets 8. (3) The test suite is
 89 tests (the board rework had grown it past the documented 87).
+
+---
+
+## Fix: board clock orientation + protect `develop` from deletion  (2026-07-03)
+Follow-up to the board rework above: Low-Cost Housing (start) was at top-*left*
+`(0,0)`, not 12 o'clock. Rotated the ring 2 cells clockwise so start sits at
+top-middle `(0,2)` (12 o'clock); the turn timer stays at bottom-middle `(3,2)`
+(6 o'clock, already correct — untouched). Separately, added a deletion-only
+ruleset for `develop`, mirroring the existing `main` ruleset precedent.
+- [x] `Board.java`: rotate the `CELLS` array (keep `STOPS`/ring-index-0 fixed
+      to Low-Cost Housing); update Javadoc
+- [x] Propagate the new home coordinate `(0,2)` everywhere `(0,0)` was
+      hard-coded as start/reset: `LoginGUI`, `JdbcUserRepository`
+      (`insertNewUser`/`resetUser`), `MainGameGUI` (stale-position snapback,
+      round-end highlight, new-round reset)
+- [x] `BoardTest`: updated cell/location expectations for the rotated layout
+- [x] Verify: `./mvnw clean test` green (89/89); a standalone board-print
+      confirms Low-Cost Housing at `(0,2)` / 12 o'clock and the timer still at
+      `(3,2)` / 6 o'clock
+- [x] `.github/rulesets/protect-develop.json` (deletion-only) + README update;
+      attempted `gh api .../rulesets -X POST` — same 403 plan-gate as `main`
+      (private repo needs Pro or public); committed ready-to-apply, as with
+      `protect-main.json`
