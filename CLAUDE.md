@@ -52,6 +52,6 @@ Core Principles
 Project Workflow (AmissProj)
 1. Context: This project's orientation lives in README.md, SETUP.md and ROADMAP.md. Read them at the start of a session; do not ask the user to re-explain the project.
 2. Goals: ROADMAP.md is the canonical long-term plan (phases turning this HS project into a full-stack, CV-ready app). Tick items off there as they ship.
-3. Feature branches: Do each unit of work on its own branch off main — feat/<name> (also fix/, chore/, docs/, test/, refactor/). Keep main runnable. Work in small, descriptive commits; push the branch and open a PR (use the gh CLI if available) for the user to review/merge.
+3. Feature branches: Do each unit of work on its own branch off develop — feat/<name> (also fix/, chore/, docs/, test/, refactor/). PRs target develop (gh pr create --base develop); when a milestone is ready, a release PR merges develop into main. main is protected (PR + green CI build check) and stays runnable. Work in small, descriptive commits; push the branch and open the PR (gh CLI) for the user to review/merge.
 4. Commits in PowerShell: use git commit -F <file> with the message written via Set-Content -Encoding ascii. Never embed double-quotes inside a -m here-string (PowerShell 5.1 splits the args). Always end commit messages with the Co-Authored-By trailer.
 5. Definition of done: behaviour verified, ROADMAP/docs updated, branch pushed.
