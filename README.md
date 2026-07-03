@@ -19,7 +19,8 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 | | |
 |---|---|
 | Language / UI | Java 21, Swing (`amiss.presentation` in `amiss-swing`) |
-| Modules | Maven reactor: `amiss-core` (rules + persistence + migrations), `amiss-swing` (desktop client), `amiss-coverage` (JaCoCo aggregate) |
+| Modules | Maven reactor: `amiss-core` (rules + persistence + migrations), `amiss-swing` (desktop client), `amiss-api` (REST API), `amiss-coverage` (JaCoCo aggregate) |
+| REST API | Spring Boot 3.5 (`amiss-api`) over the same core services — `.\mvnw -f amiss-api spring-boot:run`, health at `/actuator/health`, RFC 7807 error responses |
 | Database | MySQL 8.4+ / 9.x (`amissdb`); app runs as least-privilege `amiss` user |
 | Migrations | Flyway 11 — versioned SQL in `amiss-core/src/main/resources/db/migration`, applied automatically at app start (by a dedicated `amiss_migrator` account) |
 | JDBC driver | MySQL Connector/J 9.7 (Maven-managed) |
@@ -125,6 +126,8 @@ amiss-core/                   Game rules: domain / application / infrastructure 
 amiss-swing/                  The Swing desktop client (amiss.presentation), bundled UI
                               images, application.properties + logback.xml; shades the
                               runnable amiss-swing/target/AmissProj.jar
+amiss-api/                    Spring Boot REST API over amiss-core (Phase 3, in progress):
+                              actuator health, RFC 7807 error envelope, application.yml
 amiss-coverage/               Aggregates per-module JaCoCo coverage for CI
 mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install needed)
 .github/workflows/ci.yml      GitHub Actions CI (build + tests + coverage badges on push/PR)

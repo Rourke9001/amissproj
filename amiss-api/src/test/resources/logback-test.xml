@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Test logging: keep Surefire output readable. The Problem Details contract
+  test deliberately throws PersistenceFailureException, whose handler logs the
+  stack trace at ERROR - silence amiss.api so the expected noise doesn't drown
+  the test report (same precedent as amiss-core's logback-test.xml).
+-->
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="amiss.api" level="OFF"/>
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

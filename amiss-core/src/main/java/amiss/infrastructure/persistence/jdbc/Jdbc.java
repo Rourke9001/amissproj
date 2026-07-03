@@ -5,6 +5,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,12 +20,22 @@ import org.slf4j.LoggerFactory;
  * statement state. Binding the values through {@code setObject} (rather than
  * concatenating them into the SQL) is what makes the queries injection-safe.
  *
+ * <p>Two connection modes:
+ * <ul>
+ *   <li>{@link #Jdbc()} — the Swing client's mode: one connection opened from
+ *       {@link Config} and held for the life of the app (a single-threaded UI).</li>
+ *   <li>{@link #Jdbc(DataSource)} — the REST API's mode: a connection is
+ *       borrowed from the pool per call and returned immediately, so concurrent
+ *       requests never share connection state.</li>
+ * </ul>
+ *
  * @author The Rourke
  */
 public class Jdbc implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(Jdbc.class);
     private static final String driver = "com.mysql.cj.jdbc.Driver";
+    private final DataSource dataSource;
     private Connection connection;
 
     /** Maps the current row of a {@link ResultSet} to a value of type {@code T}. */
@@ -33,10 +44,18 @@ public class Jdbc implements AutoCloseable {
         T map(ResultSet rs) throws SQLException;
     }
 
+    /** Work that needs a live connection; used to abstract over the two modes. */
+    @FunctionalInterface
+    private interface ConnectionWork<T> {
+        T run(Connection con) throws SQLException;
+    }
+
     /**
-     * Object which connects the SQL database
+     * Single-connection mode: connects once using the {@link Config} settings.
+     * Used by the Swing client, whose UI thread is the only caller.
      */
     public Jdbc() {
+        this.dataSource = null;
         try {
             Class.forName(driver);
             connection = DriverManager.getConnection(Config.dbUrl(), Config.dbUser(), Config.dbPassword());
@@ -46,6 +65,30 @@ public class Jdbc implements AutoCloseable {
         } catch (ClassNotFoundException c) {
             log.error("Cannot load driver", c);
         }
+    }
+
+    /**
+     * Pooled mode: every call borrows a connection from {@code dataSource} and
+     * returns it when done, making the helper safe under concurrent callers.
+     * The pool's lifecycle belongs to whoever created it (e.g. Spring).
+     *
+     * @param dataSource the connection pool to borrow from; never {@code null}
+     */
+    public Jdbc(DataSource dataSource) {
+        if (dataSource == null) {
+            throw new IllegalArgumentException("dataSource must not be null");
+        }
+        this.dataSource = dataSource;
+    }
+
+    /** Runs {@code work} with a connection appropriate to the mode. */
+    private <T> T withConnection(ConnectionWork<T> work) throws SQLException {
+        if (dataSource != null) {
+            try (Connection con = dataSource.getConnection()) {
+                return work.run(con);
+            }
+        }
+        return work.run(connection);
     }
 
     // ---- Parameterised, resource-safe API ---------------------------------
@@ -58,10 +101,12 @@ public class Jdbc implements AutoCloseable {
      * @throws SQLException if the statement fails
      */
     public int update(String sql, Object... params) throws SQLException {
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            bind(ps, params);
-            return ps.executeUpdate();
-        }
+        return withConnection(con -> {
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                bind(ps, params);
+                return ps.executeUpdate();
+            }
+        });
     }
 
     /**
@@ -73,16 +118,18 @@ public class Jdbc implements AutoCloseable {
      * @throws SQLException if the query fails
      */
     public <T> List<T> query(String sql, RowMapper<T> mapper, Object... params) throws SQLException {
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            bind(ps, params);
-            try (ResultSet rs = ps.executeQuery()) {
-                List<T> rows = new ArrayList<>();
-                while (rs.next()) {
-                    rows.add(mapper.map(rs));
+        return withConnection(con -> {
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                bind(ps, params);
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<T> rows = new ArrayList<>();
+                    while (rs.next()) {
+                        rows.add(mapper.map(rs));
+                    }
+                    return rows;
                 }
-                return rows;
             }
-        }
+        });
     }
 
     /**
@@ -91,12 +138,14 @@ public class Jdbc implements AutoCloseable {
      * @throws SQLException if the query fails
      */
     public <T> Optional<T> queryForObject(String sql, RowMapper<T> mapper, Object... params) throws SQLException {
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            bind(ps, params);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.ofNullable(mapper.map(rs)) : Optional.empty();
+        return withConnection(con -> {
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                bind(ps, params);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? Optional.ofNullable(mapper.map(rs)) : Optional.empty();
+                }
             }
-        }
+        });
     }
 
     /**
@@ -124,7 +173,10 @@ public class Jdbc implements AutoCloseable {
         }
     }
 
-    /** Closes the underlying connection; safe to call more than once. */
+    /**
+     * Closes the single-connection mode's connection; safe to call more than
+     * once. In pooled mode this is a no-op — the pool owns its connections.
+     */
     @Override
     public void close() {
         try {

@@ -303,22 +303,43 @@ installed, `release=21` everywhere.
 ### PR1 — `chore/kan27-multi-module-reactor`
 - [x] Install Temurin 21 (winget) + verify `mvnw -v` shows 21
 - [x] JIRA: KAN-16 + KAN-27 → In Progress; design comments on KAN-29/KAN-30
-- [ ] Commit 1: pure `git mv` → `amiss-core` (domain/application/infrastructure +
+- [x] Commit 1: pure `git mv` → `amiss-core` (domain/application/infrastructure +
       migrations + tests) and `amiss-swing` (presentation + assets +
       application.properties + logback.xml)
-- [ ] Commit 2: reactor poms (parent + core + swing + coverage aggregate), `release=21`,
-      logback 1.5.x / slf4j 2.0.17 bump, CI → `clean verify` + aggregate JaCoCo paths,
-      scripts → `amiss-swing/target/AmissProj.jar`, README/SETUP/ARCHITECTURE updates
-- [ ] Verify: `mvnw -B clean verify` green (~89 tests); Swing jar launches + connects
+- [x] Commit 2: reactor poms (parent + core + swing + coverage aggregate), `release=21`,
+      slf4j 2.0.17 / logback 1.5.18 (core exposes only slf4j-api; backend is per-app),
+      CI → `clean verify` + aggregate JaCoCo paths, `-pl amiss-core` for the Migrations
+      workflow, scripts → `amiss-swing/target/AmissProj.jar`, README/SETUP/ARCHITECTURE
+- [x] Commit 3: `scripts/find-java21.ps1` — PATH java + machine JAVA_HOME were still
+      JDK 20 (jar died silently with UnsupportedClassVersionError); user-level
+      JAVA_HOME now → Temurin 21; run/build scripts resolve a 21+ JDK by `release` file
+- [x] Verify: `mvnw -B clean verify` green (89/89 tests, aggregate csv); Swing jar
+      launches on Temurin 21 + logs `Connection Successful` against live MySQL
 
 ### PR2 — `feat/kan27-spring-boot-api-scaffold` (stacked on PR1)
-- [ ] `amiss-api` module: Boot 3.5 BOM (module-only), starters web/validation/actuator/jdbc
-- [ ] `PersistenceConfig` beans (Jdbc + 4 adapters), `GameServicesFactory`,
-      `GlobalExceptionHandler` (RFC 7807), `application.yml` (AMISS_DB_* + migrator split)
-- [ ] Core: `Jdbc` gains DataSource constructor (pooled per call); Swing path untouched
-- [ ] Tests: context smoke (flyway off), advice `@WebMvcTest` problem+json
-- [ ] Verify: `spring-boot:run` → `GET /actuator/health` UP (db+flyway); Swing regression
+- [x] `amiss-api` module: Boot 3.5.16 BOM (module-only), starters web/validation/actuator/jdbc,
+      spring-boot-maven-plugin repackage (never next to shade)
+- [x] `PersistenceConfig` beans (Jdbc + 4 adapters), `GameServicesFactory` (per-request
+      `GameServices`; 404/500 exceptions), `GlobalExceptionHandler` (RFC 7807 ProblemDetail),
+      `application.yml` (AMISS_DB_* runtime user + AMISS_DB_MIGRATOR_* for Boot's Flyway)
+- [x] Core: `Jdbc` gains pooled `DataSource` mode (borrow-per-call via `withConnection`);
+      legacy single-connection ctor untouched for Swing
+- [x] Tests: core `JdbcPooledModeTest` (5), api context smoke (flyway off),
+      `ProblemDetailContractTest` (2), `GameServicesFactoryTest` (3) → 94 + 6 green
+- [x] Verify: `spring-boot:run` → `GET /actuator/health` **UP** (db UP on live MySQL,
+      flyway endpoint shows baseline + V2); Swing jar regression green (new Jdbc, old mode)
 - [ ] Push both branches; `gh pr create` (PR1 → develop, PR2 → PR1 branch)
 
 ### Review
-(fill in at end of session)
+KAN-27 shipped as two stacked PRs. PR1 restructures to a Maven reactor
+(amiss-core / amiss-swing / amiss-coverage) on Java 21 — pure-rename commit first, then
+poms/CI/scripts/docs; CI now runs `clean verify` and reads the aggregate JaCoCo csv.
+PR2 adds amiss-api: Spring Boot 3.5.16 over the untouched core services — PersistenceConfig
+mirrors GameContext, Jdbc gained a pooled DataSource mode for concurrent requests,
+errors leave as RFC 7807 problem+json, and Boot's Flyway runs fail-fast as amiss_migrator
+while the runtime pool stays the least-privilege amiss user. Verified end-to-end: 100 tests
+green, health UP against live MySQL, Swing client unchanged in behaviour.
+Environment gotcha worth remembering: machine JAVA_HOME/PATH still pointed at JDK 20 —
+user-level JAVA_HOME now → Temurin 21 and scripts/find-java21.ps1 picks a 21+ JDK by its
+`release` file (details in tasks/lessons.md). Next: PR3 (KAN-29 prep) — minutes migration
++ ActionCosts per the approved time design.

@@ -29,6 +29,11 @@
             <artifactId>amiss-swing</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.rourke9001</groupId>
+            <artifactId>amiss-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
