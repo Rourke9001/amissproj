@@ -210,3 +210,42 @@ mocked repos rather than mocked services, because `workMain` calls `job.toString
 can't stub — this also gives a more faithful end-to-end exercise of the decision tree. Build impact
 is additive only (test deps + Surefire pin + JaCoCo); `git diff main` touches no `src/main` file, so
 the game is byte-identical. Next Phase 2 item: GitHub Actions CI to run this suite on every push/PR.
+
+### Items 4+5 — GitHub Actions CI (KAN-14) + Flyway migrations (KAN-15), and the develop/main branching model  (2026-07-03)
+Finishes ROADMAP Phase 2. Also moves the repo to a gitflow-lite model per the user:
+`develop` integration branch, feature branches base off it, `main` protected.
+Plan:
+- [ ] Create `develop` off `main`, push. Feature branches now base off `develop`;
+      PRs target `develop`; `develop` → `main` via release PR when a milestone ships
+- [ ] **KAN-14 — CI** (branch `feat/kan14-github-actions-ci` off develop)
+  - [ ] Fix `mvnw` execute bit in the git index (Linux runners can't `./mvnw` otherwise)
+  - [ ] `.github/workflows/ci.yml`: `build` job — `./mvnw -B clean package`
+        (87 tests + JaCoCo) on push to main/develop + all PRs; surefire/JaCoCo
+        artifacts + coverage step-summary; `coverage-badge` job (push to main only)
+        publishes SVG badges to an orphan `badges` branch (main will be protected,
+        so CI can't commit badges there)
+  - [ ] README: CI + coverage badges; ROADMAP tick; document the develop-based
+        branching in CLAUDE.md + ROADMAP "how we work"
+  - [ ] PR → develop; verify the Actions run is green on the PR
+- [ ] **KAN-15 — Flyway** (branch `feat/kan15-flyway-migrations`, stacked on the
+      KAN-14 branch so its PR runs the new CI; auto-retargets when the CI PR merges)
+  - [ ] pom: `flyway-core`/`flyway-mysql` 11.8.2 + `flyway-maven-plugin`
+  - [ ] `src/main/resources/db/migration/`: `V1__baseline_schema.sql` (4 tables),
+        `V2__seed_reference_data.sql` (idempotent DELETE+INSERT of tbljobs/tblhelp)
+  - [ ] `db/bootstrap.sql` replaces `db/setup.sql`: DB + users only (runtime `amiss`
+        stays SELECT/INSERT/UPDATE; new `amiss_migrator` gets the DDL+DML Flyway needs)
+  - [ ] `FlywayMigrator` (infrastructure) run from `GameContext` before `Jdbc`;
+        `baselineOnMigrate` so existing installs keep saves; `Config` gains migrator
+        creds (`AMISS_DB_MIGRATOR_USER/_PASSWORD` overrides)
+  - [ ] `.github/workflows/migrations.yml`: MySQL 9 service container → bootstrap →
+        `flyway:migrate` as `amiss_migrator` → assert seed counts as the runtime user
+  - [ ] Docs: README/SETUP quick start (bootstrap + auto-migrate; running now needs
+        JDK 17+ for Flyway 11); ROADMAP tick → Phase 2 complete
+  - [ ] Verify locally: green build; a clean scratch DB built purely from migrations;
+        app-start baseline against the live `amissdb` keeps saves
+- [ ] **Protect `main`**: require PR + green `build` check, block force-push/deletion.
+      NOTE: repo is PRIVATE — GitHub may require a paid plan; attempt and report
+- [ ] JIRA: KAN-14/15 In Progress + PR-link comments (Done once the user merges)
+
+### Review — Items 4+5
+(filled in at the end of the session)

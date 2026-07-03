@@ -1,5 +1,9 @@
 # AmissProj
 
+[![CI](https://github.com/Rourke9001/amissproj/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Rourke9001/amissproj/actions/workflows/ci.yml)
+![Coverage](https://raw.githubusercontent.com/Rourke9001/amissproj/badges/jacoco.svg)
+![Branches](https://raw.githubusercontent.com/Rourke9001/amissproj/badges/branches.svg)
+
 A Java **Swing** desktop game — a remake of the classic *Jones in the Fast Lane*.
 You move around a small city, get a job, earn and spend money, study at university,
 pay rent and chase your goals across rounds. All game state is persisted in **MySQL**.
@@ -110,6 +114,7 @@ one runnable jar.
 ```
 pom.xml                       Maven build (managed dependencies, shaded runnable jar)
 mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install needed)
+.github/workflows/ci.yml      GitHub Actions CI (build + tests + coverage badges on push/PR)
 src/main/java/amiss/          Java source, layered into domain / application / infrastructure / presentation (see docs/ARCHITECTURE.md)
 src/main/resources/amiss/resources/   bundled UI images (screen backgrounds + game board)
 src/main/resources/application.properties  DB connection settings (overridable via AMISS_DB_* env vars)
