@@ -9,6 +9,7 @@ import amiss.domain.model.User;
 import amiss.application.service.GameServices;
 import amiss.application.service.JobService;
 import amiss.application.service.TimeService;
+import amiss.application.service.TimeSpend;
 
 /**
  * The Employment Office Screen
@@ -38,7 +39,7 @@ public class EmploymentGUI extends javax.swing.JFrame {
         dist = services.time();
         job = services.jobs();
 
-        lblTimer.setText(dist.getNewTime(0));
+        lblTimer.setText(dist.readClock());
     }
 
     /**
@@ -316,12 +317,17 @@ public class EmploymentGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnCookActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCookActionPerformed
-        if (dist.getNewTime(0).equals("0h")) { //checks if the user enough time to apply for a job
+        if (dist.spendMinutes(0).weekOver()) { //checks if the user enough time to apply for a job
             txaNotification.setText(txaNotification.getText() + "\n\nRound Has Ended");
-        } else { //checks if the user has enough education for a job
-            lblTimer.setText(dist.getNewTime(4));
-            String jb = job.applyForJob(evt.getActionCommand());
-            txaNotification.setText(txaNotification.getText() + "\n\n" + jb);
+        } else {
+            TimeSpend spend = dist.spendMinutes(services.costs().applyJobMinutes());
+            if (spend.rejected()) {
+                txaNotification.setText(txaNotification.getText() + "\n\nNot Enough Time");
+            } else { //checks if the user has enough education for a job
+                lblTimer.setText(TimeService.format(spend.remainingMinutes()));
+                String jb = job.applyForJob(evt.getActionCommand());
+                txaNotification.setText(txaNotification.getText() + "\n\n" + jb);
+            }
         }
     }//GEN-LAST:event_btnCookActionPerformed
 

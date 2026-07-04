@@ -11,6 +11,7 @@ import amiss.application.service.GameServices;
 import amiss.application.service.JobService;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
+import amiss.application.service.TimeSpend;
 
 /**
  * The Rent Office Screen
@@ -42,7 +43,7 @@ public class RentOfficeGUI extends javax.swing.JFrame {
         job = services.jobs();
         stat = services.stats();
 
-       lblTimer.setText(dist.getNewTime(0)); //gets the time left in the round
+       lblTimer.setText(dist.readClock()); //gets the time left in the round
         lblMoney.setText(Integer.toString(stat.getCash())); //gets the users cash
 
         btnWork.setVisible(false);
@@ -147,18 +148,22 @@ public class RentOfficeGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnWorkActionPerformed
 
     private void btnRentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRentActionPerformed
-        if (dist.getNewTime(0).equals("0h")) {
+        if (dist.spendMinutes(0).weekOver()) {
             txaNotification.setText(txaNotification.getText() + "\nRound Has Ended");
         } else if (stat.getCash() < 80) {
             txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash, You only have R" + stat.getCash());
             lblMoney.setText(Integer.toString(stat.getCash()));
         } else {
-            lblTimer.setText(dist.getNewTime(2));
-            stat.setRent(0);
-            txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(Integer.toString(80)) + "\nThank you for paying your rent");
-            lblMoney.setText(Integer.toString(stat.getCash()));
-            btnRent.setVisible(false);
-            
+            TimeSpend spend = dist.spendMinutes(services.costs().payRentMinutes());
+            if (spend.rejected()) {
+                txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
+            } else {
+                lblTimer.setText(TimeService.format(spend.remainingMinutes()));
+                stat.setRent(0);
+                txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(Integer.toString(80)) + "\nThank you for paying your rent");
+                lblMoney.setText(Integer.toString(stat.getCash()));
+                btnRent.setVisible(false);
+            }
         }
     }//GEN-LAST:event_btnRentActionPerformed
 

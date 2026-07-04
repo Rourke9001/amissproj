@@ -6,6 +6,7 @@ import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
 import amiss.application.service.GameServices;
 import amiss.domain.model.User;
+import amiss.infrastructure.config.Config;
 import amiss.infrastructure.persistence.flyway.FlywayMigrator;
 import amiss.infrastructure.persistence.jdbc.Jdbc;
 import amiss.infrastructure.persistence.jdbc.JdbcHelpRepository;
@@ -56,9 +57,9 @@ public final class GameContext implements AutoCloseable {
         return help;
     }
 
-    /** Builds the wired game-rule services for {@code user}. */
+    /** Builds the wired game-rule services for {@code user}, priced from {@link Config}. */
     public GameServices servicesFor(User user) {
-        return new GameServices(user, users, userStats, jobs);
+        return new GameServices(user, users, userStats, jobs, Config.actionCosts());
     }
 
     /** Closes the underlying JDBC connection. */

@@ -24,6 +24,16 @@ spring:
     problemdetails:
       enabled: true
 
+# Game balance (KAN-29): any amiss.costs.* key overrides the built-in ActionCosts
+# default (all values are integer minutes). Same table the Swing client reads via
+# AMISS_COSTS_* env vars / costs.*-minutes properties. Example:
+#   amiss:
+#     costs:
+#       work-minutes: 300
+#       travel-per-step-minutes: 40
+#       base-week-minutes: 3600
+#       fed-week-minutes: 4320
+
 management:
   endpoints:
     web:

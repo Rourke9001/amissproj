@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * The KAN-27 error-envelope contract: every API error leaves as an RFC 7807
  * problem document with a stable machine-readable {@code type}.
  */
-@WebMvcTest
+@WebMvcTest(controllers = ProblemDetailContractTest.ThrowingController.class)
 @Import({GlobalExceptionHandler.class, ProblemDetailContractTest.ThrowingController.class})
 class ProblemDetailContractTest {
 

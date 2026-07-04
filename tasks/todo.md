@@ -343,3 +343,96 @@ Environment gotcha worth remembering: machine JAVA_HOME/PATH still pointed at JD
 user-level JAVA_HOME now → Temurin 21 and scripts/find-java21.ps1 picks a 21+ JDK by its
 `release` file (details in tasks/lessons.md). Next: PR3 (KAN-29 prep) — minutes migration
 + ActionCosts per the approved time design.
+
+---
+
+## Phase 3 / KAN-29 PR3 — time → integer minutes + ActionCosts  (2026-07-04)
+PRs #14/#15 merged → KAN-27 Done. PR3 executes the pre-approved spec from
+`.claude/plans/witty-nibbling-pumpkin.md` (branch `refactor/kan29-time-minutes-and-cost-table`).
+
+- [x] `ActionCosts` record (application.config): work/study/relax 360, apply-job 240,
+      pay-rent 120, eat 60, shop 0, travel-per-step 40, enter-building 120,
+      week 3600 / 4320 fed; `Config.actionCosts()` resolves each value
+      (env `AMISS_COSTS_*_MINUTES` > `costs.*-minutes` props > defaults)
+- [x] `TimeService`: `TimeSpend spendMinutes(int)` (record: remainingMinutes / rejected /
+      weekOver) replaces `getNewTime`; static `format(int)` → "38h 30m"/"72h"/"45m"/"0h";
+      `readClock()` for display-only sites; persistence failure now = rejected spend
+- [x] `StatsService`/`GameServices` carry `ActionCosts` (old ctors delegate to defaults);
+      `GameContext.servicesFor` wires `Config.actionCosts()` for Swing
+- [x] Flyway `V3__time_to_minutes.sql` — `time*60`, default 4320 (ONE-WAY); seeds/resets
+      4320 in `JdbcUserRepository` + `LoginGUI`
+- [x] Swing sweep: 13 timer-display sites → `readClock()`; movement, study, enroll,
+      apply, rent, shop, relax, new-round handlers → spendMinutes + rejected/weekOver
+      flags. Latent-bug fix: EmploymentGUI apply and RentOfficeGUI pay proceeded
+      (uncharged) when time was short — both now stop with "Not Enough Time"
+- [x] Tests 100 → 109: TimeServiceTest rewritten in minutes (+format/readClock),
+      ActionCostsTest pins the cost table, ConfigActionCostsTest pins precedence;
+      orchestration "66h"/"71h" asserts survive on minute values
+- [x] Verify: `mvnw -B clean verify` green; live MySQL97 — V3 applied at startup
+      (save 595h → 35700 min, column default 720 → 4320, history v3 success),
+      `Connection Successful`; zero generated `initComponents()`/layout changes vs develop
+
+### Review — PR3
+The clock is now integer minutes end-to-end: one `ActionCosts` table prices every action
+(config-overridable without a rebuild in both clients), `TimeSpend` flags replace the
+"Not Enough Time"/"0h" string sentinels, and the V3 migration converted the live DB in
+place on first launch. Behaviour is byte-identical for default costs except two latent
+Swing bugs the rejected-flag guards fixed (documented above). Next: PR4
+`feat/kan29-turn-service-and-end-week` — TurnService extraction + POST end-week +
+Spring `CostsProperties` (KAN-29 Done when merged).
+
+## Phase 3 / KAN-29 PR4 — TurnService + end-week endpoint  (2026-07-04)
+Branch `feat/kan29-turn-service-and-end-week`, stacked on PR3.
+
+- [x] `TurnService.endWeek()` → `WeekSummary` (refuses while time remains; settles the
+      closed round: 4th-round unpaid rent → debt+80; consumes one stored food for the
+      fed 4320 / unfed 3600 budget; clock+position+round reset; flags rent due entering
+      every 4th round; **no wages at rollover**). Unified rent rule = documented
+      behaviour change: debt now charged exactly once at end-week (old code charged on
+      re-login, repeatably). Also fixed the stale `btnArr[0][0]` new-round highlight.
+- [x] Swing `btnNewRound` delegates; the MainGameGUI constructor keeps only the
+      informational rent messages
+- [x] API: `CostsProperties` (`amiss.costs.*` → `ActionCosts` bean, defaults when
+      absent), `GET /api/players/{u}` (PlayerStateDto from `Board`, never
+      `OpenLocation`), `POST /api/players/{u}/end-week` (summary + fresh state; 409
+      `urn:amiss:week-not-over` while time remains), 404 unknown player
+- [x] Reactor-wide compiler `-parameters` (Spring MVC @PathVariable name resolution —
+      this build imports the Boot BOM without the Boot parent)
+- [x] Tests 109 → 122 (TurnService 7, costs binding 3, controller 3); all green
+- [x] Live MySQL97 verify: health UP; disposable `kan29test` player — GET weekOver
+      "0h" → end-week 200 (round 2, 3600 min, home) persisted in DB → second POST 409
+      → 404 for unknown; test rows deleted after
+
+### Review — PR4
+The week rollover is now one tested rule shared by both clients, and the API exposes the
+full KAN-29 turn lifecycle with costs-from-config. KAN-29 → Done once PR #17 + PR4 merge.
+Next: PR5 `feat/kan30-board-and-move` (TravelService, GET /api/board, POST move).
+
+## Phase 3 / KAN-30 PR5 — TravelService + board & move endpoints  (2026-07-04)
+Branch `feat/kan30-board-and-move`, stacked on PR4.
+
+- [x] `TravelService.moveTo(Location)` → `MoveResult` (OK / INSUFFICIENT_TIME /
+      WEEK_OVER): ringDistance × travel-per-step + enter-building; position persisted
+      only on success; moving to the current stop charges entry only; a walk landing
+      exactly on 0 ends the week charged-but-unmoved (Swing parity); stale saved cell
+      measures from home. `Board.ringIndexOf(Location)` added.
+- [x] `MainGameGUI` click handler delegates to `TravelService`
+- [x] API: `GET /api/board` (13 stops + minutesPerStep/enterBuildingMinutes metadata,
+      from `Board` + the `ActionCosts` bean), `POST /api/players/{u}/move {"target"}` →
+      steps/minutesCharged/fresh state; 400 `urn:amiss:unknown-location`,
+      409 `urn:amiss:insufficient-time` / `urn:amiss:week-over`. `LocationDto`
+      promoted to a shared top-level DTO.
+- [x] Tests 122 → 135: TravelService ×8 (both ring directions — 1 step cw/acw 160 min,
+      cross-town 6×40+120=360 — entry-only, rejections persist nothing, exact-zero,
+      stale clamp), board contract ×1, move contract ×4
+- [x] Live MySQL97 verify: board JSON (13 stops), cross-town move 360 min → "66h" +
+      position (3,3) persisted, 1-step back 160 min → "63h 20m", unknown target 400,
+      insufficient-time & week-over 409s, position only changed on success; test rows
+      deleted
+
+### Review — PR5
+Movement now lives in one tested rule used by both clients, and the REST surface for
+KAN-30 is complete (board model + move with full problem-detail contracts). KAN-30 →
+Done when the stack (#17 → #18 → PR5) merges. Next: KAN-28 (player state DTO
+enrichment + highscores), then KAN-31 (bank/rent), KAN-32 (jobs/university/food) to
+close KAN-16.

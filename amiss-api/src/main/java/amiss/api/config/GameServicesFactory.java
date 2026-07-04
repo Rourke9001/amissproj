@@ -2,6 +2,7 @@ package amiss.api.config;
 
 import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.PlayerNotFoundException;
+import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
@@ -22,12 +23,14 @@ public class GameServicesFactory {
     private final UserRepository users;
     private final UserStatsRepository userStats;
     private final JobRepository jobs;
+    private final ActionCosts costs;
 
     public GameServicesFactory(UserRepository users, UserStatsRepository userStats,
-            JobRepository jobs) {
+            JobRepository jobs, ActionCosts costs) {
         this.users = users;
         this.userStats = userStats;
         this.jobs = jobs;
+        this.costs = costs;
     }
 
     /**
@@ -40,7 +43,7 @@ public class GameServicesFactory {
         try {
             User user = users.findByName(username)
                     .orElseThrow(() -> new PlayerNotFoundException(username));
-            return new GameServices(user, users, userStats, jobs);
+            return new GameServices(user, users, userStats, jobs, costs);
         } catch (SQLException e) {
             throw new PersistenceFailureException(e);
         }

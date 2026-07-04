@@ -10,8 +10,11 @@ import amiss.domain.board.Board;
 import amiss.application.service.EducationService;
 import amiss.application.service.FoodService;
 import amiss.application.service.GameServices;
+import amiss.application.service.MoveResult;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
+import amiss.application.service.TimeSpend;
+import amiss.application.service.WeekSummary;
 import java.awt.Color;
 
 /**
@@ -23,9 +26,6 @@ public class MainGameGUI extends javax.swing.JFrame {
     /**
      * Creates new form MainGameGUI
      */
-    /** Flat time cost, in hours, to enter any building (added to the walking distance). */
-    private static final int ENTER_BUILDING_HOURS = 2;
-
     User user;
     GameServices services;
 
@@ -56,19 +56,15 @@ public class MainGameGUI extends javax.swing.JFrame {
         btnNewRound.setVisible(false);
         lblCurrRound.setText(dist.getRound());
 
-        String time = dist.getNewTime(0); // time is 0 when user saved and exit
-        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0h")) {
-            stat.setDebt(80);
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0h")) {
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
+        // Rent settlement (debt for an unpaid rent round) is TurnService.endWeek()'s job now;
+        // the screen only reminds the player during a rent round.
+        TimeSpend clock = dist.spendMinutes(0); // clock is 0 when the user saved at week end
+        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
             txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
-            stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0)){
             txaNotification.setText(txaNotification.getText() +"\nThank You for Paying Your Rent");
-        } 
-        
+        }
+
         btnStartNewGame.setVisible(false); //checks if the time is deplected and new round should start
         int cashG = stat.getCash();
         int happyG = Integer.parseInt(stat.getHappiness());
@@ -84,12 +80,12 @@ public class MainGameGUI extends javax.swing.JFrame {
         
         
         
-        if (time.equals("0h")) {
+        if (clock.weekOver()) {
             btnNewRound.setVisible(true);
             btnPanel.setVisible(false);
             txaNotification.setText("Round has Ended");
         } else {
-            lblTimer.setText(time);
+            lblTimer.setText(TimeService.format(clock.remainingMinutes()));
         }
 
         // Any stale/invalid saved position (e.g. from the old 4x4 board) snaps back home.
@@ -132,35 +128,30 @@ public class MainGameGUI extends javax.swing.JFrame {
                                     int row = Integer.parseInt("" + evt.getActionCommand().charAt(0));
                                     int col = Integer.parseInt("" + evt.getActionCommand().charAt(1));
 
-                                    int walk = board.ringDistanceBetween(oldRow, oldCol, row, col);
-                                    int cost = walk + ENTER_BUILDING_HOURS; // walking hours + 2h to enter
-                                    String time = dist.getNewTime(cost);
+                                    MoveResult move = services.travel()
+                                            .moveTo(board.locationAt(row, col)); //movement rule lives in TravelService
 
-                                    switch (time) {
-                                        case "Not Enough Time":
-                                            txaNotification.setText(txaNotification.getText() + "\nNot Enough Time"); //message guide to user
-                                            break;
-                                        case "0h":
-                                            txaNotification.setText(txaNotification.getText() + "\nRound has Ended"); //message guide to user
-                                            lblTimer.setText("0h");
-                                            btnNewRound.setVisible(true);
+                                    if (move.status() == MoveResult.Status.INSUFFICIENT_TIME) {
+                                        txaNotification.setText(txaNotification.getText() + "\nNot Enough Time"); //message guide to user
+                                    } else if (move.status() == MoveResult.Status.WEEK_OVER) {
+                                        txaNotification.setText(txaNotification.getText() + "\nRound has Ended"); //message guide to user
+                                        lblTimer.setText(TimeService.format(0));
+                                        btnNewRound.setVisible(true);
 
-                                            btnArr[oldRow][oldCol].setBackground(Color.BLUE);
-                                            btnArr[0][2].setBackground(Color.YELLOW);
+                                        btnArr[oldRow][oldCol].setBackground(Color.BLUE);
+                                        btnArr[0][2].setBackground(Color.YELLOW);
 
-                                            btnPanel.setVisible(false);
-                                            break;
-                                        default:
-                                            txaNotification.setText(txaNotification.getText()
-                                                    + "\nWalked " + walk + " blocks (+2h to enter).");
-                                            lblTimer.setText(time);
-                                            dist.setPos(row, col);
-                                            btnArr[row][col].setBackground(Color.YELLOW);
-                                            btnArr[oldRow][oldCol].setBackground(Color.BLUE);
+                                        btnPanel.setVisible(false);
+                                    } else {
+                                        txaNotification.setText(txaNotification.getText()
+                                                + "\nWalked " + move.steps() + " blocks (+"
+                                                + TimeService.format(services.costs().enterBuildingMinutes()) + " to enter).");
+                                        lblTimer.setText(TimeService.format(move.remainingMinutes()));
+                                        btnArr[row][col].setBackground(Color.YELLOW);
+                                        btnArr[oldRow][oldCol].setBackground(Color.BLUE);
 
-                                            MainGameGUI.this.dispose(); //closes the screen
-                                            loc.openLocation(dist.toString(), user, services); //opens location when the user clicks on it
-                                            break;
+                                        MainGameGUI.this.dispose(); //closes the screen
+                                        loc.openLocation(dist.toString(), user, services); //opens location when the user clicks on it
                                     }
                                 }
                             }
@@ -274,47 +265,34 @@ public class MainGameGUI extends javax.swing.JFrame {
     private void btnNewRoundActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewRoundActionPerformed
         btnNewRound.setVisible(false);
         btnPanel.setVisible(true);
-        
-        boolean eaten = eat.getEat();
-        if (eaten == false) { //did not eat last round -> hungry, start with fewer hours
-            dist.setTime(60);
-            lblTimer.setText("60h");
-        } else {
-            dist.setTime(72);
-            lblTimer.setText("72h");
-        }
-        btnArr[dist.getX()][dist.getY()].setBackground(Color.BLUE); //updates the new location on the board
-        dist.setPos(0, 2);
-        dist.setRound();
-        
-        String time = dist.getNewTime(0); // time is 0 when user saved and exit
-        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0h")) {
-            stat.setDebt(80);
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0h")) {
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
-            txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0)){
-            txaNotification.setText(txaNotification.getText() +"\nThank You for Paying Your Rent");
-        } 
-        
-        btnArr[0][0].setBackground(Color.YELLOW);
 
-        lblCurrRound.setText(dist.getRound());
-        
+        int oldRow = dist.getX();
+        int oldCol = dist.getY();
+        WeekSummary summary = services.turn().endWeek(); //rollover rule lives in TurnService
+        if (!summary.weekEnded()) { //defensive: the button only shows once the week is over
+            return;
+        }
+
+        lblTimer.setText(TimeService.format(summary.timeMinutes()));
+        btnArr[oldRow][oldCol].setBackground(Color.BLUE); //updates the new location on the board
+        btnArr[0][2].setBackground(Color.YELLOW); //back home at 12 o'clock
+
+        lblCurrRound.setText(Integer.toString(summary.round()));
+
         int cashG = stat.getCash();
         int happyG = Integer.parseInt(stat.getHappiness());
         int workG = Integer.parseInt(stat.getWork());
         int eduG = uni.getEducation();
-        
+
         if (cashG >= 1000 && happyG >= 200 && workG >= 200 && eduG == 8) { //checks the users goals
             btnStartNewGame.setVisible(true);
             txaNotification.setText("congratulations, You have Completed the Game!"); //message guide to user
         } else {
             txaNotification.setText("Your Current Stats Are as Follows\nCash: \n" + cashG + "/1000\nHappiness: \n" + happyG + "/200\nWork Experience: \n" + workG + "/200\nAnd Education: \n" + eduG + "/8\n\nWeeks of Food Stored:\n" + eat.getFood());
 
+        }
+        if (summary.rentDue()) {
+            txaNotification.setText(txaNotification.getText() + "\nRent Is Due This Round");
         }
     }//GEN-LAST:event_btnNewRoundActionPerformed
 

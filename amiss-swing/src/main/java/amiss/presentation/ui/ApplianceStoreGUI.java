@@ -42,7 +42,7 @@ public class ApplianceStoreGUI extends javax.swing.JFrame {
         job = services.jobs();
         stat = services.stats();
 
-        lblTimer.setText(dist.getNewTime(0)); //gets the time left in the round
+        lblTimer.setText(dist.readClock()); //gets the time left in the round
         lblMoney.setText(Integer.toString(stat.getCash())); //gets the users cash
 
         btnWork.setVisible(false);

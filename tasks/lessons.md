@@ -227,6 +227,22 @@ Add to this after any correction or non-obvious gotcha.
   Migrations workflow's `./mvnw flyway:migrate` needed `-pl amiss-core` once the flyway
   plugin/config moved into that module.
 
+## Phase 3 / Spring Boot API (KAN-29)
+- **Importing the Boot BOM (not the Boot parent) loses `-parameters`.** Spring MVC resolves
+  `@PathVariable`/`@RequestParam` names reflectively; without the flag every request dies with
+  "Name for argument ... not specified, and parameter name information not available via
+  reflection". The Boot *parent* sets `maven.compiler.parameters`; a BOM-only build must add
+  `<parameters>true</parameters>` to maven-compiler-plugin itself (done reactor-wide in the
+  root pluginManagement).
+- **`.\mvnw -f amiss-api spring-boot:run` resolves amiss-core from `~/.m2`, not the reactor.**
+  After changing core, a single-module run can fail with `ClassNotFoundException` for
+  brand-new core classes because the installed snapshot is stale. Run
+  `.\mvnw -B install -DskipTests` first (or run the goal after a full `install`).
+- **An unqualified `@WebMvcTest` instantiates every `@Controller` in the app** — adding the
+  first real controller broke the pre-existing ProblemDetail contract test, whose slice
+  suddenly needed the controller's beans. Always pin the slice:
+  `@WebMvcTest(controllers = X.class)`.
+
 ## Phase 2 / GitHub Actions CI + Flyway migrations
 - **`mvnw.cmd` mangles `&` inside `-D` args.** PowerShell passes the quoted arg fine, but
   the `.cmd` batch layer re-parses it: `-Dflyway.url=jdbc:...?useSSL=false&allow...` splits

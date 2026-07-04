@@ -11,6 +11,7 @@ import amiss.application.service.GameServices;
 import amiss.application.service.JobService;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
+import amiss.application.service.TimeSpend;
 
 /**
  * The Clothes Store Screen
@@ -42,7 +43,7 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
         job = services.jobs();
         stat = services.stats();
 
-        lblTimer.setText(dist.getNewTime(0)); //displays the remaining time of the round
+        lblTimer.setText(dist.readClock()); //displays the remaining time of the round
         lblMoney.setText(Integer.toString(stat.getCash())); //displays the users cash
     }
 
@@ -166,16 +167,21 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
                 txaNotification.setText("An Error occured"); //message guide to user
                 break;
         }
-        if (dist.getNewTime(0).equals("0h")) { //checks if the user has enough time and cash to purchase an item
+        if (dist.spendMinutes(0).weekOver()) { //checks if the user has enough time and cash to purchase an item
             txaNotification.setText(txaNotification.getText() + "\nRound Has Ended");
         } else if (stat.getCash() < price) {
             txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash,\n You only have R" + stat.getCash());
             lblMoney.setText(Integer.toString(stat.getCash()));
         } else {
-            lblTimer.setText(dist.getNewTime(0));
+            TimeSpend spend = dist.spendMinutes(services.costs().shopMinutes());
+            if (spend.rejected()) {
+                txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
+            } else {
+                lblTimer.setText(TimeService.format(spend.remainingMinutes()));
 
-            txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(Integer.toString(price)));
-            lblMoney.setText(Integer.toString(stat.getCash()));
+                txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(Integer.toString(price)));
+                lblMoney.setText(Integer.toString(stat.getCash()));
+            }
         }
     }//GEN-LAST:event_btnCasualActionPerformed
 
