@@ -43,7 +43,7 @@ class RentServiceTest {
         TimeService time = new TimeService(users, USER);
         FoodService food = new FoodService(users, USER);
         EducationService education = new EducationService(userStats, USER);
-        JobService jobs = new JobService(jobRepo, users, education, USER);
+        JobService jobs = new JobService(jobRepo, users, education, time, ActionCosts.defaults(), USER);
         StatsService stats = new StatsService(users, userStats, jobs, time, food, USER);
         service = new RentService(time, stats, ActionCosts.defaults());
     }

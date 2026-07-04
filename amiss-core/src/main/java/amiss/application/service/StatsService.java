@@ -10,10 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The player's money, rent/debt, work experience and happiness, plus the work/eat action
- * orchestration (was {@code Stats}). Swing-free: {@link #workMain()} and
- * {@link #eatMain(int)} return an {@link ActionResult} of plain values for the screen to
- * render, and persistence failures are logged rather than shown in the UI.
+ * The player's money, rent/debt, work experience and happiness, plus the work/eat/shop action
+ * orchestration (was {@code Stats}). {@link #work()}, {@link #eat(int)},
+ * {@link #buyGroceries(int, int)} and {@link #buyClothes(int, int)} are the typed rule
+ * methods shared by Swing and the REST API; {@link #workMain()} and {@link #eatMain(int)}
+ * are thin Swing-era formatters over {@link #work()}/{@link #eat(int)} that rebuild the
+ * exact same {@link ActionResult} strings. Persistence failures are logged, not shown in
+ * the UI.
  */
 public class StatsService {
 
@@ -205,21 +208,47 @@ public class StatsService {
      * @return the notification text, timer and money values for the screen to render
      */
     public ActionResult workMain() {
-        String clothes = job.getJobClothes();
-
-        if (clothes == null) {
-            TimeSpend spend = dist.spendMinutes(costs.workMinutes());
-            if (spend.rejected()) {
+        WorkOutcome outcome = work();
+        switch (outcome.status()) {
+            case UNDERDRESSED:
+                return ActionResult.message("\n\n" + job.getJobClothes());
+            case INSUFFICIENT_TIME:
                 return ActionResult.message("\nNot Enough Time");
-            } else {
-                updateWork();
-                String message = "\n" + job.toString() + "\n" + setCash(job.getEarnings());
-                return new ActionResult(message, TimeService.format(spend.remainingMinutes()),
+            default:
+                String cashText = outcome.debtDocked()
+                        ? "You were deducted R10 for not paying rent \nYou now have R" + outcome.cash()
+                        : "You now have R" + outcome.cash();
+                String message = "\n" + job.toString() + "\n" + cashText;
+                return new ActionResult(message, TimeService.format(outcome.remainingMinutes()),
                         Integer.toString(getCash()));
-            }
-        } else {
-            return ActionResult.message("\n\n" + clothes);
         }
+    }
+
+    /**
+     * Checks if the user is properly dressed and has enough time to work, then pays the
+     * player's job earnings (docking R10 toward any outstanding debt).
+     * @return the typed work outcome
+     */
+    public WorkOutcome work() {
+        String jobName = job.getJob();
+        int hourlyWage = job.getEarnings();
+        String clothes = job.getJobClothes();
+        if (clothes != null) {
+            return new WorkOutcome(WorkOutcome.Status.UNDERDRESSED, -1, -1, jobName, hourlyWage, false);
+        }
+
+        TimeSpend spend = dist.spendMinutes(costs.workMinutes());
+        if (spend.rejected()) {
+            return new WorkOutcome(WorkOutcome.Status.INSUFFICIENT_TIME, spend.remainingMinutes(), -1,
+                    jobName, hourlyWage, false);
+        }
+
+        updateWork();
+        boolean debtDocked = getDebt() > 0;
+        int cashBefore = getCash();
+        int newCash = debtDocked ? cashBefore + hourlyWage - 10 : cashBefore + hourlyWage;
+        setCash(hourlyWage);
+        return new WorkOutcome(WorkOutcome.Status.OK, spend.remainingMinutes(), newCash, jobName, hourlyWage, debtDocked);
     }
 
     /**
@@ -228,23 +257,99 @@ public class StatsService {
      * @return the notification text, timer and money values for the screen to render
      */
     public ActionResult eatMain(int price) {
+        EatOutcome outcome = eat(price);
+        switch (outcome.status()) {
+            case INSUFFICIENT_TIME:
+                return ActionResult.message("\nNot Enough Time");
+            case INSUFFICIENT_CASH:
+                return ActionResult.message("\nNot Enough Cash, You only have R" + outcome.cash());
+            default:
+                String message = "\n" + "You spent R" + price + ", You have R" + outcome.cash() + " left"
+                        + "\nThat Was Yummy, One point into happiness";
+                return new ActionResult(message, TimeService.format(outcome.remainingMinutes()),
+                        Integer.toString(getCash()));
+        }
+    }
+
+    /**
+     * Checks if the user has enough time and cash to eat, then updates stored food and happiness.
+     * @param price price of the item being purchased
+     * @return the typed eat outcome
+     */
+    public EatOutcome eat(int price) {
         int food = eat.getFood();
         TimeSpend spend = dist.spendMinutes(costs.eatMinutes());
         if (spend.rejected()) {
-            return ActionResult.message("\nNot Enough Time");
-        } else if (getCash() < price) {
-            return ActionResult.message("\nNot Enough Cash, You only have R" + getCash());
-        } else {
-            if (food >= 1) {
-                eat.setFood(0);
-            } else {
-                eat.setFood(1);
-            }
-            String message = "\n" + buy(Integer.toString(price)) + "\nThat Was Yummy, One point into happiness";
-            updateHappiness();
-            return new ActionResult(message, TimeService.format(spend.remainingMinutes()),
-                    Integer.toString(getCash()));
+            return new EatOutcome(EatOutcome.Status.INSUFFICIENT_TIME, spend.remainingMinutes(), -1, price);
         }
+
+        int cash = getCash();
+        if (cash < price) {
+            return new EatOutcome(EatOutcome.Status.INSUFFICIENT_CASH, spend.remainingMinutes(), cash, price);
+        }
+
+        if (food >= 1) {
+            eat.setFood(0);
+        } else {
+            eat.setFood(1);
+        }
+        buy(Integer.toString(price));
+        updateHappiness();
+        return new EatOutcome(EatOutcome.Status.OK, spend.remainingMinutes(), cash - price, price);
+    }
+
+    /**
+     * Checks if the user has enough time and cash to buy groceries (was the body of
+     * {@code MarketGUI.btn1WeeksActionPerformed}), then adds the stored food weeks.
+     * @param price price of the grocery pack
+     * @param weeks weeks of food the pack is worth
+     * @return the typed purchase outcome
+     */
+    public PurchaseOutcome buyGroceries(int price, int weeks) {
+        TimeSpend spend = dist.spendMinutes(costs.shopMinutes());
+        if (spend.rejected()) {
+            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, spend.remainingMinutes(), getCash());
+        }
+
+        int cash = getCash();
+        if (cash < price) {
+            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, spend.remainingMinutes(), cash);
+        }
+
+        buy(Integer.toString(price));
+        eat.setFood(weeks);
+        return new PurchaseOutcome(PurchaseOutcome.Status.OK, spend.remainingMinutes(), cash - price);
+    }
+
+    /**
+     * Checks if the user has enough time and cash to buy clothes (was the body of
+     * {@code ClothesStoreGUI.btnCasualActionPerformed}), <strong>then</strong> updates the
+     * clothing level. The original Swing handler set the clothing level before this check,
+     * so a failed purchase still upgraded the player's clothes for free; this method
+     * validates and charges first, fixing that bug.
+     * @param level the clothing level purchased
+     * @param price price of the clothing item
+     * @return the typed purchase outcome
+     */
+    public PurchaseOutcome buyClothes(int level, int price) {
+        TimeSpend clock = dist.spendMinutes(0);
+        if (clock.weekOver()) {
+            return new PurchaseOutcome(PurchaseOutcome.Status.WEEK_OVER, clock.remainingMinutes(), getCash());
+        }
+
+        int cash = getCash();
+        if (cash < price) {
+            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, clock.remainingMinutes(), cash);
+        }
+
+        TimeSpend spend = dist.spendMinutes(costs.shopMinutes());
+        if (spend.rejected()) {
+            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, spend.remainingMinutes(), cash);
+        }
+
+        buy(Integer.toString(price));
+        job.setClothes(level);
+        return new PurchaseOutcome(PurchaseOutcome.Status.OK, spend.remainingMinutes(), cash - price);
     }
 
     /**
