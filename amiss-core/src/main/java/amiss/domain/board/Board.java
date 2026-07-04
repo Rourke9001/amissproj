@@ -85,6 +85,16 @@ public final class Board {
         return i < 0 ? null : STOPS[i];
     }
 
+    /** The ring index (0..12) of {@code stop}; every {@link Location} is on the ring. */
+    public int ringIndexOf(Location stop) {
+        for (int i = 0; i < STOPS.length; i++) {
+            if (STOPS[i] == stop) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("Location not on the ring: " + stop);
+    }
+
     /** The ring index (0..12) of {@code (row,col)}, or -1 if it is not a stop. */
     public int ringIndex(int row, int col) {
         for (int i = 0; i < CELLS.length; i++) {

@@ -7,10 +7,10 @@ package amiss.presentation.ui;
 import amiss.domain.model.User;
 import amiss.domain.board.Board;
 
-import amiss.application.config.ActionCosts;
 import amiss.application.service.EducationService;
 import amiss.application.service.FoodService;
 import amiss.application.service.GameServices;
+import amiss.application.service.MoveResult;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
 import amiss.application.service.TimeSpend;
@@ -128,15 +128,12 @@ public class MainGameGUI extends javax.swing.JFrame {
                                     int row = Integer.parseInt("" + evt.getActionCommand().charAt(0));
                                     int col = Integer.parseInt("" + evt.getActionCommand().charAt(1));
 
-                                    ActionCosts costs = services.costs();
-                                    int walk = board.ringDistanceBetween(oldRow, oldCol, row, col);
-                                    int cost = walk * costs.travelPerStepMinutes()
-                                            + costs.enterBuildingMinutes(); // walking + entering the building
-                                    TimeSpend spend = dist.spendMinutes(cost);
+                                    MoveResult move = services.travel()
+                                            .moveTo(board.locationAt(row, col)); //movement rule lives in TravelService
 
-                                    if (spend.rejected()) {
+                                    if (move.status() == MoveResult.Status.INSUFFICIENT_TIME) {
                                         txaNotification.setText(txaNotification.getText() + "\nNot Enough Time"); //message guide to user
-                                    } else if (spend.weekOver()) {
+                                    } else if (move.status() == MoveResult.Status.WEEK_OVER) {
                                         txaNotification.setText(txaNotification.getText() + "\nRound has Ended"); //message guide to user
                                         lblTimer.setText(TimeService.format(0));
                                         btnNewRound.setVisible(true);
@@ -147,10 +144,9 @@ public class MainGameGUI extends javax.swing.JFrame {
                                         btnPanel.setVisible(false);
                                     } else {
                                         txaNotification.setText(txaNotification.getText()
-                                                + "\nWalked " + walk + " blocks (+"
-                                                + TimeService.format(costs.enterBuildingMinutes()) + " to enter).");
-                                        lblTimer.setText(TimeService.format(spend.remainingMinutes()));
-                                        dist.setPos(row, col);
+                                                + "\nWalked " + move.steps() + " blocks (+"
+                                                + TimeService.format(services.costs().enterBuildingMinutes()) + " to enter).");
+                                        lblTimer.setText(TimeService.format(move.remainingMinutes()));
                                         btnArr[row][col].setBackground(Color.YELLOW);
                                         btnArr[oldRow][oldCol].setBackground(Color.BLUE);
 

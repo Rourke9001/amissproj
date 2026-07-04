@@ -407,3 +407,32 @@ Branch `feat/kan29-turn-service-and-end-week`, stacked on PR3.
 The week rollover is now one tested rule shared by both clients, and the API exposes the
 full KAN-29 turn lifecycle with costs-from-config. KAN-29 → Done once PR #17 + PR4 merge.
 Next: PR5 `feat/kan30-board-and-move` (TravelService, GET /api/board, POST move).
+
+## Phase 3 / KAN-30 PR5 — TravelService + board & move endpoints  (2026-07-04)
+Branch `feat/kan30-board-and-move`, stacked on PR4.
+
+- [x] `TravelService.moveTo(Location)` → `MoveResult` (OK / INSUFFICIENT_TIME /
+      WEEK_OVER): ringDistance × travel-per-step + enter-building; position persisted
+      only on success; moving to the current stop charges entry only; a walk landing
+      exactly on 0 ends the week charged-but-unmoved (Swing parity); stale saved cell
+      measures from home. `Board.ringIndexOf(Location)` added.
+- [x] `MainGameGUI` click handler delegates to `TravelService`
+- [x] API: `GET /api/board` (13 stops + minutesPerStep/enterBuildingMinutes metadata,
+      from `Board` + the `ActionCosts` bean), `POST /api/players/{u}/move {"target"}` →
+      steps/minutesCharged/fresh state; 400 `urn:amiss:unknown-location`,
+      409 `urn:amiss:insufficient-time` / `urn:amiss:week-over`. `LocationDto`
+      promoted to a shared top-level DTO.
+- [x] Tests 122 → 135: TravelService ×8 (both ring directions — 1 step cw/acw 160 min,
+      cross-town 6×40+120=360 — entry-only, rejections persist nothing, exact-zero,
+      stale clamp), board contract ×1, move contract ×4
+- [x] Live MySQL97 verify: board JSON (13 stops), cross-town move 360 min → "66h" +
+      position (3,3) persisted, 1-step back 160 min → "63h 20m", unknown target 400,
+      insufficient-time & week-over 409s, position only changed on success; test rows
+      deleted
+
+### Review — PR5
+Movement now lives in one tested rule used by both clients, and the REST surface for
+KAN-30 is complete (board model + move with full problem-detail contracts). KAN-30 →
+Done when the stack (#17 → #18 → PR5) merges. Next: KAN-28 (player state DTO
+enrichment + highscores), then KAN-31 (bank/rent), KAN-32 (jobs/university/food) to
+close KAN-16.

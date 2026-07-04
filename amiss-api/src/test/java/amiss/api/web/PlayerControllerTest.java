@@ -9,10 +9,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.config.GameServicesFactory;
+import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.PlayerStateDto;
 import amiss.application.service.GameServices;
+import amiss.application.service.MoveResult;
+import amiss.application.service.TravelService;
 import amiss.application.service.TurnService;
 import amiss.application.service.WeekSummary;
+import amiss.domain.board.Location;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -40,7 +44,7 @@ class PlayerControllerTest {
 
     private static PlayerStateDto dto() {
         return new PlayerStateDto("bob", 3, 3960, "66h", false, 120, 0, false,
-                new PlayerStateDto.LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2));
+                new LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2));
     }
 
     @Test
@@ -91,5 +95,68 @@ class PlayerControllerTest {
                 .andExpect(jsonPath("$.rentDue").value(true))
                 .andExpect(jsonPath("$.debtCharged").value(false))
                 .andExpect(jsonPath("$.state.username").value("bob"));
+    }
+
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder moveTo(String target) {
+        return post("/api/players/bob/move")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"target\":\"" + target + "\"}");
+    }
+
+    private GameServices mockServicesWithTravel(TravelService travel) {
+        GameServices services = mock(GameServices.class);
+        when(factory.forPlayer("bob")).thenReturn(services);
+        when(services.travel()).thenReturn(travel);
+        return services;
+    }
+
+    @Test
+    void move_returnsTheCostAndFreshState() throws Exception {
+        TravelService travel = mock(TravelService.class);
+        GameServices services = mockServicesWithTravel(travel);
+        when(travel.moveTo(Location.BANK))
+                .thenReturn(new MoveResult(MoveResult.Status.OK, 4, 280, 4040));
+        when(assembler.assemble("bob", services)).thenReturn(dto());
+
+        mvc.perform(moveTo("BANK"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.target").value("BANK"))
+                .andExpect(jsonPath("$.steps").value(4))
+                .andExpect(jsonPath("$.minutesCharged").value(280))
+                .andExpect(jsonPath("$.state.username").value("bob"));
+    }
+
+    @Test
+    void move_unknownTargetIsA400Problem() throws Exception {
+        mvc.perform(moveTo("MOON"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:amiss:unknown-location"));
+    }
+
+    @Test
+    void move_insufficientTimeIsA409Problem() throws Exception {
+        TravelService travel = mock(TravelService.class);
+        mockServicesWithTravel(travel);
+        when(travel.moveTo(Location.BANK))
+                .thenReturn(new MoveResult(MoveResult.Status.INSUFFICIENT_TIME, 4, 0, 100));
+
+        mvc.perform(moveTo("BANK"))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-time"));
+    }
+
+    @Test
+    void move_weekOverIsA409Problem() throws Exception {
+        TravelService travel = mock(TravelService.class);
+        mockServicesWithTravel(travel);
+        when(travel.moveTo(Location.BANK))
+                .thenReturn(new MoveResult(MoveResult.Status.WEEK_OVER, 4, 0, 0));
+
+        mvc.perform(moveTo("BANK"))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:amiss:week-over"));
     }
 }
