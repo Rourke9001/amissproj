@@ -2,6 +2,7 @@ package amiss.application.service;
 
 import amiss.application.port.JobRepository;
 import amiss.application.port.UserRepository;
+import amiss.domain.validation.Validation;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +75,11 @@ public class JobService {
         }
     }
 
-    private String getJob() {
+    /**
+     * returns the name of the job the user currently holds (or {@code "Unemployed"})
+     * @return returns the current job name
+     */
+    public String getJob() {
         try {
             return users.getJob(username);
         } catch (SQLException ex) {
@@ -137,6 +142,14 @@ public class JobService {
         } catch (SQLException ex) {
             return ("Failed to Get User Clothes");
         }
+    }
+
+    /**
+     * returns the user's clothing level (1 = casual, default when unparseable)
+     * @return returns the user's clothing level
+     */
+    public int getClothingLevel() {
+        return Validation.parseIntOrDefault(getUserClothes(), 1);
     }
 
     @Override

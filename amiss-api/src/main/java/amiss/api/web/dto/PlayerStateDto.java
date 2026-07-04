@@ -18,5 +18,10 @@ public record PlayerStateDto(
         int cash,
         int debt,
         boolean rentDue,
+        int foodWeeks,
+        int clothing,
+        JobDto job,
+        StatsDto stats,
+        GoalsDto goals,
         LocationDto location) {
 }
