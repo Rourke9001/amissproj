@@ -2,6 +2,7 @@ package amiss.application.service;
 import amiss.domain.model.ActionResult;
 
 import amiss.domain.validation.Validation;
+import amiss.application.config.ActionCosts;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
 import java.sql.SQLException;
@@ -23,15 +24,23 @@ public class StatsService {
     private final JobService job;
     private final TimeService dist;
     private final FoodService eat;
+    private final ActionCosts costs;
     private final String username;
 
     public StatsService(UserRepository users, UserStatsRepository stats,
             JobService job, TimeService dist, FoodService eat, String username) {
+        this(users, stats, job, dist, eat, ActionCosts.defaults(), username);
+    }
+
+    public StatsService(UserRepository users, UserStatsRepository stats,
+            JobService job, TimeService dist, FoodService eat, ActionCosts costs,
+            String username) {
         this.users = users;
         this.stats = stats;
         this.job = job;
         this.dist = dist;
         this.eat = eat;
+        this.costs = costs;
         this.username = username;
     }
 
@@ -199,13 +208,14 @@ public class StatsService {
         String clothes = job.getJobClothes();
 
         if (clothes == null) {
-            String time = dist.getNewTime(6);
-            if (time.equals("Not Enough Time")) {
-                return ActionResult.message("\n" + time);
+            TimeSpend spend = dist.spendMinutes(costs.workMinutes());
+            if (spend.rejected()) {
+                return ActionResult.message("\nNot Enough Time");
             } else {
                 updateWork();
                 String message = "\n" + job.toString() + "\n" + setCash(job.getEarnings());
-                return new ActionResult(message, time, Integer.toString(getCash()));
+                return new ActionResult(message, TimeService.format(spend.remainingMinutes()),
+                        Integer.toString(getCash()));
             }
         } else {
             return ActionResult.message("\n\n" + clothes);
@@ -219,9 +229,9 @@ public class StatsService {
      */
     public ActionResult eatMain(int price) {
         int food = eat.getFood();
-        String time = dist.getNewTime(1);
-        if (time.equals("Not Enough Time")) {
-            return ActionResult.message("\n" + time);
+        TimeSpend spend = dist.spendMinutes(costs.eatMinutes());
+        if (spend.rejected()) {
+            return ActionResult.message("\nNot Enough Time");
         } else if (getCash() < price) {
             return ActionResult.message("\nNot Enough Cash, You only have R" + getCash());
         } else {
@@ -232,7 +242,8 @@ public class StatsService {
             }
             String message = "\n" + buy(Integer.toString(price)) + "\nThat Was Yummy, One point into happiness";
             updateHappiness();
-            return new ActionResult(message, time, Integer.toString(getCash()));
+            return new ActionResult(message, TimeService.format(spend.remainingMinutes()),
+                    Integer.toString(getCash()));
         }
     }
 

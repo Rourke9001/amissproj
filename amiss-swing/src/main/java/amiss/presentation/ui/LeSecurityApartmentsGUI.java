@@ -23,7 +23,7 @@ public class LeSecurityApartmentsGUI extends javax.swing.JFrame {
         dist = services.time();
         stat = services.stats();
 
-        lblTimer.setText(dist.getNewTime(0));
+        lblTimer.setText(dist.readClock());
         lblMoney.setText(Integer.toString(stat.getCash()));
     }
 

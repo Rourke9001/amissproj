@@ -10,6 +10,7 @@ import amiss.application.service.EducationService;
 import amiss.application.service.GameServices;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
+import amiss.application.service.TimeSpend;
 
 /**
  * The University Screen
@@ -43,7 +44,7 @@ public class UniversityGUI extends javax.swing.JFrame {
         stat = services.stats();
         uni = services.education();
 
-        lblTimer.setText(dist.getNewTime(0)); //gets the time left in the round
+        lblTimer.setText(dist.readClock()); //gets the time left in the round
 
         btnEnroll.setVisible(false);
 
@@ -163,48 +164,44 @@ public class UniversityGUI extends javax.swing.JFrame {
 
         int prog = uni.getProg();
 
-        String time = dist.getNewTime(6); //gets the time left after the user studies
-        switch (time) {
-            case "Not Enough Time":
-                txaNotification.setText(txaNotification.getText() + "\n" + time);
-                break;
+        TimeSpend spend = dist.spendMinutes(services.costs().studyMinutes()); //time left after the user studies
+        if (spend.rejected()) {
+            txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
+        } else {
+            lblTimer.setText(TimeService.format(spend.remainingMinutes()));
 
-            default: //
-                lblTimer.setText(time);
+            prog += 1;
+            uni.setProg(prog);
 
-                prog += 1;
-                uni.setProg(prog);
+            txfProg.setText(prog - 1 + "/10");
+            if (prog == 11) {
+                txaNotification.setText(txaNotification.getText() + "\n\nWell Done You have Completed: " + studyArr[uni.getEducation()]);
+                uni.setEducation();
+                btnEnroll.setVisible(true);
+                btnStudy.setVisible(false);
+                uni.setProg(0);
+                txfProg.setText("0/10");
 
-                txfProg.setText(prog - 1 + "/10");
-                if (prog == 11) {
-                    txaNotification.setText(txaNotification.getText() + "\n\nWell Done You have Completed: " + studyArr[uni.getEducation()]);
-                    uni.setEducation();
-                    btnEnroll.setVisible(true);
-                    btnStudy.setVisible(false);
-                    uni.setProg(0);
-                    txfProg.setText("0/10");
-
-                    if (uni.getEducation() == 8 && prog == 11) {
-                        txaNotification.setText("You have completed Hi-Tech U");
-                        lblCurrDegree.setVisible(false);
-                        btnEnroll.setVisible(false);
-                        lblFee.setVisible(false);
-                        lblProgress.setVisible(false);
-                        txfProg.setVisible(false);
-                    } else {
-                        lblCurrDegree.setText(studyArr[uni.getEducation()]);
-                    }
+                if (uni.getEducation() == 8 && prog == 11) {
+                    txaNotification.setText("You have completed Hi-Tech U");
+                    lblCurrDegree.setVisible(false);
+                    btnEnroll.setVisible(false);
+                    lblFee.setVisible(false);
+                    lblProgress.setVisible(false);
+                    txfProg.setVisible(false);
+                } else {
+                    lblCurrDegree.setText(studyArr[uni.getEducation()]);
                 }
-                break;
+            }
         }
     }//GEN-LAST:event_btnStudyActionPerformed
 
     private void btnEnrollActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnrollActionPerformed
 
         String cash = stat.buy("50");
-        String time = dist.getNewTime(0);
-        if (time.equals("Not Enough Time")) {
-            txaNotification.setText(txaNotification.getText() + "\n" + time);
+        TimeSpend spend = dist.spendMinutes(0);
+        if (spend.rejected()) {
+            txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
         } else {
             if (cash.contains("not enough")) {
                 txaNotification.setText(txaNotification.getText() + "\n\nYou Do Not Have Enough Cash");
@@ -216,7 +213,7 @@ public class UniversityGUI extends javax.swing.JFrame {
                 if (degree < 8) {
                     //uni.setEducation();
                     uni.setProg(1);
-                    lblTimer.setText(time);
+                    lblTimer.setText(TimeService.format(spend.remainingMinutes()));
                     btnEnroll.setVisible(false);
                     btnStudy.setVisible(true);
                     txfProg.setText("0/10");

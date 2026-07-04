@@ -9,6 +9,7 @@ import amiss.domain.model.User;
 import amiss.application.service.GameServices;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
+import amiss.application.service.TimeSpend;
 
 /**
  * The Residence Screen
@@ -38,7 +39,7 @@ public class LowClassResidenceGUI extends javax.swing.JFrame {
         dist = services.time();
         stat = services.stats();
 
-        lblTimer.setText(dist.getNewTime(0)); //gets the time left in the round
+        lblTimer.setText(dist.readClock()); //gets the time left in the round
         
     }
 
@@ -124,13 +125,13 @@ public class LowClassResidenceGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnStartNewRoundActionPerformed
 
     private void btnRelaxActionPerformed(java.awt.event.ActionEvent evt) {
-        String time = dist.getNewTime(6); //relaxing at home costs 6 hours
-        if (time.equals("Not Enough Time")) {
-            txaNotification.setText(txaNotification.getText() + "\n\n" + time);
+        TimeSpend spend = dist.spendMinutes(services.costs().relaxMinutes()); //relaxing at home costs time
+        if (spend.rejected()) {
+            txaNotification.setText(txaNotification.getText() + "\n\nNot Enough Time");
         } else {
             txaNotification.setText(txaNotification.getText() + "\nYou relax at home. One point in Happiness.");
             stat.updateHappiness();
-            lblTimer.setText(time);
+            lblTimer.setText(TimeService.format(spend.remainingMinutes()));
         }
     }
 

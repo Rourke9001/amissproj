@@ -7,11 +7,13 @@ package amiss.presentation.ui;
 import amiss.domain.model.User;
 import amiss.domain.board.Board;
 
+import amiss.application.config.ActionCosts;
 import amiss.application.service.EducationService;
 import amiss.application.service.FoodService;
 import amiss.application.service.GameServices;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
+import amiss.application.service.TimeSpend;
 import java.awt.Color;
 
 /**
@@ -23,9 +25,6 @@ public class MainGameGUI extends javax.swing.JFrame {
     /**
      * Creates new form MainGameGUI
      */
-    /** Flat time cost, in hours, to enter any building (added to the walking distance). */
-    private static final int ENTER_BUILDING_HOURS = 2;
-
     User user;
     GameServices services;
 
@@ -56,19 +55,19 @@ public class MainGameGUI extends javax.swing.JFrame {
         btnNewRound.setVisible(false);
         lblCurrRound.setText(dist.getRound());
 
-        String time = dist.getNewTime(0); // time is 0 when user saved and exit
-        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0h")) {
+        TimeSpend clock = dist.spendMinutes(0); // clock is 0 when the user saved at week end
+        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && clock.weekOver()) {
             stat.setDebt(80);
             stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0h")) {
+        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && clock.weekOver()) {
             stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
             txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
             stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0)){
             txaNotification.setText(txaNotification.getText() +"\nThank You for Paying Your Rent");
-        } 
-        
+        }
+
         btnStartNewGame.setVisible(false); //checks if the time is deplected and new round should start
         int cashG = stat.getCash();
         int happyG = Integer.parseInt(stat.getHappiness());
@@ -84,12 +83,12 @@ public class MainGameGUI extends javax.swing.JFrame {
         
         
         
-        if (time.equals("0h")) {
+        if (clock.weekOver()) {
             btnNewRound.setVisible(true);
             btnPanel.setVisible(false);
             txaNotification.setText("Round has Ended");
         } else {
-            lblTimer.setText(time);
+            lblTimer.setText(TimeService.format(clock.remainingMinutes()));
         }
 
         // Any stale/invalid saved position (e.g. from the old 4x4 board) snaps back home.
@@ -132,35 +131,34 @@ public class MainGameGUI extends javax.swing.JFrame {
                                     int row = Integer.parseInt("" + evt.getActionCommand().charAt(0));
                                     int col = Integer.parseInt("" + evt.getActionCommand().charAt(1));
 
+                                    ActionCosts costs = services.costs();
                                     int walk = board.ringDistanceBetween(oldRow, oldCol, row, col);
-                                    int cost = walk + ENTER_BUILDING_HOURS; // walking hours + 2h to enter
-                                    String time = dist.getNewTime(cost);
+                                    int cost = walk * costs.travelPerStepMinutes()
+                                            + costs.enterBuildingMinutes(); // walking + entering the building
+                                    TimeSpend spend = dist.spendMinutes(cost);
 
-                                    switch (time) {
-                                        case "Not Enough Time":
-                                            txaNotification.setText(txaNotification.getText() + "\nNot Enough Time"); //message guide to user
-                                            break;
-                                        case "0h":
-                                            txaNotification.setText(txaNotification.getText() + "\nRound has Ended"); //message guide to user
-                                            lblTimer.setText("0h");
-                                            btnNewRound.setVisible(true);
+                                    if (spend.rejected()) {
+                                        txaNotification.setText(txaNotification.getText() + "\nNot Enough Time"); //message guide to user
+                                    } else if (spend.weekOver()) {
+                                        txaNotification.setText(txaNotification.getText() + "\nRound has Ended"); //message guide to user
+                                        lblTimer.setText(TimeService.format(0));
+                                        btnNewRound.setVisible(true);
 
-                                            btnArr[oldRow][oldCol].setBackground(Color.BLUE);
-                                            btnArr[0][2].setBackground(Color.YELLOW);
+                                        btnArr[oldRow][oldCol].setBackground(Color.BLUE);
+                                        btnArr[0][2].setBackground(Color.YELLOW);
 
-                                            btnPanel.setVisible(false);
-                                            break;
-                                        default:
-                                            txaNotification.setText(txaNotification.getText()
-                                                    + "\nWalked " + walk + " blocks (+2h to enter).");
-                                            lblTimer.setText(time);
-                                            dist.setPos(row, col);
-                                            btnArr[row][col].setBackground(Color.YELLOW);
-                                            btnArr[oldRow][oldCol].setBackground(Color.BLUE);
+                                        btnPanel.setVisible(false);
+                                    } else {
+                                        txaNotification.setText(txaNotification.getText()
+                                                + "\nWalked " + walk + " blocks (+"
+                                                + TimeService.format(costs.enterBuildingMinutes()) + " to enter).");
+                                        lblTimer.setText(TimeService.format(spend.remainingMinutes()));
+                                        dist.setPos(row, col);
+                                        btnArr[row][col].setBackground(Color.YELLOW);
+                                        btnArr[oldRow][oldCol].setBackground(Color.BLUE);
 
-                                            MainGameGUI.this.dispose(); //closes the screen
-                                            loc.openLocation(dist.toString(), user, services); //opens location when the user clicks on it
-                                            break;
+                                        MainGameGUI.this.dispose(); //closes the screen
+                                        loc.openLocation(dist.toString(), user, services); //opens location when the user clicks on it
                                     }
                                 }
                             }
@@ -276,22 +274,20 @@ public class MainGameGUI extends javax.swing.JFrame {
         btnPanel.setVisible(true);
         
         boolean eaten = eat.getEat();
-        if (eaten == false) { //did not eat last round -> hungry, start with fewer hours
-            dist.setTime(60);
-            lblTimer.setText("60h");
-        } else {
-            dist.setTime(72);
-            lblTimer.setText("72h");
-        }
+        int week = eaten //did not eat last round -> hungry, start with fewer hours
+                ? services.costs().fedWeekMinutes()
+                : services.costs().baseWeekMinutes();
+        dist.setTime(week);
+        lblTimer.setText(TimeService.format(week));
         btnArr[dist.getX()][dist.getY()].setBackground(Color.BLUE); //updates the new location on the board
         dist.setPos(0, 2);
         dist.setRound();
-        
-        String time = dist.getNewTime(0); // time is 0 when user saved and exit
-        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && time.equals("0h")) {
+
+        TimeSpend clock = dist.spendMinutes(0); // clock is 0 when the user saved at week end
+        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && clock.weekOver()) {
             stat.setDebt(80);
             stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && time.equals("0h")) {
+        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && clock.weekOver()) {
             stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
             txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
