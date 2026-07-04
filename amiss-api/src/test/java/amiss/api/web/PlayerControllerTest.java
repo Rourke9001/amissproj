@@ -9,8 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.config.GameServicesFactory;
+import amiss.api.web.dto.GoalDto;
+import amiss.api.web.dto.GoalsDto;
+import amiss.api.web.dto.JobDto;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.PlayerStateDto;
+import amiss.api.web.dto.StatsDto;
 import amiss.application.service.GameServices;
 import amiss.application.service.MoveResult;
 import amiss.application.service.TravelService;
@@ -44,6 +48,11 @@ class PlayerControllerTest {
 
     private static PlayerStateDto dto() {
         return new PlayerStateDto("bob", 3, 3960, "66h", false, 120, 0, false,
+                1, 1,
+                new JobDto("Unemployed", null, null),
+                new StatsDto(0, 0, 0, 0),
+                new GoalsDto(new GoalDto(120, 1000), new GoalDto(0, 200),
+                        new GoalDto(0, 200), new GoalDto(0, 8)),
                 new LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2));
     }
 
