@@ -77,6 +77,7 @@ public class PlayerStateAssembler {
                 TimeService.format(clock.remainingMinutes()),
                 clock.weekOver(),
                 cash,
+                services.bank().balance(),
                 stats.getDebt(),
                 stats.getRent() == 1,
                 services.food().getFood(),

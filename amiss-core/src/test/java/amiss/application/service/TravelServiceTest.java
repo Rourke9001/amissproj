@@ -130,4 +130,22 @@ class TravelServiceTest {
         assertEquals(new MoveResult(MoveResult.Status.OK, 1, 160, 4160), result);
         verify(users).updatePosition(USER, 0, 3);
     }
+
+    // ---- currentLocation -----------------------------------------------------
+
+    @Test
+    void currentLocation_atAKnownStopReturnsThatStop() throws SQLException {
+        when(users.getXpos(USER)).thenReturn(2); // Bank is (2,0)
+        when(users.getYpos(USER)).thenReturn(0);
+
+        assertEquals(Location.BANK, service.currentLocation());
+    }
+
+    @Test
+    void currentLocation_aStaleSavedCellClampsToHome() throws SQLException {
+        when(users.getXpos(USER)).thenReturn(2); // inner cell, not a stop
+        when(users.getYpos(USER)).thenReturn(2);
+
+        assertEquals(Location.LOW_COST_HOUSING, service.currentLocation());
+    }
 }

@@ -24,6 +24,8 @@ public class GameServices {
     private final StatsService stats;
     private final TurnService turn;
     private final TravelService travel;
+    private final BankService bank;
+    private final RentService rent;
     private final ActionCosts costs;
 
     public GameServices(User user, UserRepository users, UserStatsRepository userStats,
@@ -43,6 +45,8 @@ public class GameServices {
         this.stats = new StatsService(users, userStats, jobs, time, food, costs, username);
         this.turn = new TurnService(time, food, stats, costs);
         this.travel = new TravelService(time, costs);
+        this.bank = new BankService(users, username);
+        this.rent = new RentService(time, stats, costs);
     }
 
     public TimeService time() {
@@ -71,6 +75,14 @@ public class GameServices {
 
     public TravelService travel() {
         return travel;
+    }
+
+    public BankService bank() {
+        return bank;
+    }
+
+    public RentService rent() {
+        return rent;
     }
 
     /** The action cost table this game was wired with (minutes per action). */

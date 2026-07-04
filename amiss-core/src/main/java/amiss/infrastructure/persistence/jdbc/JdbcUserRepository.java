@@ -137,16 +137,45 @@ public class JdbcUserRepository implements UserRepository {
         db.update("UPDATE tbluser SET password = ? WHERE name = ?", passwordHash, name);
     }
 
-    /** Inserts a brand-new player with the game's starting values (positional INSERT). */
+    /**
+     * Inserts a brand-new player with the game's starting values. Uses an explicit column
+     * list (rather than a positional {@code VALUES (...)}) so it stays valid as columns are
+     * added later — {@code bank} falls back to its schema default (0).
+     */
     public void insertNewUser(String name, String passwordHash) throws SQLException {
-        db.update("INSERT INTO tbluser VALUES (?,?,0,2,4320,100,1,'Unemployed',1,1,0,0)",
+        db.update("INSERT INTO tbluser "
+                + "(name, password, xpos, ypos, `time`, cash, round, job, clothing, rent, eat, debt) "
+                + "VALUES (?, ?, 0, 2, 4320, 100, 1, 'Unemployed', 1, 1, 0, 0)",
                 name, passwordHash);
     }
 
     /** Resets the player's saved row to the game's starting values (the tbluser half of a game reset). */
     public void resetUser(String name) throws SQLException {
         db.update("UPDATE amissdb.tbluser SET `xpos` = 0, `ypos` = 2, `time` = 4320, `cash` = 100, "
-                + "`round` = 1, `job` = 'Unemployed', `clothing` = 1,`eat` = 0, `rent` = 1, `debt` = 0 "
-                + "WHERE name = ?", name);
+                + "`round` = 1, `job` = 'Unemployed', `clothing` = 1,`eat` = 0, `rent` = 1, `debt` = 0, "
+                + "`bank` = 0 WHERE name = ?", name);
+    }
+
+    // ---- bank ---------------------------------------------------------------
+
+    /** The player's savings balance, or -1 if the player does not exist. */
+    public int getBank(String name) throws SQLException {
+        return db.queryForInt("SELECT bank FROM tbluser WHERE name = ?", -1, name);
+    }
+
+    /**
+     * Moves {@code amount} from cash to bank in one atomic conditional update; {@code false}
+     * (no row updated) means insufficient cash. Safe under concurrent requests since the
+     * cash check and the write are the same statement.
+     */
+    public boolean depositToBank(String name, int amount) throws SQLException {
+        return db.update("UPDATE tbluser SET cash = cash - ?, bank = bank + ? "
+                + "WHERE name = ? AND cash >= ?", amount, amount, name, amount) == 1;
+    }
+
+    /** Symmetric with {@link #depositToBank}: moves {@code amount} from bank to cash. */
+    public boolean withdrawFromBank(String name, int amount) throws SQLException {
+        return db.update("UPDATE tbluser SET cash = cash + ?, bank = bank - ? "
+                + "WHERE name = ? AND bank >= ?", amount, amount, name, amount) == 1;
     }
 }

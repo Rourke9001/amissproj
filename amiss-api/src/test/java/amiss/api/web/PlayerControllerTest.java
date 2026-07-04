@@ -47,7 +47,7 @@ class PlayerControllerTest {
     private PlayerStateAssembler assembler;
 
     private static PlayerStateDto dto() {
-        return new PlayerStateDto("bob", 3, 3960, "66h", false, 120, 0, false,
+        return new PlayerStateDto("bob", 3, 3960, "66h", false, 120, 0, 0, false,
                 1, 1,
                 new JobDto("Unemployed", null, null),
                 new StatsDto(0, 0, 0, 0),

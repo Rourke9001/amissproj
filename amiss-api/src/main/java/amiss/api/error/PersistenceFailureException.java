@@ -14,4 +14,9 @@ public class PersistenceFailureException extends RuntimeException {
     public PersistenceFailureException(SQLException cause) {
         super("Database access failed", cause);
     }
+
+    /** For a service that already logged its own {@link SQLException} and reported a status. */
+    public PersistenceFailureException(String message) {
+        super(message);
+    }
 }
