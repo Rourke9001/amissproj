@@ -25,32 +25,51 @@ An outer layer may depend on an inner one; an inner layer never knows about an o
 | **infrastructure** | `amiss.infrastructure.*` | Adapters: JDBC repositories, DB connection, config, security. Implements the ports. | application, domain |
 | **presentation** | `amiss.presentation.*` | Swing UI — one delivery mechanism among many. | application, domain |
 
-## Folder structure (`src/main/java/amiss/`)
+## Maven modules (Phase 3 reactor)
+
+The layers map onto a multi-module Maven reactor, so each delivery mechanism is
+its own artifact and the rules ship UI-free:
+
+| Module | Contains | Depends on |
+|--------|----------|------------|
+| `amiss-core` | `domain` + `application` + `infrastructure` packages, the Flyway migrations, the whole unit-test suite | — |
+| `amiss-swing` | the `presentation` package (Swing client), UI images, `application.properties`, `logback.xml`; shades the runnable `AmissProj.jar` | `amiss-core` |
+| `amiss-api` | Spring Boot REST API — another presentation adapter over the same core; `PersistenceConfig` is its `GameContext` counterpart, `Jdbc` runs in pooled (`DataSource`) mode | `amiss-core` |
+| `amiss-coverage` | JaCoCo `report-aggregate` for CI; no code | the code modules |
+
+Core exposes only the SLF4J facade; each app picks its logging backend (Swing
+bundles logback, Spring Boot brings its own) — so the modules can't fight over
+logging versions.
+
+## Folder structure
 
 ```
-domain/
-  model/        User, UserGoals, ActionResult        (plain entities / value types)
-  board/        TwoDGrid                              (board model)
-  validation/   Validation                            (pure input rules)
-application/
-  port/         UserRepository, UserStatsRepository,  (repository INTERFACES — the seam)
-                JobRepository, HelpRepository
-  service/      TimeService, EducationService, FoodService, JobService,
-                StatsService, GameServices            (the game rules)
-infrastructure/
-  persistence/jdbc/  Jdbc                              (JDBC helper, was `DB`)
-                     JdbcUserRepository, JdbcUserStatsRepository,
-                     JdbcJobRepository, JdbcHelpRepository   (implement the ports)
-  config/       Config                                (env / properties)
-  security/     PasswordHasher                        (BCrypt)
-  GameContext                                         (composition root)
-presentation/
-  ui/           LoginGUI (entry point), MainGameGUI, the location screens,
-                HelpGUI, HighScoreGUI, OpenLocation   (Swing)
-  assets/       Assets                                (classpath image loader)
+amiss-core/src/main/java/amiss/
+  domain/
+    model/        User, UserGoals, ActionResult        (plain entities / value types)
+    board/        Board, Location                      (the 13-stop ring board model)
+    validation/   Validation                           (pure input rules)
+  application/
+    port/         UserRepository, UserStatsRepository, (repository INTERFACES — the seam)
+                  JobRepository, HelpRepository
+    service/      TimeService, EducationService, FoodService, JobService,
+                  StatsService, GameServices           (the game rules)
+  infrastructure/
+    persistence/jdbc/  Jdbc                             (JDBC helper, was `DB`)
+                       JdbcUserRepository, JdbcUserStatsRepository,
+                       JdbcJobRepository, JdbcHelpRepository   (implement the ports)
+    persistence/flyway/ FlywayMigrator                  (startup schema migration)
+    config/       Config                               (env / properties)
+    security/     PasswordHasher                       (BCrypt)
+    GameContext                                        (composition root)
+amiss-swing/src/main/java/amiss/
+  presentation/
+    ui/           LoginGUI (entry point), MainGameGUI, the location screens,
+                  HelpGUI, HighScoreGUI, OpenLocation  (Swing)
+    assets/       Assets                               (classpath image loader)
 ```
 
-Tests mirror these packages under `src/test/java/`.
+Tests mirror these packages under `amiss-core/src/test/java/`.
 
 ## The load-bearing change: repository ports
 

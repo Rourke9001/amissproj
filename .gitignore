@@ -1,5 +1,5 @@
-# ─── Maven build output ───
-/target/
+# ─── Maven build output (root and every module) ───
+target/
 # ─── VSCode Java language-server scratch output (invisible-project classes) ───
 /build/
 /bin/

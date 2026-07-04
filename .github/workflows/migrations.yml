@@ -57,9 +57,11 @@ jobs:
               ON amissdb.* TO 'amiss_migrator'@'%';
           SQL
 
+      # -pl amiss-core: the flyway plugin + migration sources live in that
+      # module now; running the goal reactor-wide would re-invoke it per module.
       - name: Migrate as amiss_migrator
         run: >-
-          ./mvnw -B flyway:migrate flyway:info
+          ./mvnw -B -pl amiss-core flyway:migrate flyway:info
           "-Dflyway.url=jdbc:mysql://127.0.0.1:3306/amissdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
           -Dflyway.user=amiss_migrator
           -Dflyway.password=amissmigratorpw

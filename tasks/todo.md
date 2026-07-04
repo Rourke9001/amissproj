@@ -268,3 +268,78 @@ committed at `.github/rulesets/protect-main.json` with apply instructions; revis
 when the repo goes public (Phase 4 showcase) or gets Pro. (2) Running the game now
 needs a JDK 17+ runtime (Flyway 11); source still targets 8. (3) The test suite is
 89 tests (the board rework had grown it past the documented 87).
+
+---
+
+## Fix: board clock orientation + protect `develop` from deletion  (2026-07-03)
+Follow-up to the board rework above: Low-Cost Housing (start) was at top-*left*
+`(0,0)`, not 12 o'clock. Rotated the ring 2 cells clockwise so start sits at
+top-middle `(0,2)` (12 o'clock); the turn timer stays at bottom-middle `(3,2)`
+(6 o'clock, already correct — untouched). Separately, added a deletion-only
+ruleset for `develop`, mirroring the existing `main` ruleset precedent.
+- [x] `Board.java`: rotate the `CELLS` array (keep `STOPS`/ring-index-0 fixed
+      to Low-Cost Housing); update Javadoc
+- [x] Propagate the new home coordinate `(0,2)` everywhere `(0,0)` was
+      hard-coded as start/reset: `LoginGUI`, `JdbcUserRepository`
+      (`insertNewUser`/`resetUser`), `MainGameGUI` (stale-position snapback,
+      round-end highlight, new-round reset)
+- [x] `BoardTest`: updated cell/location expectations for the rotated layout
+- [x] Verify: `./mvnw clean test` green (89/89); a standalone board-print
+      confirms Low-Cost Housing at `(0,2)` / 12 o'clock and the timer still at
+      `(3,2)` / 6 o'clock
+- [x] `.github/rulesets/protect-develop.json` (deletion-only) + README update;
+      attempted `gh api .../rulesets -X POST` — same 403 plan-gate as `main`
+      (private repo needs Pro or public); committed ready-to-apply, as with
+      `protect-main.json`
+
+---
+
+## Phase 3 / KAN-16 start — KAN-27 Spring Boot scaffold  (2026-07-03)
+Plan approved (`.claude/plans/witty-nibbling-pumpkin.md`). Decisions: time → integer
+minutes (40 min/ring-step, week 3600/4320 — Jones-notes fractional movement without
+floats); 1 PR = 1 JIRA subtask; monorepo (React in `frontend/` at KAN-19); Temurin 21
+installed, `release=21` everywhere.
+
+### PR1 — `chore/kan27-multi-module-reactor`
+- [x] Install Temurin 21 (winget) + verify `mvnw -v` shows 21
+- [x] JIRA: KAN-16 + KAN-27 → In Progress; design comments on KAN-29/KAN-30
+- [x] Commit 1: pure `git mv` → `amiss-core` (domain/application/infrastructure +
+      migrations + tests) and `amiss-swing` (presentation + assets +
+      application.properties + logback.xml)
+- [x] Commit 2: reactor poms (parent + core + swing + coverage aggregate), `release=21`,
+      slf4j 2.0.17 / logback 1.5.18 (core exposes only slf4j-api; backend is per-app),
+      CI → `clean verify` + aggregate JaCoCo paths, `-pl amiss-core` for the Migrations
+      workflow, scripts → `amiss-swing/target/AmissProj.jar`, README/SETUP/ARCHITECTURE
+- [x] Commit 3: `scripts/find-java21.ps1` — PATH java + machine JAVA_HOME were still
+      JDK 20 (jar died silently with UnsupportedClassVersionError); user-level
+      JAVA_HOME now → Temurin 21; run/build scripts resolve a 21+ JDK by `release` file
+- [x] Verify: `mvnw -B clean verify` green (89/89 tests, aggregate csv); Swing jar
+      launches on Temurin 21 + logs `Connection Successful` against live MySQL
+
+### PR2 — `feat/kan27-spring-boot-api-scaffold` (stacked on PR1)
+- [x] `amiss-api` module: Boot 3.5.16 BOM (module-only), starters web/validation/actuator/jdbc,
+      spring-boot-maven-plugin repackage (never next to shade)
+- [x] `PersistenceConfig` beans (Jdbc + 4 adapters), `GameServicesFactory` (per-request
+      `GameServices`; 404/500 exceptions), `GlobalExceptionHandler` (RFC 7807 ProblemDetail),
+      `application.yml` (AMISS_DB_* runtime user + AMISS_DB_MIGRATOR_* for Boot's Flyway)
+- [x] Core: `Jdbc` gains pooled `DataSource` mode (borrow-per-call via `withConnection`);
+      legacy single-connection ctor untouched for Swing
+- [x] Tests: core `JdbcPooledModeTest` (5), api context smoke (flyway off),
+      `ProblemDetailContractTest` (2), `GameServicesFactoryTest` (3) → 94 + 6 green
+- [x] Verify: `spring-boot:run` → `GET /actuator/health` **UP** (db UP on live MySQL,
+      flyway endpoint shows baseline + V2); Swing jar regression green (new Jdbc, old mode)
+- [ ] Push both branches; `gh pr create` (PR1 → develop, PR2 → PR1 branch)
+
+### Review
+KAN-27 shipped as two stacked PRs. PR1 restructures to a Maven reactor
+(amiss-core / amiss-swing / amiss-coverage) on Java 21 — pure-rename commit first, then
+poms/CI/scripts/docs; CI now runs `clean verify` and reads the aggregate JaCoCo csv.
+PR2 adds amiss-api: Spring Boot 3.5.16 over the untouched core services — PersistenceConfig
+mirrors GameContext, Jdbc gained a pooled DataSource mode for concurrent requests,
+errors leave as RFC 7807 problem+json, and Boot's Flyway runs fail-fast as amiss_migrator
+while the runtime pool stays the least-privilege amiss user. Verified end-to-end: 100 tests
+green, health UP against live MySQL, Swing client unchanged in behaviour.
+Environment gotcha worth remembering: machine JAVA_HOME/PATH still pointed at JDK 20 —
+user-level JAVA_HOME now → Temurin 21 and scripts/find-java21.ps1 picks a 21+ JDK by its
+`release` file (details in tasks/lessons.md). Next: PR3 (KAN-29 prep) — minutes migration
++ ActionCosts per the approved time design.
