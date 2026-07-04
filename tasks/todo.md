@@ -380,3 +380,30 @@ place on first launch. Behaviour is byte-identical for default costs except two 
 Swing bugs the rejected-flag guards fixed (documented above). Next: PR4
 `feat/kan29-turn-service-and-end-week` — TurnService extraction + POST end-week +
 Spring `CostsProperties` (KAN-29 Done when merged).
+
+## Phase 3 / KAN-29 PR4 — TurnService + end-week endpoint  (2026-07-04)
+Branch `feat/kan29-turn-service-and-end-week`, stacked on PR3.
+
+- [x] `TurnService.endWeek()` → `WeekSummary` (refuses while time remains; settles the
+      closed round: 4th-round unpaid rent → debt+80; consumes one stored food for the
+      fed 4320 / unfed 3600 budget; clock+position+round reset; flags rent due entering
+      every 4th round; **no wages at rollover**). Unified rent rule = documented
+      behaviour change: debt now charged exactly once at end-week (old code charged on
+      re-login, repeatably). Also fixed the stale `btnArr[0][0]` new-round highlight.
+- [x] Swing `btnNewRound` delegates; the MainGameGUI constructor keeps only the
+      informational rent messages
+- [x] API: `CostsProperties` (`amiss.costs.*` → `ActionCosts` bean, defaults when
+      absent), `GET /api/players/{u}` (PlayerStateDto from `Board`, never
+      `OpenLocation`), `POST /api/players/{u}/end-week` (summary + fresh state; 409
+      `urn:amiss:week-not-over` while time remains), 404 unknown player
+- [x] Reactor-wide compiler `-parameters` (Spring MVC @PathVariable name resolution —
+      this build imports the Boot BOM without the Boot parent)
+- [x] Tests 109 → 122 (TurnService 7, costs binding 3, controller 3); all green
+- [x] Live MySQL97 verify: health UP; disposable `kan29test` player — GET weekOver
+      "0h" → end-week 200 (round 2, 3600 min, home) persisted in DB → second POST 409
+      → 404 for unknown; test rows deleted after
+
+### Review — PR4
+The week rollover is now one tested rule shared by both clients, and the API exposes the
+full KAN-29 turn lifecycle with costs-from-config. KAN-29 → Done once PR #17 + PR4 merge.
+Next: PR5 `feat/kan30-board-and-move` (TravelService, GET /api/board, POST move).

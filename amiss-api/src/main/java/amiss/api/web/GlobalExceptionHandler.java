@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.PlayerNotFoundException;
+import amiss.api.error.WeekNotOverException;
 import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Player not found");
         problem.setType(URI.create("urn:amiss:player-not-found"));
+        return problem;
+    }
+
+    @ExceptionHandler(WeekNotOverException.class)
+    ProblemDetail weekNotOver(WeekNotOverException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Week not over");
+        problem.setType(URI.create("urn:amiss:week-not-over"));
         return problem;
     }
 

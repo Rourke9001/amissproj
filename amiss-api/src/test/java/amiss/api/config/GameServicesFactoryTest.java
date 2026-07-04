@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.PlayerNotFoundException;
+import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
@@ -26,7 +27,7 @@ class GameServicesFactoryTest {
     @Mock private JobRepository jobs;
 
     private GameServicesFactory newFactory() {
-        return new GameServicesFactory(users, userStats, jobs);
+        return new GameServicesFactory(users, userStats, jobs, ActionCosts.defaults());
     }
 
     @Test
