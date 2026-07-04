@@ -23,6 +23,21 @@ public class TravelService {
         this.costs = costs;
     }
 
+    /**
+     * The stop the player currently stands at. A saved position that is not a stop (e.g. a
+     * stale pre-ring save) is reported as home, mirroring {@link #moveTo}'s clamp.
+     */
+    public Location currentLocation() {
+        int row = time.getX();
+        int col = time.getY();
+        if (!board.isStop(row, col)) {
+            int[] home = board.cellOf(0);
+            row = home[0];
+            col = home[1];
+        }
+        return board.locationAt(row, col);
+    }
+
     /** Attempts to walk to {@code target} and enter it. */
     public MoveResult moveTo(Location target) {
         int fromIndex = board.ringIndex(time.getX(), time.getY());

@@ -47,6 +47,7 @@ class PlayerStateAssemblerTest {
         when(users.getTime(USER)).thenReturn(3960);
         when(users.getRound(USER)).thenReturn(3);
         when(users.getCash(USER)).thenReturn(120);
+        when(users.getBank(USER)).thenReturn(50);
         when(users.getDebt(USER)).thenReturn(0);
         when(users.getRent(USER)).thenReturn(0);
         when(users.getEat(USER)).thenReturn(1);
@@ -94,6 +95,7 @@ class PlayerStateAssemblerTest {
         assertEquals(30, dto.stats().workExperience());
         assertEquals(1, dto.foodWeeks());
         assertEquals(1, dto.clothing());
+        assertEquals(50, dto.bank());
 
         assertEquals(120, dto.goals().cash().current());
         assertEquals(1000, dto.goals().cash().target());
@@ -112,6 +114,7 @@ class PlayerStateAssemblerTest {
         when(users.getTime(USER)).thenReturn(3960);
         when(users.getRound(USER)).thenReturn(3);
         when(users.getCash(USER)).thenReturn(120);
+        when(users.getBank(USER)).thenReturn(50);
         when(users.getDebt(USER)).thenReturn(0);
         when(users.getRent(USER)).thenReturn(0);
         when(users.getEat(USER)).thenReturn(1);

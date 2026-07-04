@@ -50,6 +50,9 @@ public interface UserRepository {
     /** All players' {name, round} pairs, highest round first, for the high-score board. */
     List<String[]> highScores() throws SQLException;
 
+    /** The player's savings balance, or -1 if the player does not exist. */
+    int getBank(String name) throws SQLException;
+
     // ---- writes ------------------------------------------------------------
 
     void updatePosition(String name, int xpos, int ypos) throws SQLException;
@@ -79,4 +82,16 @@ public interface UserRepository {
 
     /** Resets the player's saved row to the game's starting values. */
     void resetUser(String name) throws SQLException;
+
+    /**
+     * Moves {@code amount} from cash to bank in one atomic conditional update.
+     * @return {@code false} if the player doesn't have {@code amount} in cash (nothing changed)
+     */
+    boolean depositToBank(String name, int amount) throws SQLException;
+
+    /**
+     * Moves {@code amount} from bank to cash in one atomic conditional update.
+     * @return {@code false} if the player doesn't have {@code amount} in the bank (nothing changed)
+     */
+    boolean withdrawFromBank(String name, int amount) throws SQLException;
 }
