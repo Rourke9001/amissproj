@@ -16,6 +16,7 @@ public record PlayerStateDto(
         String timeDisplay,
         boolean weekOver,
         int cash,
+        int bank,
         int debt,
         boolean rentDue,
         int foodWeeks,

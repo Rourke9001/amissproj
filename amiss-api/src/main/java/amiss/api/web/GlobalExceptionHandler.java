@@ -1,11 +1,15 @@
 package amiss.api.web;
 
+import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InsufficientTimeException;
+import amiss.api.error.InvalidAmountException;
 import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.PlayerNotFoundException;
+import amiss.api.error.RentNotDueException;
 import amiss.api.error.UnknownLocationException;
 import amiss.api.error.WeekNotOverException;
 import amiss.api.error.WeekOverException;
+import amiss.api.error.WrongLocationException;
 import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +68,38 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         problem.setTitle("Unknown location");
         problem.setType(URI.create("urn:amiss:unknown-location"));
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidAmountException.class)
+    ProblemDetail invalidAmount(InvalidAmountException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid amount");
+        problem.setType(URI.create("urn:amiss:invalid-amount"));
+        return problem;
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    ProblemDetail insufficientFunds(InsufficientFundsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Insufficient funds");
+        problem.setType(URI.create("urn:amiss:insufficient-funds"));
+        return problem;
+    }
+
+    @ExceptionHandler(RentNotDueException.class)
+    ProblemDetail rentNotDue(RentNotDueException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Rent not due");
+        problem.setType(URI.create("urn:amiss:rent-not-due"));
+        return problem;
+    }
+
+    @ExceptionHandler(WrongLocationException.class)
+    ProblemDetail wrongLocation(WrongLocationException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Wrong location");
+        problem.setType(URI.create("urn:amiss:wrong-location"));
         return problem;
     }
 
