@@ -19,8 +19,4 @@ public record PlayerStateDto(
         int debt,
         boolean rentDue,
         LocationDto location) {
-
-    /** One stop of the board ring, with its render cell. */
-    public record LocationDto(String id, String name, int ringIndex, int row, int col) {
-    }
 }

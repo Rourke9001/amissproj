@@ -1,8 +1,11 @@
 package amiss.api.web;
 
+import amiss.api.error.InsufficientTimeException;
 import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.PlayerNotFoundException;
+import amiss.api.error.UnknownLocationException;
 import amiss.api.error.WeekNotOverException;
+import amiss.api.error.WeekOverException;
 import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +40,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Week not over");
         problem.setType(URI.create("urn:amiss:week-not-over"));
+        return problem;
+    }
+
+    @ExceptionHandler(WeekOverException.class)
+    ProblemDetail weekOver(WeekOverException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Week over");
+        problem.setType(URI.create("urn:amiss:week-over"));
+        return problem;
+    }
+
+    @ExceptionHandler(InsufficientTimeException.class)
+    ProblemDetail insufficientTime(InsufficientTimeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Insufficient time");
+        problem.setType(URI.create("urn:amiss:insufficient-time"));
+        return problem;
+    }
+
+    @ExceptionHandler(UnknownLocationException.class)
+    ProblemDetail unknownLocation(UnknownLocationException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Unknown location");
+        problem.setType(URI.create("urn:amiss:unknown-location"));
         return problem;
     }
 

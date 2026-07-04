@@ -1,5 +1,6 @@
 package amiss.api.web;
 
+import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.PlayerStateDto;
 import amiss.application.service.GameServices;
 import amiss.application.service.StatsService;
@@ -43,7 +44,7 @@ public class PlayerStateAssembler {
                 stats.getCash(),
                 stats.getDebt(),
                 stats.getRent() == 1,
-                new PlayerStateDto.LocationDto(location.name(), location.displayName(),
+                new LocationDto(location.name(), location.displayName(),
                         board.ringIndex(row, col), row, col));
     }
 }
