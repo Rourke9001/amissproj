@@ -1,0 +1,35 @@
+# AmissProj REST API configuration.
+#
+# The same AMISS_DB_* environment variables the Swing client honours override
+# everything here, so both apps are configured the same way. Two credential
+# sets on purpose (mirrors the desktop app / KAN-15):
+#   - spring.datasource  -> the least-privilege runtime user (SELECT/INSERT/UPDATE)
+#   - spring.flyway      -> the DDL-capable migrator, used only at startup
+spring:
+  application:
+    name: amiss-api
+  datasource:
+    url: ${AMISS_DB_URL:jdbc:mysql://localhost:3306/amissdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${AMISS_DB_USER:amiss}
+    password: ${AMISS_DB_PASSWORD:amisspw}
+  flyway:
+    url: ${AMISS_DB_URL:jdbc:mysql://localhost:3306/amissdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    user: ${AMISS_DB_MIGRATOR_USER:amiss_migrator}
+    password: ${AMISS_DB_MIGRATOR_PASSWORD:amissmigratorpw}
+    # Pre-Flyway installs get baselined instead of failing (saves preserved) —
+    # same behaviour as the Swing client's FlywayMigrator.
+    baseline-on-migrate: true
+    baseline-version: "1"
+  mvc:
+    problemdetails:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,flyway
+  endpoint:
+    health:
+      # Convenient while the API has no auth; tighten with KAN-36 (Spring Security).
+      show-details: always

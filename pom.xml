@@ -20,12 +20,13 @@
                         migrations, the whole unit-test suite. No UI dependencies.
         amiss-swing     the original Swing desktop client; builds the shaded
                         runnable AmissProj.jar.
+        amiss-api       Spring Boot REST API over the same core (KAN-16).
         amiss-coverage  aggregates the per-module JaCoCo reports for CI.
-      The Spring Boot amiss-api module joins the reactor on the next branch.
     -->
     <modules>
         <module>amiss-core</module>
         <module>amiss-swing</module>
+        <module>amiss-api</module>
         <module>amiss-coverage</module>
     </modules>
 

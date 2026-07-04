@@ -34,7 +34,7 @@ its own artifact and the rules ship UI-free:
 |--------|----------|------------|
 | `amiss-core` | `domain` + `application` + `infrastructure` packages, the Flyway migrations, the whole unit-test suite | — |
 | `amiss-swing` | the `presentation` package (Swing client), UI images, `application.properties`, `logback.xml`; shades the runnable `AmissProj.jar` | `amiss-core` |
-| `amiss-api` *(next)* | Spring Boot REST API — another presentation adapter over the same core | `amiss-core` |
+| `amiss-api` | Spring Boot REST API — another presentation adapter over the same core; `PersistenceConfig` is its `GameContext` counterpart, `Jdbc` runs in pooled (`DataSource`) mode | `amiss-core` |
 | `amiss-coverage` | JaCoCo `report-aggregate` for CI; no code | the code modules |
 
 Core exposes only the SLF4J facade; each app picks its logging backend (Swing
