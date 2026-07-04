@@ -1,5 +1,6 @@
 package amiss.application.service;
 
+import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
 import amiss.application.port.UserRepository;
 import amiss.domain.validation.Validation;
@@ -19,12 +20,17 @@ public class JobService {
     private final JobRepository jobs;
     private final UserRepository users;
     private final EducationService education;
+    private final TimeService time;
+    private final ActionCosts costs;
     private final String username;
 
-    public JobService(JobRepository jobs, UserRepository users, EducationService education, String username) {
+    public JobService(JobRepository jobs, UserRepository users, EducationService education,
+            TimeService time, ActionCosts costs, String username) {
         this.jobs = jobs;
         this.users = users;
         this.education = education;
+        this.time = time;
+        this.costs = costs;
         this.username = username;
     }
 
@@ -52,6 +58,48 @@ public class JobService {
         } catch (SQLException ex) {
             return (-1);
         }
+    }
+
+    /**
+     * Applies for {@code jobName}: checks it exists, charges the application time, then
+     * checks the player's education. Mirrors {@code EmploymentGUI.btnCookActionPerformed}
+     * exactly: the 4h application time is charged even when education is insufficient (the
+     * game rule — applying always takes 4 hours, win or lose). Unlike {@link #neededEdu},
+     * this calls the port directly so a SQL failure ({@link ApplyOutcome.Status#FAILED}) can
+     * be told apart from a genuinely unknown job ({@link ApplyOutcome.Status#UNKNOWN_JOB}),
+     * which Swing's fixed job buttons can never send but the API might.
+     * @param jobName field name of the job
+     * @return the typed apply outcome
+     */
+    public ApplyOutcome apply(String jobName) {
+        int neededEdu;
+        try {
+            neededEdu = jobs.getRequiredEducation(jobName);
+        } catch (SQLException ex) {
+            log.warn("Failed to check required education", ex);
+            return new ApplyOutcome(ApplyOutcome.Status.FAILED, -1, jobName, -1);
+        }
+        if (neededEdu == -1) {
+            return new ApplyOutcome(ApplyOutcome.Status.UNKNOWN_JOB, -1, jobName, -1);
+        }
+
+        TimeSpend clock = time.spendMinutes(0);
+        if (clock.weekOver()) {
+            return new ApplyOutcome(ApplyOutcome.Status.WEEK_OVER, clock.remainingMinutes(), jobName, -1);
+        }
+
+        TimeSpend spend = time.spendMinutes(costs.applyJobMinutes());
+        if (spend.rejected()) {
+            return new ApplyOutcome(ApplyOutcome.Status.INSUFFICIENT_TIME, spend.remainingMinutes(), jobName, -1);
+        }
+
+        int actualEdu = education.getEducation();
+        if (actualEdu < neededEdu) {
+            return new ApplyOutcome(ApplyOutcome.Status.INSUFFICIENT_EDUCATION, spend.remainingMinutes(), jobName, -1);
+        }
+
+        setJob(jobName);
+        return new ApplyOutcome(ApplyOutcome.Status.HIRED, spend.remainingMinutes(), jobName, getEarnings());
     }
 
     private void setJob(String jb) {

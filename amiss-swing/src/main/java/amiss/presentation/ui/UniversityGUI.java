@@ -7,10 +7,11 @@ package amiss.presentation.ui;
 import amiss.domain.model.User;
 
 import amiss.application.service.EducationService;
+import amiss.application.service.EnrollOutcome;
 import amiss.application.service.GameServices;
-import amiss.application.service.StatsService;
+import amiss.application.service.StudyOutcome;
 import amiss.application.service.TimeService;
-import amiss.application.service.TimeSpend;
+import amiss.application.service.UniversityService;
 
 /**
  * The University Screen
@@ -25,8 +26,8 @@ public class UniversityGUI extends javax.swing.JFrame {
     GameServices services;
 
     private TimeService dist;
-    private StatsService stat;
     private EducationService uni;
+    private UniversityService university;
 
     static String[] studyArr = {"Junior College", "Academic", "Year 3", "Year 4", "Graduate School", "Post Doctoral", "Research", "Publishing"}; //Array of degrees the user studies
 
@@ -41,8 +42,8 @@ public class UniversityGUI extends javax.swing.JFrame {
         user = u;
         this.services = services;
         dist = services.time();
-        stat = services.stats();
         uni = services.education();
+        university = services.university();
 
         lblTimer.setText(dist.readClock()); //gets the time left in the round
 
@@ -161,65 +162,50 @@ public class UniversityGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnExitActionPerformed
 
     private void btnStudyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStudyActionPerformed
-
-        int prog = uni.getProg();
-
-        TimeSpend spend = dist.spendMinutes(services.costs().studyMinutes()); //time left after the user studies
-        if (spend.rejected()) {
+        StudyOutcome outcome = university.study();
+        if (outcome.status() == StudyOutcome.Status.INSUFFICIENT_TIME) {
             txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
-        } else {
-            lblTimer.setText(TimeService.format(spend.remainingMinutes()));
+            return;
+        }
 
-            prog += 1;
-            uni.setProg(prog);
+        lblTimer.setText(TimeService.format(outcome.remainingMinutes()));
+        if (outcome.status() == StudyOutcome.Status.DEGREE_COMPLETED) {
+            txaNotification.setText(txaNotification.getText() + "\n\nWell Done You have Completed: " + outcome.degreeCompleted());
+            btnEnroll.setVisible(true);
+            btnStudy.setVisible(false);
+            txfProg.setText("0/10");
 
-            txfProg.setText(prog - 1 + "/10");
-            if (prog == 11) {
-                txaNotification.setText(txaNotification.getText() + "\n\nWell Done You have Completed: " + studyArr[uni.getEducation()]);
-                uni.setEducation();
-                btnEnroll.setVisible(true);
-                btnStudy.setVisible(false);
-                uni.setProg(0);
-                txfProg.setText("0/10");
-
-                if (uni.getEducation() == 8 && prog == 11) {
-                    txaNotification.setText("You have completed Hi-Tech U");
-                    lblCurrDegree.setVisible(false);
-                    btnEnroll.setVisible(false);
-                    lblFee.setVisible(false);
-                    lblProgress.setVisible(false);
-                    txfProg.setVisible(false);
-                } else {
-                    lblCurrDegree.setText(studyArr[uni.getEducation()]);
-                }
+            if (outcome.educationLevel() == 8) {
+                txaNotification.setText("You have completed Hi-Tech U");
+                lblCurrDegree.setVisible(false);
+                btnEnroll.setVisible(false);
+                lblFee.setVisible(false);
+                lblProgress.setVisible(false);
+                txfProg.setVisible(false);
+            } else {
+                lblCurrDegree.setText(studyArr[outcome.educationLevel()]);
             }
+        } else {
+            txfProg.setText(outcome.progress() - 1 + "/10");
         }
     }//GEN-LAST:event_btnStudyActionPerformed
 
     private void btnEnrollActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnrollActionPerformed
-
-        String cash = stat.buy("50");
-        TimeSpend spend = dist.spendMinutes(0);
-        if (spend.rejected()) {
-            txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
-        } else {
-            if (cash.contains("not enough")) {
-                txaNotification.setText(txaNotification.getText() + "\n\nYou Do Not Have Enough Cash");
-            } else {
-                int degree = uni.getEducation();
-                btnEnroll.setVisible(false);
-                
-                txaNotification.setText(txaNotification.getText() + "\n\n" + cash);
-                if (degree < 8) {
-                    //uni.setEducation();
-                    uni.setProg(1);
-                    lblTimer.setText(TimeService.format(spend.remainingMinutes()));
-                    btnEnroll.setVisible(false);
-                    btnStudy.setVisible(true);
-                    txfProg.setText("0/10");
-                }
-            }
+        EnrollOutcome outcome = university.enroll();
+        if (outcome.status() == EnrollOutcome.Status.INSUFFICIENT_CASH) {
+            txaNotification.setText(txaNotification.getText() + "\n\nYou Do Not Have Enough Cash");
+            return;
         }
+        if (outcome.status() != EnrollOutcome.Status.OK) {
+            return; // ALREADY_ENROLLED / EDUCATION_COMPLETE: unreachable here, Enroll is hidden in both states
+        }
+
+        btnEnroll.setVisible(false);
+        String cashText = "You spent R" + UniversityService.ENROLL_FEE + ", You have R" + outcome.cash() + " left";
+        txaNotification.setText(txaNotification.getText() + "\n\n" + cashText);
+        lblTimer.setText(dist.readClock());
+        btnStudy.setVisible(true);
+        txfProg.setText("0/10");
     }//GEN-LAST:event_btnEnrollActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

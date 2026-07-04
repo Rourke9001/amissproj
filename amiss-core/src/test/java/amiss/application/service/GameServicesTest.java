@@ -31,5 +31,6 @@ class GameServicesTest {
         assertNotNull(services.travel(), "travel service");
         assertNotNull(services.bank(), "bank service");
         assertNotNull(services.rent(), "rent service");
+        assertNotNull(services.university(), "university service");
     }
 }
