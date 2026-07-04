@@ -1,5 +1,6 @@
 package amiss.infrastructure.config;
 
+import amiss.application.config.ActionCosts;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -77,5 +78,42 @@ public final class Config {
     /** Migration account password. Override with {@code AMISS_DB_MIGRATOR_PASSWORD}. */
     public static String dbMigratorPassword() {
         return resolve("db.migrator.password", "AMISS_DB_MIGRATOR_PASSWORD", "amissmigratorpw");
+    }
+
+    /**
+     * The action cost table for this deployment. Each value resolves independently:
+     * env {@code AMISS_COSTS_<NAME>_MINUTES}, then {@code costs.<name>-minutes} in
+     * application.properties, then the {@link ActionCosts#defaults()} value. A value that
+     * is not a whole number is logged and ignored.
+     */
+    public static ActionCosts actionCosts() {
+        ActionCosts d = ActionCosts.defaults();
+        return new ActionCosts(
+                resolveMinutes("work", d.workMinutes()),
+                resolveMinutes("study", d.studyMinutes()),
+                resolveMinutes("relax", d.relaxMinutes()),
+                resolveMinutes("apply-job", d.applyJobMinutes()),
+                resolveMinutes("pay-rent", d.payRentMinutes()),
+                resolveMinutes("eat", d.eatMinutes()),
+                resolveMinutes("shop", d.shopMinutes()),
+                resolveMinutes("travel-per-step", d.travelPerStepMinutes()),
+                resolveMinutes("enter-building", d.enterBuildingMinutes()),
+                resolveMinutes("base-week", d.baseWeekMinutes()),
+                resolveMinutes("fed-week", d.fedWeekMinutes()));
+    }
+
+    private static int resolveMinutes(String name, int defaultValue) {
+        String propKey = "costs." + name + "-minutes";
+        String envKey = "AMISS_COSTS_" + name.toUpperCase().replace('-', '_') + "_MINUTES";
+        String raw = resolve(propKey, envKey, null);
+        if (raw == null) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            log.warn("Ignoring non-integer cost override {}={}", propKey, raw);
+            return defaultValue;
+        }
     }
 }
