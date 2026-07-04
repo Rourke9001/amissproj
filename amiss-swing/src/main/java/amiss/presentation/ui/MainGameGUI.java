@@ -14,6 +14,7 @@ import amiss.application.service.GameServices;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
 import amiss.application.service.TimeSpend;
+import amiss.application.service.WeekSummary;
 import java.awt.Color;
 
 /**
@@ -55,15 +56,11 @@ public class MainGameGUI extends javax.swing.JFrame {
         btnNewRound.setVisible(false);
         lblCurrRound.setText(dist.getRound());
 
+        // Rent settlement (debt for an unpaid rent round) is TurnService.endWeek()'s job now;
+        // the screen only reminds the player during a rent round.
         TimeSpend clock = dist.spendMinutes(0); // clock is 0 when the user saved at week end
-        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && clock.weekOver()) {
-            stat.setDebt(80);
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && clock.weekOver()) {
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
+        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
             txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
-            stat.setRent(1);
         } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0)){
             txaNotification.setText(txaNotification.getText() +"\nThank You for Paying Your Rent");
         }
@@ -272,45 +269,34 @@ public class MainGameGUI extends javax.swing.JFrame {
     private void btnNewRoundActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewRoundActionPerformed
         btnNewRound.setVisible(false);
         btnPanel.setVisible(true);
-        
-        boolean eaten = eat.getEat();
-        int week = eaten //did not eat last round -> hungry, start with fewer hours
-                ? services.costs().fedWeekMinutes()
-                : services.costs().baseWeekMinutes();
-        dist.setTime(week);
-        lblTimer.setText(TimeService.format(week));
-        btnArr[dist.getX()][dist.getY()].setBackground(Color.BLUE); //updates the new location on the board
-        dist.setPos(0, 2);
-        dist.setRound();
 
-        TimeSpend clock = dist.spendMinutes(0); // clock is 0 when the user saved at week end
-        if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1) && clock.weekOver()) {
-            stat.setDebt(80);
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0) && clock.weekOver()) {
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 1)) {
-            txaNotification.setText(txaNotification.getText() +"\nRent Is Due This Round");
-            stat.setRent(1);
-        } else if (Integer.parseInt(dist.getRound()) % 4 == 0 && (stat.getRent() == 0)){
-            txaNotification.setText(txaNotification.getText() +"\nThank You for Paying Your Rent");
-        } 
-        
-        btnArr[0][0].setBackground(Color.YELLOW);
+        int oldRow = dist.getX();
+        int oldCol = dist.getY();
+        WeekSummary summary = services.turn().endWeek(); //rollover rule lives in TurnService
+        if (!summary.weekEnded()) { //defensive: the button only shows once the week is over
+            return;
+        }
 
-        lblCurrRound.setText(dist.getRound());
-        
+        lblTimer.setText(TimeService.format(summary.timeMinutes()));
+        btnArr[oldRow][oldCol].setBackground(Color.BLUE); //updates the new location on the board
+        btnArr[0][2].setBackground(Color.YELLOW); //back home at 12 o'clock
+
+        lblCurrRound.setText(Integer.toString(summary.round()));
+
         int cashG = stat.getCash();
         int happyG = Integer.parseInt(stat.getHappiness());
         int workG = Integer.parseInt(stat.getWork());
         int eduG = uni.getEducation();
-        
+
         if (cashG >= 1000 && happyG >= 200 && workG >= 200 && eduG == 8) { //checks the users goals
             btnStartNewGame.setVisible(true);
             txaNotification.setText("congratulations, You have Completed the Game!"); //message guide to user
         } else {
             txaNotification.setText("Your Current Stats Are as Follows\nCash: \n" + cashG + "/1000\nHappiness: \n" + happyG + "/200\nWork Experience: \n" + workG + "/200\nAnd Education: \n" + eduG + "/8\n\nWeeks of Food Stored:\n" + eat.getFood());
 
+        }
+        if (summary.rentDue()) {
+            txaNotification.setText(txaNotification.getText() + "\nRent Is Due This Round");
         }
     }//GEN-LAST:event_btnNewRoundActionPerformed
 
