@@ -13,6 +13,7 @@ import amiss.application.service.GameServices;
 import amiss.application.service.JobService;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
+import amiss.application.service.TimeSpend;
 
 /**
  * The Market Screen
@@ -46,7 +47,7 @@ public class MarketGUI extends javax.swing.JFrame {
         stat = services.stats();
         eat = services.food();
 
-        lblTimer.setText(dist.getNewTime(0)); //gets the time left in the round
+        lblTimer.setText(dist.readClock()); //gets the time left in the round
         lblMoney.setText(Integer.toString(stat.getCash())); //gets the users cash
 
         btnWork.setVisible(false);
@@ -212,15 +213,15 @@ public class MarketGUI extends javax.swing.JFrame {
                 break;
         }
         
-        String time = dist.getNewTime(0); //checks if the user has enough time and cash to pay for item
-        if (time.equals("Not Enough Time")) {
-            txaNotification.setText(txaNotification.getText() + "\n" + time);
+        TimeSpend spend = dist.spendMinutes(services.costs().shopMinutes()); //checks if the user has enough time and cash to pay for item
+        if (spend.rejected()) {
+            txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
         } else if (stat.getCash() < Validation.parseIntOrDefault(evt.getActionCommand(), 0)) {
             txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash, You only have R" + stat.getCash());
         } else {
             txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(evt.getActionCommand()));
             eat.setFood(food);
-            lblTimer.setText(time);
+            lblTimer.setText(TimeService.format(spend.remainingMinutes()));
             lblMoney.setText(Integer.toString(stat.getCash()));
         }
     }//GEN-LAST:event_btn1WeeksActionPerformed

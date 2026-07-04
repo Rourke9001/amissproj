@@ -343,3 +343,40 @@ Environment gotcha worth remembering: machine JAVA_HOME/PATH still pointed at JD
 user-level JAVA_HOME now → Temurin 21 and scripts/find-java21.ps1 picks a 21+ JDK by its
 `release` file (details in tasks/lessons.md). Next: PR3 (KAN-29 prep) — minutes migration
 + ActionCosts per the approved time design.
+
+---
+
+## Phase 3 / KAN-29 PR3 — time → integer minutes + ActionCosts  (2026-07-04)
+PRs #14/#15 merged → KAN-27 Done. PR3 executes the pre-approved spec from
+`.claude/plans/witty-nibbling-pumpkin.md` (branch `refactor/kan29-time-minutes-and-cost-table`).
+
+- [x] `ActionCosts` record (application.config): work/study/relax 360, apply-job 240,
+      pay-rent 120, eat 60, shop 0, travel-per-step 40, enter-building 120,
+      week 3600 / 4320 fed; `Config.actionCosts()` resolves each value
+      (env `AMISS_COSTS_*_MINUTES` > `costs.*-minutes` props > defaults)
+- [x] `TimeService`: `TimeSpend spendMinutes(int)` (record: remainingMinutes / rejected /
+      weekOver) replaces `getNewTime`; static `format(int)` → "38h 30m"/"72h"/"45m"/"0h";
+      `readClock()` for display-only sites; persistence failure now = rejected spend
+- [x] `StatsService`/`GameServices` carry `ActionCosts` (old ctors delegate to defaults);
+      `GameContext.servicesFor` wires `Config.actionCosts()` for Swing
+- [x] Flyway `V3__time_to_minutes.sql` — `time*60`, default 4320 (ONE-WAY); seeds/resets
+      4320 in `JdbcUserRepository` + `LoginGUI`
+- [x] Swing sweep: 13 timer-display sites → `readClock()`; movement, study, enroll,
+      apply, rent, shop, relax, new-round handlers → spendMinutes + rejected/weekOver
+      flags. Latent-bug fix: EmploymentGUI apply and RentOfficeGUI pay proceeded
+      (uncharged) when time was short — both now stop with "Not Enough Time"
+- [x] Tests 100 → 109: TimeServiceTest rewritten in minutes (+format/readClock),
+      ActionCostsTest pins the cost table, ConfigActionCostsTest pins precedence;
+      orchestration "66h"/"71h" asserts survive on minute values
+- [x] Verify: `mvnw -B clean verify` green; live MySQL97 — V3 applied at startup
+      (save 595h → 35700 min, column default 720 → 4320, history v3 success),
+      `Connection Successful`; zero generated `initComponents()`/layout changes vs develop
+
+### Review — PR3
+The clock is now integer minutes end-to-end: one `ActionCosts` table prices every action
+(config-overridable without a rebuild in both clients), `TimeSpend` flags replace the
+"Not Enough Time"/"0h" string sentinels, and the V3 migration converted the live DB in
+place on first launch. Behaviour is byte-identical for default costs except two latent
+Swing bugs the rejected-flag guards fixed (documented above). Next: PR4
+`feat/kan29-turn-service-and-end-week` — TurnService extraction + POST end-week +
+Spring `CostsProperties` (KAN-29 Done when merged).

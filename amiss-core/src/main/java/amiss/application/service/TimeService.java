@@ -74,30 +74,51 @@ public class TimeService {
     }
 
     /**
-     * Spends {@code cost} hours of the player's remaining weekly time and returns the new
-     * remaining time formatted for the timer label, e.g. {@code "54h"}. Pass {@code 0} to read
-     * the current time without spending any. Returns {@code "Not Enough Time"} (and spends
-     * nothing) if the action would overrun the week; {@code "0h"} means the week is used up.
+     * Spends {@code cost} minutes of the player's remaining weekly time. Pass {@code 0} to
+     * read the clock without spending any. A spend that would push the clock below zero is
+     * rejected and persists nothing; a persistence failure is logged and reported as a
+     * rejection, so no action proceeds on a broken clock.
      *
-     * @param cost the whole hours the action takes (0 to just read the clock)
-     * @return the remaining time as {@code "Nh"}, or {@code "Not Enough Time"}
+     * @param cost the whole minutes the action takes (0 to just read the clock)
+     * @return the new remaining minutes plus the rejected / week-over flags
      */
-    public String getNewTime(int cost) {
+    public TimeSpend spendMinutes(int cost) {
         try {
             int time = users.getTime(username);
             if (time != -1) {
-                time = time - cost;
-                if (time < 0) {
-                    return "Not Enough Time";
+                int remaining = time - cost;
+                if (remaining < 0) {
+                    return new TimeSpend(time, true, time == 0);
                 }
-                setTime(time);
-                return time + "h";
+                setTime(remaining);
+                return new TimeSpend(remaining, false, remaining == 0);
             }
         } catch (SQLException ex) {
             log.warn("Failed to get time", ex);
         }
 
-        return "failed to get time";
+        return new TimeSpend(0, true, false);
+    }
+
+    /** Reads the clock without spending and formats it for a timer label, e.g. {@code "66h"}. */
+    public String readClock() {
+        return format(spendMinutes(0).remainingMinutes());
+    }
+
+    /**
+     * Formats a minute count for display: {@code "38h 30m"}, or just {@code "72h"} when the
+     * minutes part is zero, or just {@code "45m"} under an hour ({@code 0} renders {@code "0h"}).
+     */
+    public static String format(int minutes) {
+        int h = minutes / 60;
+        int m = minutes % 60;
+        if (m == 0) {
+            return h + "h";
+        }
+        if (h == 0) {
+            return m + "m";
+        }
+        return h + "h " + m + "m";
     }
 
     /**

@@ -15,7 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Unit tests for {@link TimeService}. The repository is mocked, so the hours-based time
+ * Unit tests for {@link TimeService}. The repository is mocked, so the minutes-based time
  * budget is exercised in isolation from MySQL. (Board-distance maths now lives in
  * {@code amiss.domain.board.Board} and is covered by {@code BoardTest}.)
  */
@@ -31,53 +31,83 @@ class TimeServiceTest {
         return new TimeService(users, USER);
     }
 
-    // ---- getNewTime: hours spend + "Nh" formatting -------------------------
+    // ---- spendMinutes: minute spend + TimeSpend flags -----------------------
 
     @Test
-    void getNewTime_spendsWholeHoursAndFormatsWithAnHSuffix() throws SQLException {
-        when(users.getTime(USER)).thenReturn(72);
-        assertEquals("66h", newService().getNewTime(6)); // 72 - 6 = 66
-        verify(users).updateTime(USER, 66);
+    void spendMinutes_spendsAndPersistsTheRemainingMinutes() throws SQLException {
+        when(users.getTime(USER)).thenReturn(4320);
+        assertEquals(new TimeSpend(3960, false, false), newService().spendMinutes(360)); // 72h - 6h = 66h
+        verify(users).updateTime(USER, 3960);
     }
 
     @Test
-    void getNewTime_spendsASingleHour() throws SQLException {
-        when(users.getTime(USER)).thenReturn(60);
-        assertEquals("59h", newService().getNewTime(1)); // 60 - 1 = 59
-        verify(users).updateTime(USER, 59);
+    void spendMinutes_zeroCostReadsTheClockUnchanged() throws SQLException {
+        when(users.getTime(USER)).thenReturn(3600);
+        assertEquals(new TimeSpend(3600, false, false), newService().spendMinutes(0));
+        verify(users).updateTime(USER, 3600);
     }
 
     @Test
-    void getNewTime_zeroCostReadsTheClockAndReturnsItUnchanged() throws SQLException {
-        when(users.getTime(USER)).thenReturn(60);
-        assertEquals("60h", newService().getNewTime(0));
-        verify(users).updateTime(USER, 60);
-    }
-
-    @Test
-    void getNewTime_returnsZeroHoursWhenTheWeekIsExactlyUsedUp() throws SQLException {
-        when(users.getTime(USER)).thenReturn(6);
-        assertEquals("0h", newService().getNewTime(6)); // 6 - 6 = 0 -> round-ended sentinel
+    void spendMinutes_flagsWeekOverWhenTheWeekIsExactlyUsedUp() throws SQLException {
+        when(users.getTime(USER)).thenReturn(360);
+        assertEquals(new TimeSpend(0, false, true), newService().spendMinutes(360));
         verify(users).updateTime(USER, 0);
     }
 
     @Test
-    void getNewTime_returnsNotEnoughTimeAndDoesNotPersistWhenTimeWouldGoNegative() throws SQLException {
-        when(users.getTime(USER)).thenReturn(5);
-        assertEquals("Not Enough Time", newService().getNewTime(6)); // 5 - 6 < 0 -> rejected
+    void spendMinutes_rejectsAndPersistsNothingWhenTimeWouldGoNegative() throws SQLException {
+        when(users.getTime(USER)).thenReturn(300);
+        assertEquals(new TimeSpend(300, true, false), newService().spendMinutes(360)); // 300 - 360 < 0
         verify(users, never()).updateTime(anyString(), anyInt());
     }
 
     @Test
-    void getNewTime_returnsFailureSentinelWhenNoRowExists() throws SQLException {
-        when(users.getTime(USER)).thenReturn(-1);
-        assertEquals("failed to get time", newService().getNewTime(6));
+    void spendMinutes_rejectionOnAnEmptyClockAlsoReportsWeekOver() throws SQLException {
+        when(users.getTime(USER)).thenReturn(0);
+        assertEquals(new TimeSpend(0, true, true), newService().spendMinutes(360));
+        verify(users, never()).updateTime(anyString(), anyInt());
     }
 
     @Test
-    void getNewTime_returnsFailureSentinelOnSqlException() throws SQLException {
+    void spendMinutes_rejectsWhenNoRowExists() throws SQLException {
+        when(users.getTime(USER)).thenReturn(-1);
+        assertEquals(new TimeSpend(0, true, false), newService().spendMinutes(360));
+        verify(users, never()).updateTime(anyString(), anyInt());
+    }
+
+    @Test
+    void spendMinutes_rejectsOnSqlException() throws SQLException {
         when(users.getTime(USER)).thenThrow(new SQLException("boom"));
-        assertEquals("failed to get time", newService().getNewTime(6));
+        assertEquals(new TimeSpend(0, true, false), newService().spendMinutes(360));
+    }
+
+    // ---- format / readClock -------------------------------------------------
+
+    @Test
+    void format_rendersHoursAndMinutes() {
+        assertEquals("38h 30m", TimeService.format(2310));
+    }
+
+    @Test
+    void format_omitsTheMinutesPartWhenZero() {
+        assertEquals("72h", TimeService.format(4320));
+    }
+
+    @Test
+    void format_rendersUnderAnHourAsMinutesOnly() {
+        assertEquals("45m", TimeService.format(45));
+    }
+
+    @Test
+    void format_rendersAnEmptyClockAsZeroHours() {
+        assertEquals("0h", TimeService.format(0));
+    }
+
+    @Test
+    void readClock_formatsTheCurrentClockWithoutSpending() throws SQLException {
+        when(users.getTime(USER)).thenReturn(2310);
+        assertEquals("38h 30m", newService().readClock());
+        verify(users).updateTime(USER, 2310);
     }
 
     // ---- position / round reads + writes -----------------------------------

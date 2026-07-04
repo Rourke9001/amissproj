@@ -58,7 +58,7 @@ class StatsServiceOrchestrationTest {
     void workMain_paysAndAdvancesWhenDressedWithEnoughTime() throws SQLException {
         when(users.getJob(USER)).thenReturn("Janitor");
         when(jobRepo.getRequiredClothing("Janitor")).thenReturn(null); // no dress code
-        when(users.getTime(USER)).thenReturn(72);
+        when(users.getTime(USER)).thenReturn(4320);
         when(jobRepo.getSalary("Janitor")).thenReturn(20);
         when(users.getDebt(USER)).thenReturn(0);
         when(users.getCash(USER)).thenReturn(100);
@@ -66,9 +66,9 @@ class StatsServiceOrchestrationTest {
         ActionResult r = service.workMain();
 
         assertEquals("\nYou work as a Janitor and Earn R20\nYou now have R120", r.message());
-        assertEquals("66h", r.timer());            // 72 - 6 = 66
+        assertEquals("66h", r.timer());            // 4320 - 360 = 3960 min = 66h
         assertEquals("100", r.money());             // re-read of the (mocked) stored cash
-        verify(users).updateTime(USER, 66);
+        verify(users).updateTime(USER, 3960);
         verify(userStats).incrementWork(USER);
         verify(users).updateCash(USER, 120);
     }
@@ -77,7 +77,7 @@ class StatsServiceOrchestrationTest {
     void workMain_reportsNotEnoughTimeAndChangesNothing() throws SQLException {
         when(users.getJob(USER)).thenReturn("Janitor");
         when(jobRepo.getRequiredClothing("Janitor")).thenReturn(null);
-        when(users.getTime(USER)).thenReturn(5); // 5 - 6 < 0
+        when(users.getTime(USER)).thenReturn(300); // 300 - 360 < 0
 
         ActionResult r = service.workMain();
 
@@ -110,25 +110,25 @@ class StatsServiceOrchestrationTest {
     @Test
     void eatMain_buysFoodAndAddsHappinessOnSuccess() throws SQLException {
         when(users.getEat(USER)).thenReturn(0);
-        when(users.getTime(USER)).thenReturn(72);
+        when(users.getTime(USER)).thenReturn(4320);
         when(users.getCash(USER)).thenReturn(100);
 
         ActionResult r = service.eatMain(30);
 
         assertEquals("\nYou spent R30, You have R70 left\nThat Was Yummy, One point into happiness",
                 r.message());
-        assertEquals("71h", r.timer());            // 72 - 1 = 71
+        assertEquals("71h", r.timer());            // 4320 - 60 = 4260 min = 71h
         assertEquals("100", r.money());
         verify(users).updateEat(USER, 1);           // had none -> store one
         verify(users).updateCash(USER, 70);
         verify(userStats).incrementHappiness(USER);
-        verify(users).updateTime(USER, 71);
+        verify(users).updateTime(USER, 4260);
     }
 
     @Test
     void eatMain_reportsNotEnoughTimeAndChangesNothing() throws SQLException {
         when(users.getEat(USER)).thenReturn(0);
-        when(users.getTime(USER)).thenReturn(0); // 0 - 1 < 0
+        when(users.getTime(USER)).thenReturn(0); // 0 - 60 < 0
 
         ActionResult r = service.eatMain(30);
 
