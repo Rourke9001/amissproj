@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.rourke9001</groupId>
+        <artifactId>amissproj</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>amiss-coverage</artifactId>
+    <packaging>pom</packaging>
+
+    <name>AmissProj :: coverage aggregate</name>
+    <description>Aggregates the per-module JaCoCo results into one report for CI
+        (target/site/jacoco-aggregate). Depends on every code module so the
+        reactor builds it last.</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.rourke9001</groupId>
+            <artifactId>amiss-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.rourke9001</groupId>
+            <artifactId>amiss-swing</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+              report-aggregate merges the jacoco.exec of every dependency module.
+              Bound to verify, so CI runs `mvnw clean verify` (not just package)
+              to produce target/site/jacoco-aggregate/jacoco.{csv,html...}.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jacoco-report-aggregate</id>
+                        <phase>verify</phase>
+                        <goals><goal>report-aggregate</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

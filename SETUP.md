@@ -9,11 +9,11 @@ This guide gets it running again on a modern machine **without NetBeans**.
 
 | | |
 |---|---|
-| **Language / UI** | Java 8 source, Swing desktop GUI (`amiss` package) |
-| **Entry point** | `amiss.LoginGUI` |
-| **Persistence** | MySQL, accessed through the thin `amiss.DB` JDBC wrapper |
+| **Language / UI** | Java 21, Swing desktop GUI (`amiss.presentation` package in `amiss-swing`) |
+| **Entry point** | `amiss.presentation.ui.LoginGUI` |
+| **Persistence** | MySQL, accessed through the thin `Jdbc` helper behind repository ports (`amiss-core`) |
 | **External libs** | Maven-managed (MySQL Connector/J, SLF4J + Logback, jBCrypt); the one non-Central jar, NetBeans `AbsoluteLayout`, is vendored under `vendor/` |
-| **Build** | Maven via the committed `mvnw` wrapper — no global Maven/NetBeans/Ant needed |
+| **Build** | Maven multi-module reactor (`amiss-core` rules + `amiss-swing` client) via the committed `mvnw` wrapper — no global Maven/NetBeans/Ant needed |
 
 The game stores **all** state in MySQL (database `amissdb`). Without a running
 database the login window still opens, but you cannot create or load a player.
@@ -22,9 +22,10 @@ database the login window still opens, but you cannot create or load a player.
 
 ## 2. Prerequisites
 
-1. **A JDK** — already installed (`C:\Program Files\Java\jdk-20`). Any JDK 17+
-   works (the Flyway engine that migrates the schema at startup needs 17+; the
-   source itself still targets Java 8).
+1. **A JDK 21 or newer** — installed at
+   `C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot` (Temurin 21 LTS).
+   The whole reactor compiles with `--release 21` (Phase 3), so older JDKs no
+   longer build it.
 2. **MySQL Community Server 8.x or 9.x** — see step 3.
 
 > **Driver note:** the project originally shipped MySQL Connector/J **5.1.22 (2012)**,
@@ -50,7 +51,7 @@ database the login window still opens, but you cannot create or load a player.
      as a least-privilege **`amiss`** user that the script creates (plus a
      DDL-capable **`amiss_migrator`** account used only while Flyway applies the
      schema migrations at startup). App connection settings live in
-     `src/main/resources/application.properties` and can be overridden at runtime
+     `amiss-swing/src/main/resources/application.properties` and can be overridden at runtime
      with the `AMISS_DB_URL` / `AMISS_DB_USER` / `AMISS_DB_PASSWORD` /
      `AMISS_DB_MIGRATOR_USER` / `AMISS_DB_MIGRATOR_PASSWORD` environment
      variables — no need to edit Java or rebuild.
@@ -68,7 +69,7 @@ Get-Service | Where-Object Name -match 'mysql'   # STATUS should be Running
 [`db/bootstrap.sql`](db/bootstrap.sql) creates only what Flyway can't create for
 itself: the `amissdb` database and the two MySQL accounts. The tables and seed
 data live in **versioned Flyway migrations**
-(`src/main/resources/db/migration/`), which the game applies automatically the
+(`amiss-core/src/main/resources/db/migration/`), which the game applies automatically the
 first time it starts. Run it once, whichever way is easiest:
 
 **Option A — command line** (the MySQL Installer adds `mysql` to PATH; if not,
@@ -101,8 +102,8 @@ the startup migrations run. It is safe to re-run — everything is
 
 ```powershell
 # from the project root (mvnw downloads a pinned Maven on first run)
-.\mvnw clean package                   # compiles + tests + builds target\AmissProj.jar
-java -jar target\AmissProj.jar         # launches the game
+.\mvnw clean package                          # compiles + tests + builds amiss-swing\target\AmissProj.jar
+java -jar amiss-swing\target\AmissProj.jar    # launches the game
 ```
 
 > The PowerShell helpers `scripts\build.ps1` / `scripts\run.ps1` still work and
@@ -125,7 +126,8 @@ the main city screen opens.
 | `Schema migration failed` in the console | Flyway couldn't connect as `amiss_migrator` — typically a pre-Flyway install. Re-run `db\bootstrap.sql` as root (it adds the account), or set `AMISS_DB_MIGRATOR_USER` / `AMISS_DB_MIGRATOR_PASSWORD`. |
 | `Public Key Retrieval is not allowed` | Shouldn't happen (the JDBC URL sets `allowPublicKeyRetrieval=true`). If it does, confirm `DB.java` URL wasn't reverted. |
 | `Cannot load driver` | The MySQL driver didn't resolve — rebuild with `.\mvnw clean package` so the connector is on the classpath. |
-| A screen has no background image | Backgrounds load from bundled resources in `src/main/resources/amiss/resources/`. If one is blank the console prints `Asset missing on classpath: ...` — regenerate them with `powershell -File scripts\gen-placeholders.ps1`, then rebuild. |
+| The window never opens on double-click, or `java -jar` dies instantly with `UnsupportedClassVersionError` | The default `java` on PATH is older than 21 (e.g. the old JDK 20 shim). Launch via `powershell -File scripts\run.ps1` (it finds the Temurin 21 install itself), or point `JAVA_HOME`/PATH at a JDK 21+. |
+| A screen has no background image | Backgrounds load from bundled resources in `amiss-swing/src/main/resources/amiss/resources/`. If one is blank the console prints `Asset missing on classpath: ...` — regenerate them with `powershell -File scripts\gen-placeholders.ps1`, then rebuild. |
 
 ---
 
@@ -164,7 +166,12 @@ the main city screen opens.
   `src/main/resources/db/migration/`, applied automatically at startup by a
   dedicated `amiss_migrator` account; `db/bootstrap.sql` now only creates the
   database + the two MySQL accounts. Existing pre-Flyway databases are
-  *baselined* on first launch (saves kept). Running the game now needs JDK 17+.
+  *baselined* on first launch (saves kept).
+- **Phase 3 — multi-module reactor** — the single Maven module split into
+  `amiss-core` (domain/application/infrastructure + migrations + the test suite)
+  and `amiss-swing` (the desktop client, still shading `AmissProj.jar`), with an
+  `amiss-coverage` module aggregating JaCoCo for CI — making room for the Spring
+  Boot `amiss-api` module. The whole build now targets **Java 21**.
 
 ---
 

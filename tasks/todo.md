@@ -291,3 +291,34 @@ ruleset for `develop`, mirroring the existing `main` ruleset precedent.
       attempted `gh api .../rulesets -X POST` — same 403 plan-gate as `main`
       (private repo needs Pro or public); committed ready-to-apply, as with
       `protect-main.json`
+
+---
+
+## Phase 3 / KAN-16 start — KAN-27 Spring Boot scaffold  (2026-07-03)
+Plan approved (`.claude/plans/witty-nibbling-pumpkin.md`). Decisions: time → integer
+minutes (40 min/ring-step, week 3600/4320 — Jones-notes fractional movement without
+floats); 1 PR = 1 JIRA subtask; monorepo (React in `frontend/` at KAN-19); Temurin 21
+installed, `release=21` everywhere.
+
+### PR1 — `chore/kan27-multi-module-reactor`
+- [x] Install Temurin 21 (winget) + verify `mvnw -v` shows 21
+- [x] JIRA: KAN-16 + KAN-27 → In Progress; design comments on KAN-29/KAN-30
+- [ ] Commit 1: pure `git mv` → `amiss-core` (domain/application/infrastructure +
+      migrations + tests) and `amiss-swing` (presentation + assets +
+      application.properties + logback.xml)
+- [ ] Commit 2: reactor poms (parent + core + swing + coverage aggregate), `release=21`,
+      logback 1.5.x / slf4j 2.0.17 bump, CI → `clean verify` + aggregate JaCoCo paths,
+      scripts → `amiss-swing/target/AmissProj.jar`, README/SETUP/ARCHITECTURE updates
+- [ ] Verify: `mvnw -B clean verify` green (~89 tests); Swing jar launches + connects
+
+### PR2 — `feat/kan27-spring-boot-api-scaffold` (stacked on PR1)
+- [ ] `amiss-api` module: Boot 3.5 BOM (module-only), starters web/validation/actuator/jdbc
+- [ ] `PersistenceConfig` beans (Jdbc + 4 adapters), `GameServicesFactory`,
+      `GlobalExceptionHandler` (RFC 7807), `application.yml` (AMISS_DB_* + migrator split)
+- [ ] Core: `Jdbc` gains DataSource constructor (pooled per call); Swing path untouched
+- [ ] Tests: context smoke (flyway off), advice `@WebMvcTest` problem+json
+- [ ] Verify: `spring-boot:run` → `GET /actuator/health` UP (db+flyway); Swing regression
+- [ ] Push both branches; `gh pr create` (PR1 → develop, PR2 → PR1 branch)
+
+### Review
+(fill in at end of session)
