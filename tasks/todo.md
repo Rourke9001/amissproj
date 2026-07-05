@@ -436,3 +436,158 @@ KAN-30 is complete (board model + move with full problem-detail contracts). KAN-
 Done when the stack (#17 → #18 → PR5) merges. Next: KAN-28 (player state DTO
 enrichment + highscores), then KAN-31 (bank/rent), KAN-32 (jobs/university/food) to
 close KAN-16.
+
+---
+
+## Phase 3 / KAN-28 PR6 — enriched state DTO + high scores  (2026-07-04)
+Branch `feat/kan28-state-highscores`, stacked on PR5. First of the four-PR chain from
+`.claude/plans/next-up-new-session-tranquil-candy.md` that closes KAN-16. (Bookkeeping for this
+PR was deferred and is written retroactively as part of PR9's closing bookkeeping — see the
+KAN-32-api PR9 section below.)
+
+- [x] `JobService.getJob()` made public (was assembler-only private access);
+      `getClothingLevel()` added so the assembler can read both without new core surface area
+- [x] `PlayerStateDto` gains `foodWeeks, clothing, job, stats, goals` (new `JobDto`, `StatsDto`,
+      `GoalsDto`, `GoalDto` records); `PlayerStateAssembler` populates them from
+      `services.{food,jobs,education}()` + `Validation.parseIntOrDefault` for the
+      String-returning happiness/work accessors
+- [x] `GET /api/highscores` (new `HighscoresController`, injects `UserRepository` directly —
+      no per-player services needed) — ranks `UserRepository.highScores()` rows 1-based
+- [x] Fixed the `baordv2.png` filename typo: `git mv` → `docs/design/boardv2.png`
+- [x] Tests: `PlayerStateAssemblerTest` (real `GameServices` over mocked ports),
+      `HighscoresControllerTest`, `PlayerControllerTest.dto()` updated for the new shape
+- [x] Verify: full reactor green; live smoke against MySQL97 confirmed the enriched
+      `GET /api/players/{u}` shape and ranked `GET /api/highscores`
+
+### Review — PR6
+`PlayerStateDto` is now the single call the future React client needs for a full game-state
+screen instead of stitching together five service calls itself, and the high-score board is
+finally HTTP-callable (`HighScoreGUI`'s `UserRepository.highScores()` query, ranked). Verified
+end-to-end against live MySQL. Next: PR7 (KAN-31 bank/rent), PR8 (KAN-32-core typed outcomes),
+PR9 (KAN-32-api endpoints, this file's most recent section) to close KAN-16.
+
+---
+
+## Phase 3 / KAN-31 PR7 — bank + rent  (2026-07-04)
+Branch `feat/kan31-bank-rent`, stacked on PR6. Bank is greenfield (no bank column existed
+before this PR). (Bookkeeping deferred — written retroactively with PR9.)
+
+- [x] `V4__bank_balance.sql` — `tbluser.bank INT NOT NULL DEFAULT 0`; `insertNewUser` switched
+      from a positional `INSERT` to an explicit column list so it survives future columns
+      (a positional insert would have silently broken); `resetUser` zeroes `bank`
+- [x] `UserRepository` port + adapter: `getBank`, `depositToBank`/`withdrawFromBank` — each a
+      single atomic conditional `UPDATE ... WHERE cash/bank >= ?`, so concurrent requests for
+      the same player can't lose an update
+- [x] New `BankService` (`deposit`/`withdraw` → typed `BankTransaction`) and `RentService`
+      (`payRent()` → typed `RentPayment`, a straight extraction of
+      `RentOfficeGUI.btnRentActionPerformed` with a defensive not-due guard the API needs but
+      Swing never reaches); `TravelService.currentLocation()` added to back the new
+      `LocationGuard` (every mutating action endpoint requires standing at the right building)
+- [x] `PlayerStateDto` gains `bank`; new `BankController` (`/bank/deposit`, `/bank/withdraw`)
+      and `RentController` (`/rent/pay`); `RentOfficeGUI` delegates to `RentService`, rendering
+      byte-identical strings
+- [x] New exceptions: `InvalidAmountException` (400), `InsufficientFundsException`,
+      `RentNotDueException`, `WrongLocationException` (409 each) + handler rows
+- [x] Tests: `BankServiceTest`, `RentServiceTest` (real collaborators over mocked ports),
+      `TravelServiceTest` `currentLocation` cases, `BankControllerTest`, `RentControllerTest`
+      (every status + problem envelope), assembler/dto() updates for `bank`
+- [x] Verify: full reactor green; live smoke confirmed V4 applied at boot, deposit/withdraw
+      balance updates, over-withdraw 409, wrong-location 409, rent-not-due 409 on a non-4th round
+
+### Review — PR7
+Bank is minimal and backend-only as scoped (no interest — that's the KAN-5 economy epic); the
+atomic conditional-update pattern means deposit/withdraw can't lose a concurrent update without
+needing a transaction. `LocationGuard` introduced here becomes the standard every later mutating
+endpoint (PR9's jobs/university/food controllers) reuses. Verified end-to-end against live
+MySQL. Next: PR8 (KAN-32-core typed action outcomes).
+
+---
+
+## Phase 3 / KAN-32-core PR8 — typed action outcomes for work/apply/study/eat/shop  (2026-07-04)
+Branch `feat/kan32-core-actions`, stacked on PR7. Moves the work/apply/study/eat/groceries/
+clothes rules that used to live only in Swing button handlers into typed core methods, so Swing
+and the REST API (PR9) share one rule source. (Bookkeeping deferred — written retroactively
+with PR9.)
+
+- [x] New typed outcome records: `WorkOutcome`, `EatOutcome`, `PurchaseOutcome` (shared by
+      groceries + clothes), `ApplyOutcome`, `EnrollOutcome`, `StudyOutcome`
+- [x] `StatsService.work()/eat(price)/buyGroceries(price,weeks)/buyClothes(level,price)`;
+      `workMain()`/`eatMain()` become thin formatters over them, rebuilding today's exact
+      strings — all pre-existing message-pinning tests stayed green **unmodified**, proving
+      byte-identical delegation
+- [x] `JobService.apply(jobName)` — ctor gains `TimeService`/`ActionCosts` (rippled into
+      `GameServices` wiring + every `JobServiceTest` construction); unknown-job checked first,
+      before any time is charged
+- [x] New `UniversityService` (`enroll()`/`study()`, mirrors `UniversityGUI`'s handlers exactly;
+      constants `ENROLL_FEE=50`, `STUDIES_PER_DEGREE=10`, `MAX_EDUCATION=8`, the 8 `DEGREES`
+      names); `GameServices` exposes `university()`
+- [x] New domain catalogs `FastFoodItem`, `FoodPack`, `ClothingItem` (`amiss.domain.model`) —
+      one canonical price/weeks/level source, replacing hardcoded Swing price switches
+- [x] **Deliberate bug fix (user-approved):** `ClothesStoreGUI` called `job.setClothes()`
+      *before* checking weekOver/cash, so a failed purchase still upgraded the player's clothes
+      for free. `StatsService.buyClothes()` now validates and charges first; pinned with a
+      regression test
+- [x] Tests: `UniversityServiceTest`, `CatalogsTest`, expanded `JobServiceTest` (apply matrix)
+      and `StatsServiceOrchestrationTest` (work/eat/buyGroceries/buyClothes matrices incl. the
+      clothes-bug regression) — 135 → 166 core tests, all green
+- [x] Verify: full reactor green; live-smoke-tested against MySQL97 (apply/work/eat/enroll/
+      study/buyClothes all confirmed correct against a live save, including the clothes fix);
+      `initComponents()` byte-identical per the lessons.md grep
+
+### Review — PR8
+The single-source-of-truth goal is met: every action rule Swing's button handlers implemented
+now has a typed core method Swing delegates to, with the message-pinning tests proving the
+delegation is byte-identical in normal play. The one deliberate behaviour change (the clothes
+free-upgrade bug) is fixed and regression-tested — see `tasks/lessons.md`. Next: PR9 puts the
+REST face on these rules (KAN-32-api) and does the deferred closing bookkeeping for this whole
+four-PR chain.
+
+---
+
+## Phase 3 / KAN-32-api PR9 — employment/university/food endpoints + close out KAN-16  (2026-07-05)
+Branch `feat/kan32-api-endpoints`, stacked on PR8 (`develop` tip after PR8 merged). Last PR of
+the four-PR chain; also performs the deferred closing bookkeeping for PR6/PR7/PR8 above, since
+none of those PRs' sessions got to it at the time.
+
+- [x] `JobRepository.listAll()` port + adapter addition (new `JobListing` domain record) — the
+      one missing read needed for `GET /api/jobs`; no other implementers, additive-only
+- [x] New `EmploymentController` (`GET /api/jobs`, `POST .../jobs/apply`, `POST .../work` — the
+      work location guard is inline rather than `LocationGuard` since a job's required location
+      varies per job, read from `tbljobs.location`), `UniversityController` (`GET /api/courses`,
+      `POST .../enroll`, `POST .../study`), `FoodController` (`GET /api/food`, `POST .../eat`,
+      `POST .../groceries`, `POST .../clothes` — the clothes endpoint is the KAN-16 scope
+      addition per locked decision 8)
+- [x] 7 new exceptions (`UnknownJobException`, `UnknownItemException`, `NoJobException`,
+      `UnderdressedException`, `NotEnrolledException`, `AlreadyEnrolledException`,
+      `EducationCompleteException`) + `GlobalExceptionHandler` rows; one overload on
+      `WrongLocationException(String required, Location actual)` for the free-text job-location
+      guard
+- [x] 17 new DTOs across the three controllers' request/response shapes (see the PR body for
+      the full list)
+- [x] Tests: `EmploymentControllerTest` (14), `UniversityControllerTest` (14),
+      `FoodControllerTest` (16) — pinned `@WebMvcTest` slices, every endpoint × every status;
+      amiss-api 44 → 79(+ pre-existing) tests, reactor total 245
+- [x] Verify: full reactor green (245 tests); live smoke against MySQL97 — the entire loop
+      (move → apply → work → eat → enroll → study → groceries → clothes) exercised against a
+      disposable player, every wrong-location/already-enrolled/unknown-item error envelope
+      confirmed, `studiesRemaining` derivation checked against real `prog` values
+- [x] `tasks/todo.md` — this section plus the missing PR6/PR7/PR8 sections above
+- [x] `ROADMAP.md` — ticked "Extract the game logic into a Spring Boot REST API"
+- [x] JIRA — KAN-28/KAN-31/KAN-32 → Done; KAN-16 → Done with a comment on the clothes-shop
+      scope addition and auth deferring to KAN-36
+- [x] `tasks/lessons.md` — the clothes-bug + fix, and the free-text wrong-location guard lesson
+
+### Review — PR9
+KAN-16 ("Spring Boot REST API over the game services") is functionally complete: every action
+in its acceptance (load player, move, work, study, shop, pay-rent) is now HTTP-callable, with
+login/auth explicitly deferred to KAN-36. The job-location guard needed a small design decision
+not covered by the existing `LocationGuard` helper — a job's location is a free-text
+`tbljobs.location` value that varies per job, not a fixed board stop — solved with a `String`
+overload on `WrongLocationException` rather than adding a domain-level reverse lookup from
+display name back to `Location`, keeping the change scoped to the API layer. `studiesRemaining`
+on `StudyResponse` is a derived convenience field (not present in the core `StudyOutcome`):
+`0` when a study session just completed the degree, otherwise
+`STUDIES_PER_DEGREE - progress + 1`, verified against `UniversityService.study()`'s `prog`
+arithmetic both in unit tests and against the live DB. Phase 3's Spring Boot REST API work is
+now complete (JPA/Hibernate, Spring Security auth, the React SPA, OpenAPI, and Docker remain as
+separate, later ROADMAP items).
