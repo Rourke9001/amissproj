@@ -73,7 +73,7 @@ public class EmploymentController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Job application failed for '" + username + "'", null);
+                throw new PersistenceFailureException("Job application failed for '" + username + "'");
             case INSUFFICIENT_EDUCATION:
                 return new ApplyResponse(false, "INSUFFICIENT_EDUCATION", services.costs().applyJobMinutes(),
                         outcome.jobName(), null, assembler.assemble(username, services));
@@ -105,7 +105,7 @@ public class EmploymentController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Work shift failed for '" + username + "'", null);
+                throw new PersistenceFailureException("Work shift failed for '" + username + "'");
             default:
                 return new WorkResponse(outcome.jobName(), outcome.hourlyWage(), services.costs().workMinutes(),
                         outcome.debtDocked(), assembler.assemble(username, services));

@@ -71,7 +71,7 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Eating failed for '" + username + "'", null);
+                throw new PersistenceFailureException("Eating failed for '" + username + "'");
             case INSUFFICIENT_CASH:
                 return new EatResponse(item.name(), item.price(), false, "INSUFFICIENT_CASH",
                         services.costs().eatMinutes(), assembler.assemble(username, services));
@@ -96,7 +96,7 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Grocery purchase failed for '" + username + "'", null);
+                throw new PersistenceFailureException("Grocery purchase failed for '" + username + "'");
             default:
                 return new GroceriesResponse(pack.name(), pack.price(), pack.weeks(),
                         services.food().getFood(), assembler.assemble(username, services));
@@ -118,7 +118,7 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Clothing purchase failed for '" + username + "'", null);
+                throw new PersistenceFailureException("Clothing purchase failed for '" + username + "'");
             default:
                 return new ClothesResponse(item.name(), item.price(), item.level(), assembler.assemble(username, services));
         }

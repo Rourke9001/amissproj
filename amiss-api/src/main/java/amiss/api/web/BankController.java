@@ -58,7 +58,7 @@ public class BankController {
             case INSUFFICIENT_FUNDS:
                 throw new InsufficientFundsException(username);
             case FAILED:
-                throw new PersistenceFailureException("Bank transfer failed for '" + username + "'", null);
+                throw new PersistenceFailureException("Bank transfer failed for '" + username + "'");
             default:
                 return new BankTransactionResponse(operation, amount, assembler.assemble(username, services));
         }

@@ -13,6 +13,10 @@ package amiss.application.port;
  */
 public class PersistenceFailureException extends RuntimeException {
 
+    public PersistenceFailureException(String message) {
+        super(message);
+    }
+
     public PersistenceFailureException(String message, Throwable cause) {
         super(message, cause);
     }

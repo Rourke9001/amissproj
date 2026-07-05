@@ -49,7 +49,7 @@ public class RentController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Rent payment failed for '" + username + "'", null);
+                throw new PersistenceFailureException("Rent payment failed for '" + username + "'");
             default:
                 return new RentPaymentResponse(RentService.WEEKLY_RENT,
                         services.costs().payRentMinutes(), assembler.assemble(username, services));

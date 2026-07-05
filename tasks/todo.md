@@ -591,3 +591,45 @@ on `StudyResponse` is a derived convenience field (not present in the core `Stud
 arithmetic both in unit tests and against the live DB. Phase 3's Spring Boot REST API work is
 now complete (JPA/Hibernate, Spring Security auth, the React SPA, OpenAPI, and Docker remain as
 separate, later ROADMAP items).
+
+---
+
+## Phase 3 / KAN-17 (JPA) + KAN-18 (Security) — six stacked PRs  (2026-07-05)
+Orchestrated session: implementation delegated to cheaper subagents; planning, diff review and
+final verification stay here. Chain off `develop`, each PR stacked on the previous. Design
+decisions locked up front:
+- JPA lives in **amiss-api** (core stays Boot-free per the reactor rule); JDBC adapters stay in
+  core for Swing — KAN-34 says keep both wired.
+- Entities map the Flyway schema **as-is with natural keys** (`name`/`job`/`topic`); no
+  surrogate IDs (would be a schema change; `ddl-auto=validate` means Flyway owns the schema).
+- KAN-17's "map SQLException to a tech-neutral exception" ships as its own mechanical PR
+  **before** the KAN-34 swap, so the swap PR's diff leaves the service tests untouched (the
+  acceptance proof that the ports held).
+- Bank deposit/withdraw stay **atomic conditional UPDATEs** (`@Modifying` JPQL mirroring the
+  JDBC SQL 1:1) — never load-modify-save; all setter-style writes mirror their JDBC SQL.
+- JWT via **spring-boot-starter-oauth2-resource-server** (HS256 secret from `AMISS_JWT_SECRET`),
+  no third-party jjwt. Login reuses core `PasswordHasher.matches` + legacy-plaintext rehash
+  through the port — one auth rule source shared with Swing (why there's no UserDetailsService).
+- KAN-37 keeps `{username}` in the path (shipped API shape) and 403s on principal mismatch.
+
+- [x] PR A `feat/kan33-jpa-entities` — starter-data-jpa; User/UserStats(@MapsId 1:1)/Job/Help
+      entities; `ddl-auto=validate`, `open-in-view=false`; context-smoke test kept DB-free;
+      live boot validate green on MySQL97 *(PR #26; 245 tests green, health UP, no
+      SchemaManagementException; note: no "goals" table exists — 4 real tables mapped)*
+- [ ] PR B `refactor/kan17-persistence-exception` — unchecked `PersistenceException` replaces
+      `throws SQLException` on the 4 ports; services/Swing/JDBC adapters/tests updated
+      mechanically; GameServicesFactory + handler simplified
+- [ ] PR C `feat/kan34-spring-data-ports` — Spring Data repos + thin adapters implement the
+      ports; PersistenceConfig swaps beans; core service tests untouched in this diff; live
+      API smoke identical before/after
+- [ ] PR D `feat/kan35-testcontainers` — failsafe + Testcontainers MySQL ITs (Flyway →
+      JPA repos; port-contract CRUD, stats round-trip, BCrypt hash survives);
+      `disabledWithoutDocker` keeps plain builds green; CI runs them (ubuntu has Docker)
+- [ ] PR E `feat/kan36-auth-jwt` — register (Validation rules, 409 taken) + login → short-lived
+      HS256 JWT; legacy rehash parity; game endpoints stay permitAll this PR; problem+json 401
+      entry point; slices import SecurityConfig
+- [ ] PR F `feat/kan37-route-protection` — lock `/api/**` (permit auth/highscores/health);
+      path-username == principal else 403; CORS from `amiss.cors.allowed-origins`; health
+      details tightened; anon 401 / cross-player 403 / own 200 tests
+- [ ] Bookkeeping: JIRA transitions + PR-link comments; ROADMAP ticks (JPA + Security);
+      lessons.md if corrections arise

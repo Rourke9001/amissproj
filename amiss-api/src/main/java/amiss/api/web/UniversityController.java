@@ -68,7 +68,7 @@ public class UniversityController {
             case WEEK_OVER:
                 throw new WeekOverException(username);
             case FAILED:
-                throw new PersistenceFailureException("Enrollment failed for '" + username + "'", null);
+                throw new PersistenceFailureException("Enrollment failed for '" + username + "'");
             default:
                 return new EnrollResponse(UniversityService.ENROLL_FEE, assembler.assemble(username, services));
         }
@@ -90,7 +90,7 @@ public class UniversityController {
             case WEEK_OVER:
                 throw new WeekOverException(username);
             case FAILED:
-                throw new PersistenceFailureException("Study session failed for '" + username + "'", null);
+                throw new PersistenceFailureException("Study session failed for '" + username + "'");
             default:
                 int studiesRemaining = outcome.status() == StudyOutcome.Status.DEGREE_COMPLETED
                         ? 0
