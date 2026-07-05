@@ -23,6 +23,12 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  jpa:
+    # Flyway owns the schema; Hibernate only validates its entity mappings
+    # against it at startup — never generates or alters DDL (KAN-33).
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
 
 # Game balance (KAN-29): any amiss.costs.* key overrides the built-in ActionCosts
 # default (all values are integer minutes). Same table the Swing client reads via
