@@ -3,10 +3,10 @@ package amiss.api.web;
 import amiss.api.config.GameServicesFactory;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InvalidAmountException;
-import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.WeekOverException;
 import amiss.api.web.dto.BankRequest;
 import amiss.api.web.dto.BankTransactionResponse;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.service.BankTransaction;
 import amiss.application.service.GameServices;
 import amiss.domain.board.Location;
@@ -58,7 +58,7 @@ public class BankController {
             case INSUFFICIENT_FUNDS:
                 throw new InsufficientFundsException(username);
             case FAILED:
-                throw new PersistenceFailureException("Bank transfer failed for '" + username + "'");
+                throw new PersistenceFailureException("Bank transfer failed for '" + username + "'", null);
             default:
                 return new BankTransactionResponse(operation, amount, assembler.assemble(username, services));
         }

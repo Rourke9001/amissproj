@@ -1,7 +1,7 @@
 package amiss.application.service;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +39,7 @@ public class FoodService {
 
         try {
             users.updateEat(username, eat);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to update food", ex);
         }
     }
@@ -51,7 +51,7 @@ public class FoodService {
     public int getFood() {
         try {
             return users.getEat(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to get stored food", ex);
         }
         return 0;
@@ -76,7 +76,7 @@ public class FoodService {
                     return eaten;
                 }
             }
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to get has-eaten", ex);
         }
 

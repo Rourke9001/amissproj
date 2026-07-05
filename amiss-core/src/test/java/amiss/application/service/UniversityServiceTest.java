@@ -11,7 +11,6 @@ import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
-import java.sql.SQLException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +52,7 @@ class UniversityServiceTest {
     // ---- enroll ----------------------------------------------------------------
 
     @Test
-    void enroll_chargesTheFeeAndStartsProgress() throws SQLException {
+    void enroll_chargesTheFeeAndStartsProgress() {
         when(userStats.getEducation(USER)).thenReturn(0);
         when(userStats.getEduprog(USER)).thenReturn(0);
         when(users.getCash(USER)).thenReturn(100);
@@ -66,7 +65,7 @@ class UniversityServiceTest {
     }
 
     @Test
-    void enroll_insufficientCashRejectsAndChargesNothing() throws SQLException {
+    void enroll_insufficientCashRejectsAndChargesNothing() {
         when(userStats.getEducation(USER)).thenReturn(0);
         when(userStats.getEduprog(USER)).thenReturn(0);
         when(users.getCash(USER)).thenReturn(10); // 10 < fee 50
@@ -79,7 +78,7 @@ class UniversityServiceTest {
     }
 
     @Test
-    void enroll_alreadyEnrolledIsRejectedBeforeAnyCharge() throws SQLException {
+    void enroll_alreadyEnrolledIsRejectedBeforeAnyCharge() {
         when(userStats.getEducation(USER)).thenReturn(2);
         when(userStats.getEduprog(USER)).thenReturn(5); // mid-study
 
@@ -91,7 +90,7 @@ class UniversityServiceTest {
     }
 
     @Test
-    void enroll_educationCompleteIsRejectedBeforeAnyCharge() throws SQLException {
+    void enroll_educationCompleteIsRejectedBeforeAnyCharge() {
         when(userStats.getEducation(USER)).thenReturn(8);
 
         EnrollOutcome outcome = service.enroll();
@@ -104,7 +103,7 @@ class UniversityServiceTest {
     // ---- study -----------------------------------------------------------------
 
     @Test
-    void study_advancesProgressWithoutCompletingTheDegree() throws SQLException {
+    void study_advancesProgressWithoutCompletingTheDegree() {
         when(userStats.getEducation(USER)).thenReturn(0);
         when(userStats.getEduprog(USER)).thenReturn(1);
         when(users.getTime(USER)).thenReturn(4320);
@@ -117,7 +116,7 @@ class UniversityServiceTest {
     }
 
     @Test
-    void study_completesTheDegreeOnTheTenthStudy() throws SQLException {
+    void study_completesTheDegreeOnTheTenthStudy() {
         when(userStats.getEducation(USER)).thenReturn(0);
         when(userStats.getEduprog(USER)).thenReturn(10); // the 10th study: prog becomes 11
         when(users.getTime(USER)).thenReturn(4320);
@@ -130,7 +129,7 @@ class UniversityServiceTest {
     }
 
     @Test
-    void study_completesTheFinalDegreeAtEducationLevelEight() throws SQLException {
+    void study_completesTheFinalDegreeAtEducationLevelEight() {
         when(userStats.getEducation(USER)).thenReturn(7); // "Publishing", the last degree
         when(userStats.getEduprog(USER)).thenReturn(10);
         when(users.getTime(USER)).thenReturn(4320);
@@ -142,7 +141,7 @@ class UniversityServiceTest {
     }
 
     @Test
-    void study_insufficientTimeRejectsAndChangesNothing() throws SQLException {
+    void study_insufficientTimeRejectsAndChangesNothing() {
         when(userStats.getEducation(USER)).thenReturn(0);
         when(userStats.getEduprog(USER)).thenReturn(1);
         when(users.getTime(USER)).thenReturn(300); // 300 - 360 < 0
@@ -155,7 +154,7 @@ class UniversityServiceTest {
     }
 
     @Test
-    void study_notEnrolledIsRejectedBeforeAnyCharge() throws SQLException {
+    void study_notEnrolledIsRejectedBeforeAnyCharge() {
         when(userStats.getEducation(USER)).thenReturn(0);
         when(userStats.getEduprog(USER)).thenReturn(0);
 
@@ -167,7 +166,7 @@ class UniversityServiceTest {
     }
 
     @Test
-    void study_educationCompleteIsRejectedBeforeAnyCharge() throws SQLException {
+    void study_educationCompleteIsRejectedBeforeAnyCharge() {
         when(userStats.getEducation(USER)).thenReturn(8);
 
         StudyOutcome outcome = service.study();

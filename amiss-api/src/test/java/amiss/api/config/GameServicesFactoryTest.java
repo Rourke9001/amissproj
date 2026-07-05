@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.PlayerNotFoundException;
 import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
 import amiss.domain.model.User;
@@ -31,7 +31,7 @@ class GameServicesFactoryTest {
     }
 
     @Test
-    void forPlayer_assemblesServicesForAnExistingPlayer() throws SQLException {
+    void forPlayer_assemblesServicesForAnExistingPlayer() {
         when(users.findByName("bob")).thenReturn(Optional.of(
                 new User("bob", 0, 2, 72, 100, 1, "Unemployed", 1, 1, 0, 0)));
 
@@ -39,7 +39,7 @@ class GameServicesFactoryTest {
     }
 
     @Test
-    void forPlayer_unknownPlayerThrowsPlayerNotFound() throws SQLException {
+    void forPlayer_unknownPlayerThrowsPlayerNotFound() {
         when(users.findByName("ghost")).thenReturn(Optional.empty());
 
         PlayerNotFoundException ex = assertThrows(PlayerNotFoundException.class,
@@ -48,8 +48,8 @@ class GameServicesFactoryTest {
     }
 
     @Test
-    void forPlayer_lookupFailureThrowsPersistenceFailure() throws SQLException {
-        when(users.findByName("bob")).thenThrow(new SQLException("db down"));
+    void forPlayer_lookupFailureThrowsPersistenceFailure() {
+        when(users.findByName("bob")).thenThrow(new PersistenceFailureException(new SQLException("db down")));
 
         assertThrows(PersistenceFailureException.class, () -> newFactory().forPlayer("bob"));
     }

@@ -3,7 +3,7 @@ import amiss.application.port.JobRepository;
 import amiss.domain.model.JobListing;
 
 
-import java.sql.SQLException;
+import amiss.application.port.PersistenceFailureException;
 import java.util.List;
 
 /**
@@ -11,8 +11,9 @@ import java.util.List;
  * game offers and their education / salary / location / clothing requirements).
  *
  * <p>Wraps the project's {@link Jdbc} helper. Each lookup returns the same fallback the
- * game has always used when the job is unknown, and propagates {@link SQLException}
- * for the caller to handle, exactly as the inline calls did.
+ * game has always used when the job is unknown, and throws the unchecked
+ * {@link PersistenceFailureException} for the caller to handle, exactly as the inline
+ * calls did.
  */
 public class JdbcJobRepository implements JobRepository {
 
@@ -23,27 +24,27 @@ public class JdbcJobRepository implements JobRepository {
     }
 
     /** Minimum education a player needs for {@code job}, or -1 if the job is unknown. */
-    public int getRequiredEducation(String job) throws SQLException {
+    public int getRequiredEducation(String job) {
         return db.queryForInt("SELECT education from tbljobs where job = ?", -1, job);
     }
 
     /** Hourly salary {@code job} pays, or -1 if the job is unknown. */
-    public int getSalary(String job) throws SQLException {
+    public int getSalary(String job) {
         return db.queryForInt("SELECT salary from tbljobs where job = ?", -1, job);
     }
 
     /** The building {@code job} is worked at, or null if the job is unknown. */
-    public String getLocation(String job) throws SQLException {
+    public String getLocation(String job) {
         return db.queryForString("SELECT location from tbljobs where job = ?", null, job);
     }
 
     /** Minimum clothing level for {@code job}, read as text (callers {@code parseInt} it), or null if unknown. */
-    public String getRequiredClothing(String job) throws SQLException {
+    public String getRequiredClothing(String job) {
         return db.queryForString("SELECT clothing from tbljobs where job = ?", null, job);
     }
 
     /** Every job the game offers, ordered by location then education requirement. */
-    public List<JobListing> listAll() throws SQLException {
+    public List<JobListing> listAll() {
         return db.query("SELECT job, education, salary, location, clothing FROM tbljobs ORDER BY location, education",
                 rs -> new JobListing(rs.getString("job"), rs.getInt("education"), rs.getInt("salary"),
                         rs.getString("location"), rs.getInt("clothing")));

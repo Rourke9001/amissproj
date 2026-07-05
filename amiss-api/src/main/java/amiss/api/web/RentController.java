@@ -3,10 +3,10 @@ package amiss.api.web;
 import amiss.api.config.GameServicesFactory;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InsufficientTimeException;
-import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.RentNotDueException;
 import amiss.api.error.WeekOverException;
 import amiss.api.web.dto.RentPaymentResponse;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.service.GameServices;
 import amiss.application.service.RentPayment;
 import amiss.application.service.RentService;
@@ -49,7 +49,7 @@ public class RentController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Rent payment failed for '" + username + "'");
+                throw new PersistenceFailureException("Rent payment failed for '" + username + "'", null);
             default:
                 return new RentPaymentResponse(RentService.WEEKLY_RENT,
                         services.costs().payRentMinutes(), assembler.assemble(username, services));

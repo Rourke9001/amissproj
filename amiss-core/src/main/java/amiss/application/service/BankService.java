@@ -1,7 +1,7 @@
 package amiss.application.service;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ public class BankService {
     public int balance() {
         try {
             return users.getBank(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to get bank balance", ex);
             return -1;
         }
@@ -55,7 +55,7 @@ public class BankService {
             }
             return new BankTransaction(BankTransaction.Status.OK,
                     users.getCash(username), users.getBank(username));
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to transfer bank funds", ex);
             return new BankTransaction(BankTransaction.Status.FAILED, -1, -1);
         }

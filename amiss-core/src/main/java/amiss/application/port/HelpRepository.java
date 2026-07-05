@@ -1,6 +1,5 @@
 package amiss.application.port;
 
-import java.sql.SQLException;
 import java.util.Optional;
 
 /**
@@ -9,10 +8,11 @@ import java.util.Optional;
  *
  * <p>Application-layer port; the JDBC implementation is
  * {@code amiss.infrastructure.persistence.jdbc.JdbcHelpRepository}. {@code topic} is the
- * primary key, so a lookup matches at most one row and returns an {@link Optional}.
+ * primary key, so a lookup matches at most one row and returns an {@link Optional}. Throws
+ * the unchecked {@link PersistenceFailureException} on failure.
  */
 public interface HelpRepository {
 
     /** The help text for {@code topic}, or empty if there is no such topic. */
-    Optional<String> findDescription(String topic) throws SQLException;
+    Optional<String> findDescription(String topic);
 }

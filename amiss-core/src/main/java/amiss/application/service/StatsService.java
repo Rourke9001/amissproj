@@ -3,9 +3,9 @@ import amiss.domain.model.ActionResult;
 
 import amiss.domain.validation.Validation;
 import amiss.application.config.ActionCosts;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +64,7 @@ public class StatsService {
             try {
                 users.updateCash(username, currCash);
                 return "You spent R" + price + ", You have R" + currCash + " left";
-            } catch (SQLException ex) {
+            } catch (PersistenceFailureException ex) {
                 return ("failed to purchase");
             }
         }
@@ -77,7 +77,7 @@ public class StatsService {
     public int getCash() {
         try {
             return users.getCash(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to get cash", ex);
         }
         return -1;
@@ -96,7 +96,7 @@ public class StatsService {
             try {
                 users.updateCash(username, currCash);
                 return "You were deducted R10 for not paying rent \nYou now have R" + currCash;
-            } catch (SQLException ex) {
+            } catch (PersistenceFailureException ex) {
                 return ("failed to update cash");
             }
         } else {
@@ -104,7 +104,7 @@ public class StatsService {
             try {
                 users.updateCash(username, currCash);
                 return "You now have R" + currCash;
-            } catch (SQLException ex) {
+            } catch (PersistenceFailureException ex) {
                 return ("failed to update cash");
             }
         }
@@ -116,7 +116,7 @@ public class StatsService {
     public void setRent(int num) {
         try {
             users.updateRent(username, num);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to set rent", ex);
         }
     }
@@ -128,7 +128,7 @@ public class StatsService {
     public int getRent() {
         try {
             return users.getRent(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return (-1);
         }
     }
@@ -136,7 +136,7 @@ public class StatsService {
     public void setDebt(int num) {
         try {
             users.addDebt(username, num);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to set debt", ex);
         }
     }
@@ -144,7 +144,7 @@ public class StatsService {
     public void payDebt() {
         try {
             users.subtractDebt(username, 10);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to pay debt", ex);
         }
     }
@@ -152,7 +152,7 @@ public class StatsService {
     public int getDebt() {
         try {
             return users.getDebt(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return (-1);
         }
     }
@@ -163,7 +163,7 @@ public class StatsService {
     public void updateWork() {
         try {
             stats.incrementWork(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to update work stats", ex);
         }
     }
@@ -175,7 +175,7 @@ public class StatsService {
     public String getWork() {
         try {
             return stats.getWork(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return ("Failed to get work");
         }
     }
@@ -186,7 +186,7 @@ public class StatsService {
     public void updateHappiness() {
         try {
             stats.incrementHappiness(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to update happiness stats", ex);
         }
     }
@@ -198,7 +198,7 @@ public class StatsService {
     public String getHappiness() {
         try {
             return stats.getHappiness(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return ("Failed to get Happiness");
         }
     }
@@ -359,7 +359,7 @@ public class StatsService {
         try {
             stats.resetStats(username);
             users.resetUser(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to reset stats", ex);
         }
     }

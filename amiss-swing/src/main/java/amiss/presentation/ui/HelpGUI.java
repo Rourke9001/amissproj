@@ -6,8 +6,8 @@
 package amiss.presentation.ui;
 
 import amiss.application.port.HelpRepository;
+import amiss.application.port.PersistenceFailureException;
 import amiss.infrastructure.GameContext;
-import java.sql.SQLException;
 import java.util.Optional;
 
 /**
@@ -148,7 +148,7 @@ public class HelpGUI extends javax.swing.JFrame {
             String topic = evt.getActionCommand();
             Optional<String> description = help.findDescription(topic);
             txaNotification.setText(description.map(desc -> topic + "\n\n" + desc + "\n").orElse("")); //sets the text field with the description
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             txaNotification.setText("Can't Load Help"); //message guide to the user
         }
     }//GEN-LAST:event_btnLoadGameActionPerformed

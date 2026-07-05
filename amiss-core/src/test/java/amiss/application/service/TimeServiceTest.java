@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
@@ -34,50 +35,50 @@ class TimeServiceTest {
     // ---- spendMinutes: minute spend + TimeSpend flags -----------------------
 
     @Test
-    void spendMinutes_spendsAndPersistsTheRemainingMinutes() throws SQLException {
+    void spendMinutes_spendsAndPersistsTheRemainingMinutes() {
         when(users.getTime(USER)).thenReturn(4320);
         assertEquals(new TimeSpend(3960, false, false), newService().spendMinutes(360)); // 72h - 6h = 66h
         verify(users).updateTime(USER, 3960);
     }
 
     @Test
-    void spendMinutes_zeroCostReadsTheClockUnchanged() throws SQLException {
+    void spendMinutes_zeroCostReadsTheClockUnchanged() {
         when(users.getTime(USER)).thenReturn(3600);
         assertEquals(new TimeSpend(3600, false, false), newService().spendMinutes(0));
         verify(users).updateTime(USER, 3600);
     }
 
     @Test
-    void spendMinutes_flagsWeekOverWhenTheWeekIsExactlyUsedUp() throws SQLException {
+    void spendMinutes_flagsWeekOverWhenTheWeekIsExactlyUsedUp() {
         when(users.getTime(USER)).thenReturn(360);
         assertEquals(new TimeSpend(0, false, true), newService().spendMinutes(360));
         verify(users).updateTime(USER, 0);
     }
 
     @Test
-    void spendMinutes_rejectsAndPersistsNothingWhenTimeWouldGoNegative() throws SQLException {
+    void spendMinutes_rejectsAndPersistsNothingWhenTimeWouldGoNegative() {
         when(users.getTime(USER)).thenReturn(300);
         assertEquals(new TimeSpend(300, true, false), newService().spendMinutes(360)); // 300 - 360 < 0
         verify(users, never()).updateTime(anyString(), anyInt());
     }
 
     @Test
-    void spendMinutes_rejectionOnAnEmptyClockAlsoReportsWeekOver() throws SQLException {
+    void spendMinutes_rejectionOnAnEmptyClockAlsoReportsWeekOver() {
         when(users.getTime(USER)).thenReturn(0);
         assertEquals(new TimeSpend(0, true, true), newService().spendMinutes(360));
         verify(users, never()).updateTime(anyString(), anyInt());
     }
 
     @Test
-    void spendMinutes_rejectsWhenNoRowExists() throws SQLException {
+    void spendMinutes_rejectsWhenNoRowExists() {
         when(users.getTime(USER)).thenReturn(-1);
         assertEquals(new TimeSpend(0, true, false), newService().spendMinutes(360));
         verify(users, never()).updateTime(anyString(), anyInt());
     }
 
     @Test
-    void spendMinutes_rejectsOnSqlException() throws SQLException {
-        when(users.getTime(USER)).thenThrow(new SQLException("boom"));
+    void spendMinutes_rejectsOnSqlException() {
+        when(users.getTime(USER)).thenThrow(new PersistenceFailureException(new SQLException("boom")));
         assertEquals(new TimeSpend(0, true, false), newService().spendMinutes(360));
     }
 
@@ -104,7 +105,7 @@ class TimeServiceTest {
     }
 
     @Test
-    void readClock_formatsTheCurrentClockWithoutSpending() throws SQLException {
+    void readClock_formatsTheCurrentClockWithoutSpending() {
         when(users.getTime(USER)).thenReturn(2310);
         assertEquals("38h 30m", newService().readClock());
         verify(users).updateTime(USER, 2310);
@@ -113,38 +114,38 @@ class TimeServiceTest {
     // ---- position / round reads + writes -----------------------------------
 
     @Test
-    void getX_returnsZeroOnSqlException() throws SQLException {
-        when(users.getXpos(USER)).thenThrow(new SQLException("boom"));
+    void getX_returnsZeroOnSqlException() {
+        when(users.getXpos(USER)).thenThrow(new PersistenceFailureException(new SQLException("boom")));
         assertEquals(0, newService().getX());
     }
 
     @Test
-    void getY_returnsZeroOnSqlException() throws SQLException {
-        when(users.getYpos(USER)).thenThrow(new SQLException("boom"));
+    void getY_returnsZeroOnSqlException() {
+        when(users.getYpos(USER)).thenThrow(new PersistenceFailureException(new SQLException("boom")));
         assertEquals(0, newService().getY());
     }
 
     @Test
-    void getRound_returnsTheStoredRound() throws SQLException {
+    void getRound_returnsTheStoredRound() {
         when(users.getRound(USER)).thenReturn(5);
         assertEquals("5", newService().getRound());
     }
 
     @Test
-    void getRound_returnsFailureSentinelWhenNoRowExists() throws SQLException {
+    void getRound_returnsFailureSentinelWhenNoRowExists() {
         when(users.getRound(USER)).thenReturn(-1);
         assertEquals("failed to get round", newService().getRound());
     }
 
     @Test
-    void setRound_incrementsAndPersistsTheStoredRound() throws SQLException {
+    void setRound_incrementsAndPersistsTheStoredRound() {
         when(users.getRound(USER)).thenReturn(5);
         newService().setRound();
         verify(users).updateRound(USER, 6);
     }
 
     @Test
-    void toString_rendersCurrentPositionAsXColonY() throws SQLException {
+    void toString_rendersCurrentPositionAsXColonY() {
         when(users.getXpos(USER)).thenReturn(2);
         when(users.getYpos(USER)).thenReturn(3);
         assertEquals("2:3", newService().toString());

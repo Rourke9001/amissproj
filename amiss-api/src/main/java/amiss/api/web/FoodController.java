@@ -3,7 +3,6 @@ package amiss.api.web;
 import amiss.api.config.GameServicesFactory;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InsufficientTimeException;
-import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.UnknownItemException;
 import amiss.api.error.WeekOverException;
 import amiss.api.web.dto.ClothesRequest;
@@ -15,6 +14,7 @@ import amiss.api.web.dto.FoodPackDto;
 import amiss.api.web.dto.GroceriesRequest;
 import amiss.api.web.dto.GroceriesResponse;
 import amiss.api.web.dto.MenuItemDto;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.service.EatOutcome;
 import amiss.application.service.GameServices;
 import amiss.application.service.PurchaseOutcome;
@@ -71,7 +71,7 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Eating failed for '" + username + "'");
+                throw new PersistenceFailureException("Eating failed for '" + username + "'", null);
             case INSUFFICIENT_CASH:
                 return new EatResponse(item.name(), item.price(), false, "INSUFFICIENT_CASH",
                         services.costs().eatMinutes(), assembler.assemble(username, services));
@@ -96,7 +96,7 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Grocery purchase failed for '" + username + "'");
+                throw new PersistenceFailureException("Grocery purchase failed for '" + username + "'", null);
             default:
                 return new GroceriesResponse(pack.name(), pack.price(), pack.weeks(),
                         services.food().getFood(), assembler.assemble(username, services));
@@ -118,7 +118,7 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Clothing purchase failed for '" + username + "'");
+                throw new PersistenceFailureException("Clothing purchase failed for '" + username + "'", null);
             default:
                 return new ClothesResponse(item.name(), item.price(), item.level(), assembler.assemble(username, services));
         }

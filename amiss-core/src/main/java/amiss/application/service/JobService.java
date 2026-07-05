@@ -2,9 +2,9 @@ package amiss.application.service;
 
 import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import amiss.domain.validation.Validation;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +55,7 @@ public class JobService {
     private int neededEdu(String jb) {
         try {
             return jobs.getRequiredEducation(jb);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return (-1);
         }
     }
@@ -75,7 +75,7 @@ public class JobService {
         int neededEdu;
         try {
             neededEdu = jobs.getRequiredEducation(jobName);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to check required education", ex);
             return new ApplyOutcome(ApplyOutcome.Status.FAILED, -1, jobName, -1);
         }
@@ -105,7 +105,7 @@ public class JobService {
     private void setJob(String jb) {
         try {
             users.updateJob(username, jb);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to update job", ex);
         }
     }
@@ -118,7 +118,7 @@ public class JobService {
         String job = getJob();
         try {
             return jobs.getSalary(job);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return -1;
         }
     }
@@ -130,7 +130,7 @@ public class JobService {
     public String getJob() {
         try {
             return users.getJob(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return ("failed to get earnings");
         }
     }
@@ -143,7 +143,7 @@ public class JobService {
         String job = getJob();
         try {
             return jobs.getLocation(job);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return ("failed to get location");
         }
     }
@@ -155,7 +155,7 @@ public class JobService {
     public void setClothes(int clothes) {
         try {
             users.updateClothing(username, clothes);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to update clothes", ex);
         }
     }
@@ -177,7 +177,7 @@ public class JobService {
                     return null;
                 }
             }
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return ("failed to get clothing");
         }
 
@@ -187,7 +187,7 @@ public class JobService {
     private String getUserClothes() {
         try {
             return users.getUserClothing(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return ("Failed to Get User Clothes");
         }
     }

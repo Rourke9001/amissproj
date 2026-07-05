@@ -3,7 +3,6 @@ package amiss.api.web;
 import amiss.api.config.GameServicesFactory;
 import amiss.api.error.InsufficientTimeException;
 import amiss.api.error.NoJobException;
-import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.UnderdressedException;
 import amiss.api.error.UnknownJobException;
 import amiss.api.error.WeekOverException;
@@ -13,13 +12,13 @@ import amiss.api.web.dto.ApplyResponse;
 import amiss.api.web.dto.JobListingDto;
 import amiss.api.web.dto.WorkResponse;
 import amiss.application.port.JobRepository;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.service.ApplyOutcome;
 import amiss.application.service.GameServices;
 import amiss.application.service.JobService;
 import amiss.application.service.WorkOutcome;
 import amiss.domain.board.Location;
 import amiss.domain.model.JobListing;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,17 +50,13 @@ public class EmploymentController {
 
     @GetMapping("/api/jobs")
     public List<JobListingDto> jobs() {
-        try {
-            List<JobListing> listings = jobs.listAll();
-            List<JobListingDto> dtos = new ArrayList<>(listings.size());
-            for (JobListing job : listings) {
-                dtos.add(new JobListingDto(job.name(), job.requiredEducation(), job.hourlyWage(),
-                        job.location(), job.requiredClothing()));
-            }
-            return dtos;
-        } catch (SQLException e) {
-            throw new PersistenceFailureException(e);
+        List<JobListing> listings = jobs.listAll();
+        List<JobListingDto> dtos = new ArrayList<>(listings.size());
+        for (JobListing job : listings) {
+            dtos.add(new JobListingDto(job.name(), job.requiredEducation(), job.hourlyWage(),
+                    job.location(), job.requiredClothing()));
         }
+        return dtos;
     }
 
     @PostMapping("/api/players/{username}/jobs/apply")
@@ -78,7 +73,7 @@ public class EmploymentController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Job application failed for '" + username + "'");
+                throw new PersistenceFailureException("Job application failed for '" + username + "'", null);
             case INSUFFICIENT_EDUCATION:
                 return new ApplyResponse(false, "INSUFFICIENT_EDUCATION", services.costs().applyJobMinutes(),
                         outcome.jobName(), null, assembler.assemble(username, services));
@@ -110,7 +105,7 @@ public class EmploymentController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(username);
             case FAILED:
-                throw new PersistenceFailureException("Work shift failed for '" + username + "'");
+                throw new PersistenceFailureException("Work shift failed for '" + username + "'", null);
             default:
                 return new WorkResponse(outcome.jobName(), outcome.hourlyWage(), services.costs().workMinutes(),
                         outcome.debtDocked(), assembler.assemble(username, services));

@@ -6,13 +6,13 @@ import amiss.api.error.EducationCompleteException;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InsufficientTimeException;
 import amiss.api.error.NotEnrolledException;
-import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.WeekOverException;
 import amiss.api.web.dto.CoursesDto;
 import amiss.api.web.dto.DegreeDto;
 import amiss.api.web.dto.EnrollResponse;
 import amiss.api.web.dto.StudyResponse;
 import amiss.application.config.ActionCosts;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.service.EnrollOutcome;
 import amiss.application.service.GameServices;
 import amiss.application.service.StudyOutcome;
@@ -68,7 +68,7 @@ public class UniversityController {
             case WEEK_OVER:
                 throw new WeekOverException(username);
             case FAILED:
-                throw new PersistenceFailureException("Enrollment failed for '" + username + "'");
+                throw new PersistenceFailureException("Enrollment failed for '" + username + "'", null);
             default:
                 return new EnrollResponse(UniversityService.ENROLL_FEE, assembler.assemble(username, services));
         }
@@ -90,7 +90,7 @@ public class UniversityController {
             case WEEK_OVER:
                 throw new WeekOverException(username);
             case FAILED:
-                throw new PersistenceFailureException("Study session failed for '" + username + "'");
+                throw new PersistenceFailureException("Study session failed for '" + username + "'", null);
             default:
                 int studiesRemaining = outcome.status() == StudyOutcome.Status.DEGREE_COMPLETED
                         ? 0

@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 import amiss.application.config.ActionCosts;
 import amiss.application.port.UserRepository;
 import amiss.domain.board.Location;
-import java.sql.SQLException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,14 +36,14 @@ class TravelServiceTest {
         service = new TravelService(new TimeService(users, USER), ActionCosts.defaults());
     }
 
-    private void playerAtHomeWithMinutes(int minutes) throws SQLException {
+    private void playerAtHomeWithMinutes(int minutes) {
         when(users.getXpos(USER)).thenReturn(0);
         when(users.getYpos(USER)).thenReturn(2);
         when(users.getTime(USER)).thenReturn(minutes);
     }
 
     @Test
-    void moveTo_oneStepClockwiseCostsAStepPlusEntry() throws SQLException {
+    void moveTo_oneStepClockwiseCostsAStepPlusEntry() {
         playerAtHomeWithMinutes(4320);
 
         MoveResult result = service.moveTo(Location.PAWN_SHOP); // ring index 1
@@ -55,7 +54,7 @@ class TravelServiceTest {
     }
 
     @Test
-    void moveTo_takesTheShorterAnticlockwiseWayAroundTheRing() throws SQLException {
+    void moveTo_takesTheShorterAnticlockwiseWayAroundTheRing() {
         playerAtHomeWithMinutes(4320);
 
         // Rent Office is ring index 12: 12 steps clockwise but only 1 anticlockwise.
@@ -66,7 +65,7 @@ class TravelServiceTest {
     }
 
     @Test
-    void moveTo_crossTownIsSixStepsForFourHoursOfWalking() throws SQLException {
+    void moveTo_crossTownIsSixStepsForFourHoursOfWalking() {
         playerAtHomeWithMinutes(4320);
 
         // Hi-Tech U (index 6) is the far side of the loop: 6 x 40 + 120 = 360 min.
@@ -77,7 +76,7 @@ class TravelServiceTest {
     }
 
     @Test
-    void moveTo_theCurrentStopIsLegalAndChargesEntryOnly() throws SQLException {
+    void moveTo_theCurrentStopIsLegalAndChargesEntryOnly() {
         playerAtHomeWithMinutes(4320);
 
         MoveResult result = service.moveTo(Location.LOW_COST_HOUSING);
@@ -87,7 +86,7 @@ class TravelServiceTest {
     }
 
     @Test
-    void moveTo_insufficientTimeRejectsAndPersistsNothing() throws SQLException {
+    void moveTo_insufficientTimeRejectsAndPersistsNothing() {
         playerAtHomeWithMinutes(100); // 100 < 160
 
         MoveResult result = service.moveTo(Location.PAWN_SHOP);
@@ -98,7 +97,7 @@ class TravelServiceTest {
     }
 
     @Test
-    void moveTo_weekOverRejectsAndPersistsNothing() throws SQLException {
+    void moveTo_weekOverRejectsAndPersistsNothing() {
         playerAtHomeWithMinutes(0);
 
         MoveResult result = service.moveTo(Location.PAWN_SHOP);
@@ -109,7 +108,7 @@ class TravelServiceTest {
     }
 
     @Test
-    void moveTo_landingExactlyOnZeroEndsTheWeekChargedButUnmoved() throws SQLException {
+    void moveTo_landingExactlyOnZeroEndsTheWeekChargedButUnmoved() {
         playerAtHomeWithMinutes(160); // exactly one step + entry
 
         MoveResult result = service.moveTo(Location.PAWN_SHOP);
@@ -120,7 +119,7 @@ class TravelServiceTest {
     }
 
     @Test
-    void moveTo_aStaleSavedPositionMeasuresFromHome() throws SQLException {
+    void moveTo_aStaleSavedPositionMeasuresFromHome() {
         when(users.getXpos(USER)).thenReturn(2); // (2,2) is an inner cell, not a stop
         when(users.getYpos(USER)).thenReturn(2);
         when(users.getTime(USER)).thenReturn(4320);
@@ -134,7 +133,7 @@ class TravelServiceTest {
     // ---- currentLocation -----------------------------------------------------
 
     @Test
-    void currentLocation_atAKnownStopReturnsThatStop() throws SQLException {
+    void currentLocation_atAKnownStopReturnsThatStop() {
         when(users.getXpos(USER)).thenReturn(2); // Bank is (2,0)
         when(users.getYpos(USER)).thenReturn(0);
 
@@ -142,7 +141,7 @@ class TravelServiceTest {
     }
 
     @Test
-    void currentLocation_aStaleSavedCellClampsToHome() throws SQLException {
+    void currentLocation_aStaleSavedCellClampsToHome() {
         when(users.getXpos(USER)).thenReturn(2); // inner cell, not a stop
         when(users.getYpos(USER)).thenReturn(2);
 

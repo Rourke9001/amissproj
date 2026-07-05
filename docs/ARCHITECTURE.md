@@ -92,6 +92,14 @@ in-memory fake for a test) means writing new adapters and a new `GameContext` �
 `domain` and `application` layers, and every service test, are untouched. A REST controller
 becomes just another `presentation` adapter alongside Swing.
 
+**Ports throw a technology-neutral exception (KAN-17).** The four ports used to declare
+`throws SQLException`, a JDBC concept leaking one level into the application layer. They now
+throw the unchecked `amiss.application.port.PersistenceFailureException` instead; the `Jdbc`
+helper (`infrastructure.persistence.jdbc`) is the one place that catches `SQLException` and
+translates it into that exception, at the JDBC/application boundary. Every service's
+`catch (SQLException)` fallback became `catch (PersistenceFailureException)` with the same
+body, so behaviour is unchanged — only the exception type crossing the port is.
+
 ## The composition root: `GameContext`
 
 `amiss.infrastructure.GameContext` is the single seam where a persistence technology is chosen.
@@ -117,10 +125,6 @@ stats) from the ports it is given — it no longer constructs repositories itsel
 
 ## Known interim simplifications (deliberate, documented)
 
-- **`SQLException` on the ports.** The port interfaces still declare `throws SQLException`, so a
-  JDBC concept leaks one level into the application layer. This was kept so the services' existing
-  `catch (SQLException)` fallbacks — and the tests that assert them — remain byte-for-byte valid.
-  A later pass should map it to a technology-neutral `PersistenceException` at the adapter.
 - **UI constructs the composition root.** `LoginGUI`/`HelpGUI`/`HighScoreGUI` `new GameContext()`
   directly. That is fine (the outermost layer is allowed to wire the app), but a `main` bootstrap
   could own it instead once there is more than one entry point.

@@ -11,7 +11,6 @@ import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
-import java.sql.SQLException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,13 +52,13 @@ class RentServiceTest {
      * here: even a zero-cost {@code spendMinutes(0)} clock read writes the (unchanged) time
      * back, the same idiom {@code TurnServiceTest} accepts for its "time remains" case.
      */
-    private void assertNothingCharged() throws SQLException {
+    private void assertNothingCharged() {
         verify(users, never()).updateCash(anyString(), anyInt());
         verify(users, never()).updateRent(anyString(), anyInt());
     }
 
     @Test
-    void payRent_notDueOutsideTheFourthRound() throws SQLException {
+    void payRent_notDueOutsideTheFourthRound() {
         when(users.getRound(USER)).thenReturn(3);
         when(users.getTime(USER)).thenReturn(4320);
         when(users.getCash(USER)).thenReturn(100);
@@ -71,7 +70,7 @@ class RentServiceTest {
     }
 
     @Test
-    void payRent_notDueWhenAlreadyPaidThisRound() throws SQLException {
+    void payRent_notDueWhenAlreadyPaidThisRound() {
         when(users.getRound(USER)).thenReturn(4);
         when(users.getRent(USER)).thenReturn(0);
         when(users.getTime(USER)).thenReturn(4320);
@@ -84,7 +83,7 @@ class RentServiceTest {
     }
 
     @Test
-    void payRent_weekOverRejectsAndChangesNothing() throws SQLException {
+    void payRent_weekOverRejectsAndChangesNothing() {
         when(users.getRound(USER)).thenReturn(4);
         when(users.getRent(USER)).thenReturn(1);
         when(users.getTime(USER)).thenReturn(0);
@@ -97,7 +96,7 @@ class RentServiceTest {
     }
 
     @Test
-    void payRent_insufficientCashRejectsAndChangesNothing() throws SQLException {
+    void payRent_insufficientCashRejectsAndChangesNothing() {
         when(users.getRound(USER)).thenReturn(4);
         when(users.getRent(USER)).thenReturn(1);
         when(users.getTime(USER)).thenReturn(300);
@@ -110,7 +109,7 @@ class RentServiceTest {
     }
 
     @Test
-    void payRent_insufficientTimeRejectsAndChangesNothing() throws SQLException {
+    void payRent_insufficientTimeRejectsAndChangesNothing() {
         when(users.getRound(USER)).thenReturn(4);
         when(users.getRent(USER)).thenReturn(1);
         when(users.getTime(USER)).thenReturn(50); // < payRentMinutes (120)
@@ -123,7 +122,7 @@ class RentServiceTest {
     }
 
     @Test
-    void payRent_paysAndClearsTheRentFlagWhenDueAndAffordable() throws SQLException {
+    void payRent_paysAndClearsTheRentFlagWhenDueAndAffordable() {
         when(users.getRound(USER)).thenReturn(4);
         when(users.getRent(USER)).thenReturn(1);
         when(users.getTime(USER)).thenReturn(4320);
