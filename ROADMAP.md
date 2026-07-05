@@ -114,7 +114,13 @@ banking roles hire for.*
       repository **ports** (interfaces) and JDBC **adapters**, a `GameContext` composition root,
       and no JDBC types in the UI. Behaviour-preserving (all 87 tests green); makes the Spring
       swap below a drop-in. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-- [ ] Extract the game logic into a **Spring Boot REST API**
+- [x] Extract the game logic into a **Spring Boot REST API** (July 2026) — a new `amiss-api`
+      module exposes every game rule over JSON/HTTP across five stacked PRs (KAN-27 scaffold →
+      KAN-29 time/turn → KAN-30 board/move → KAN-28 state/highscores → KAN-31 bank/rent →
+      KAN-32 jobs/university/food), with RFC-7807 `ProblemDetail` errors throughout and
+      `amiss-core`'s rules untouched (Swing and the API share one source). Login/auth is
+      deferred to KAN-36 (Spring Security, below); everything else in KAN-16's acceptance
+      (load player, move, work, study, shop, pay-rent) is HTTP-callable.
 - [ ] Persistence via **Spring Data JPA / Hibernate** (entities replace raw JDBC)
 - [ ] **Spring Security** auth (hashed credentials, sessions or JWT)
 - [ ] A **web frontend** consuming the API (Thymeleaf, or a React/TypeScript SPA)

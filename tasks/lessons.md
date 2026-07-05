@@ -283,6 +283,36 @@ Add to this after any correction or non-obvious gotcha.
   original base. Merge with merge commits (this repo's norm) so the retargeted diff stays
   empty of PR1's changes.
 
+## Phase 3 / KAN-28 + KAN-31 + KAN-32 (state enrichment, bank/rent, jobs/university/food)
+- **Found via characterization, fixed deliberately (the one approved behaviour change in this
+  whole chain):** `ClothesStoreGUI.btnCasualActionPerformed` called `job.setClothes(level)`
+  *before* checking `weekOver`/cash, so clicking a clothing button with insufficient cash still
+  upgraded the player's clothing level for free. `StatsService.buyClothes()` (PR8) now validates
+  and charges first, matching every other purchase handler's order; pinned with a regression
+  test in `StatsServiceOrchestrationTest`. Every other rule extracted in this chain
+  (work/apply/study/eat/groceries) is a byte-identical delegation — the pre-existing
+  message-pinning tests stayed green *unmodified*, which is the proof.
+- **A "requires being at location X" guard needs a `String` overload when X isn't a fixed board
+  stop.** `LocationGuard`/`WrongLocationException` (PR7) assume the required location is one
+  `Location` enum constant, which holds for bank/rent/university/food (each building is a single
+  fixed stop). A job's work location isn't — it's whatever `tbljobs.location` says for that
+  specific job, read as a plain string. Rather than adding a `Location.byDisplayName(String)`
+  reverse lookup to the domain enum (a core change for one API-layer edge case), PR9 added a
+  second `WrongLocationException(String required, Location actual)` constructor and checks the
+  work guard inline in `EmploymentController` instead of via `LocationGuard`.
+- **`JobRepository.listAll()` needed no string-parsing, unlike the per-job lookups.**
+  `JobService.getJobClothes()` parses `getRequiredClothing()`'s `String` return because the port
+  method predates typed columns being trusted; but `tbljobs.education`/`salary`/`clothing` are
+  all plain `INT` per `V1__baseline_schema.sql`, so the new catalog adapter method
+  (`JdbcJobRepository.listAll()`, backing `GET /api/jobs`) reads them with `rs.getInt(...)`
+  directly via `Jdbc.query(sql, RowMapper, ...)` — no `Validation.parseIntOrDefault` needed.
+- **A derived response field that isn't in the core outcome record is fine, as long as the
+  derivation is verified against the real arithmetic.** `StudyResponse.studiesRemaining` doesn't
+  exist on `StudyOutcome` — it's computed in `UniversityController` as `0` when
+  `DEGREE_COMPLETED`, else `STUDIES_PER_DEGREE - progress + 1` (progress is 1-based right after
+  enrolling, per `UniversityService.study()`'s `prog` arithmetic). Verified both in
+  `UniversityControllerTest` and against a live degree-in-progress player before trusting it.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an
