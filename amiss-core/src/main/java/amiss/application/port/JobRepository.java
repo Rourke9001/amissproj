@@ -1,6 +1,8 @@
 package amiss.application.port;
 
+import amiss.domain.model.JobListing;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Read-only port for the {@code tbljobs} reference table (the jobs the game offers and
@@ -23,4 +25,7 @@ public interface JobRepository {
 
     /** Minimum clothing level for {@code job}, read as text (callers {@code parseInt} it), or null if unknown. */
     String getRequiredClothing(String job) throws SQLException;
+
+    /** Every job the game offers, ordered by location then education requirement. */
+    List<JobListing> listAll() throws SQLException;
 }

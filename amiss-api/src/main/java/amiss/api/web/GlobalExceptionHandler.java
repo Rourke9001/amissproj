@@ -1,11 +1,18 @@
 package amiss.api.web;
 
+import amiss.api.error.AlreadyEnrolledException;
+import amiss.api.error.EducationCompleteException;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InsufficientTimeException;
 import amiss.api.error.InvalidAmountException;
+import amiss.api.error.NoJobException;
+import amiss.api.error.NotEnrolledException;
 import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.PlayerNotFoundException;
 import amiss.api.error.RentNotDueException;
+import amiss.api.error.UnderdressedException;
+import amiss.api.error.UnknownItemException;
+import amiss.api.error.UnknownJobException;
 import amiss.api.error.UnknownLocationException;
 import amiss.api.error.WeekNotOverException;
 import amiss.api.error.WeekOverException;
@@ -100,6 +107,62 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Wrong location");
         problem.setType(URI.create("urn:amiss:wrong-location"));
+        return problem;
+    }
+
+    @ExceptionHandler(UnknownJobException.class)
+    ProblemDetail unknownJob(UnknownJobException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Unknown job");
+        problem.setType(URI.create("urn:amiss:unknown-job"));
+        return problem;
+    }
+
+    @ExceptionHandler(UnknownItemException.class)
+    ProblemDetail unknownItem(UnknownItemException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Unknown item");
+        problem.setType(URI.create("urn:amiss:unknown-item"));
+        return problem;
+    }
+
+    @ExceptionHandler(NoJobException.class)
+    ProblemDetail noJob(NoJobException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("No job");
+        problem.setType(URI.create("urn:amiss:no-job"));
+        return problem;
+    }
+
+    @ExceptionHandler(UnderdressedException.class)
+    ProblemDetail underdressed(UnderdressedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Underdressed");
+        problem.setType(URI.create("urn:amiss:underdressed"));
+        return problem;
+    }
+
+    @ExceptionHandler(NotEnrolledException.class)
+    ProblemDetail notEnrolled(NotEnrolledException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Not enrolled");
+        problem.setType(URI.create("urn:amiss:not-enrolled"));
+        return problem;
+    }
+
+    @ExceptionHandler(AlreadyEnrolledException.class)
+    ProblemDetail alreadyEnrolled(AlreadyEnrolledException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Already enrolled");
+        problem.setType(URI.create("urn:amiss:already-enrolled"));
+        return problem;
+    }
+
+    @ExceptionHandler(EducationCompleteException.class)
+    ProblemDetail educationComplete(EducationCompleteException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Education complete");
+        problem.setType(URI.create("urn:amiss:education-complete"));
         return problem;
     }
 

@@ -1,8 +1,10 @@
 package amiss.infrastructure.persistence.jdbc;
 import amiss.application.port.JobRepository;
+import amiss.domain.model.JobListing;
 
 
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Read-only data-access layer for the {@code tbljobs} reference table (the jobs the
@@ -38,5 +40,12 @@ public class JdbcJobRepository implements JobRepository {
     /** Minimum clothing level for {@code job}, read as text (callers {@code parseInt} it), or null if unknown. */
     public String getRequiredClothing(String job) throws SQLException {
         return db.queryForString("SELECT clothing from tbljobs where job = ?", null, job);
+    }
+
+    /** Every job the game offers, ordered by location then education requirement. */
+    public List<JobListing> listAll() throws SQLException {
+        return db.query("SELECT job, education, salary, location, clothing FROM tbljobs ORDER BY location, education",
+                rs -> new JobListing(rs.getString("job"), rs.getInt("education"), rs.getInt("salary"),
+                        rs.getString("location"), rs.getInt("clothing")));
     }
 }
