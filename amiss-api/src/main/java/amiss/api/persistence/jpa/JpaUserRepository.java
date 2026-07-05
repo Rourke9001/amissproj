@@ -194,7 +194,10 @@ public class JpaUserRepository implements UserRepository {
             user.setEat(0);
             user.setDebt(0);
             user.setBank(0);
-            users.save(user);
+            // saveAndFlush: the id is assigned (no IDENTITY), so a plain save() would
+            // defer the INSERT to the proxy's commit — outside this translation block —
+            // letting constraint violations escape untranslated.
+            users.saveAndFlush(user);
         });
     }
 

@@ -90,7 +90,10 @@ public class JpaUserStatsRepository implements UserStatsRepository {
             entity.setEducation(0);
             entity.setWork(0);
             entity.setEduprog(0);
-            stats.save(entity);
+            // saveAndFlush: the @MapsId id is assigned (no IDENTITY), so a plain save()
+            // would defer the INSERT to the proxy's commit — outside this translation
+            // block — letting the tbluser FK violation escape untranslated.
+            stats.saveAndFlush(entity);
         });
     }
 

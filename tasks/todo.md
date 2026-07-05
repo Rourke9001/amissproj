@@ -616,12 +616,16 @@ decisions locked up front:
       entities; `ddl-auto=validate`, `open-in-view=false`; context-smoke test kept DB-free;
       live boot validate green on MySQL97 *(PR #26; 245 tests green, health UP, no
       SchemaManagementException; note: no "goals" table exists — 4 real tables mapped)*
-- [ ] PR B `refactor/kan17-persistence-exception` — unchecked `PersistenceException` replaces
-      `throws SQLException` on the 4 ports; services/Swing/JDBC adapters/tests updated
-      mechanically; GameServicesFactory + handler simplified
-- [ ] PR C `feat/kan34-spring-data-ports` — Spring Data repos + thin adapters implement the
-      ports; PersistenceConfig swaps beans; core service tests untouched in this diff; live
-      API smoke identical before/after
+- [x] PR B `refactor/kan17-persistence-exception` — unchecked `PersistenceFailureException`
+      replaces `throws SQLException` on the 4 ports (Jdbc translates once at the boundary);
+      services/Swing/API/tests swapped mechanically; api-local wrapper class deleted;
+      ARCHITECTURE.md leak note resolved *(PR #27; 245 tests unchanged, leak audit clean,
+      live health+highscores smoke green; added message-only ctor after review)*
+- [x] PR C `feat/kan34-spring-data-ports` — Spring Data repos + thin adapters implement the
+      ports; PersistenceConfig swaps beans (Jdbc bean gone from the API); core untouched —
+      245 tests pass unmodified + 53 new adapter tests = 298; bank ops stay atomic
+      @Modifying JPQL; live parity smoke green *(PR #28; fallback defaults cross-checked
+      against JdbcUserRepository line-by-line)*
 - [ ] PR D `feat/kan35-testcontainers` — failsafe + Testcontainers MySQL ITs (Flyway →
       JPA repos; port-contract CRUD, stats round-trip, BCrypt hash survives);
       `disabledWithoutDocker` keeps plain builds green; CI runs them (ubuntu has Docker)

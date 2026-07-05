@@ -228,7 +228,7 @@ class JpaUserRepositoryTest {
 
         adapter().insertNewUser("newplayer", "bcrypt-hash");
 
-        verify(users).save(captor.capture());
+        verify(users).saveAndFlush(captor.capture());
         UserEntity saved = captor.getValue();
         assertEquals("newplayer", saved.getName());
         assertEquals("bcrypt-hash", saved.getPassword());

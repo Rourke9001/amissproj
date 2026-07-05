@@ -90,7 +90,7 @@ class JpaUserStatsRepositoryTest {
         adapter().insertNewStats("newplayer");
 
         verify(users).getReferenceById("newplayer");
-        verify(stats).save(captor.capture());
+        verify(stats).saveAndFlush(captor.capture());
         UserStatsEntity saved = captor.getValue();
         assertSame(reference, saved.getUser());
         assertEquals(0, saved.getHappiness());
