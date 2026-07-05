@@ -117,25 +117,19 @@ class UserStatsRepositoryIT extends MySqlITSupport {
     }
 
     /**
-     * KAN-34 defect surfaced by this IT, not fixed here (see the packet's stop condition —
-     * flagged prominently in the KAN-35 PR notes rather than silently patched):
-     * {@link UserStatsRepository#insertNewStats} is documented to throw
-     * {@link PersistenceFailureException} like every other write on this port, and the
-     * adapter's {@code translateRun} wraps every one of its calls in exactly that intent.
-     * But {@code UserStatsEntity}'s {@code @MapsId} id is <em>assigned</em>, not
-     * {@code @GeneratedValue(IDENTITY)}, so Hibernate has no reason to flush {@code save()}
-     * immediately — the INSERT is deferred to the persistence context's next flush, which
-     * happens when the surrounding {@code @Transactional} proxy commits, i.e. <em>after</em>
-     * {@code insertNewStats}'s own try/catch has already returned control to that proxy. The
-     * real FK violation therefore reaches the caller as a raw, unwrapped
-     * {@link DataIntegrityViolationException} — the adapter's exception translation never
-     * sees it. This test pins the actual behaviour rather than the port's documented one.
+     * Pins the port contract on a real constraint violation: {@code insertNewStats} for a
+     * user with no {@code tbluser} parent row hits the FK and must surface as
+     * {@link PersistenceFailureException}. This originally escaped as a raw
+     * {@link DataIntegrityViolationException} because the {@code @MapsId} id is assigned
+     * (not IDENTITY-generated), so {@code save()} deferred the INSERT to the proxy's
+     * commit — outside the adapter's translation block. The adapter now uses
+     * {@code saveAndFlush()} precisely so this test can hold.
      */
     @Test
-    void insertNewStats_forAUserWithNoParentRow_failsTheForeignKey_rawNotTranslated() {
+    void insertNewStats_forAUserWithNoParentRow_translatesTheForeignKeyViolation() {
         String ghost = "it-stats-ghost-no-parent-user";
 
-        assertThrows(DataIntegrityViolationException.class, () -> stats.insertNewStats(ghost));
+        assertThrows(PersistenceFailureException.class, () -> stats.insertNewStats(ghost));
     }
 
     @Test
