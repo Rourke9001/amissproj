@@ -149,6 +149,18 @@
                     <artifactId>flyway-maven-plugin</artifactId>
                     <version>${flyway.version}</version>
                 </plugin>
+                <!--
+                  Failsafe runs *IT.java integration tests in the integration-test/verify
+                  phases, separate from Surefire's *Test unit tests — so plain `mvnw test`
+                  (and even `mvnw package`) never touches the Testcontainers-backed suites
+                  (KAN-35). Declared here (pluginManagement) but only bound to executions in
+                  amiss-api, the one module with ITs so far.
+                -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${surefire.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
