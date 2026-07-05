@@ -19,9 +19,9 @@ import jakarta.persistence.Table;
  * the standard JPA way with {@link MapsId} deriving this entity's id from the
  * associated {@link UserEntity} rather than a separate generated column.
  *
- * <p>No repository exists yet for this entity — that lands in a later PR (KAN-34).
- * The running app still reads/writes {@code tbluserstats} through
- * {@code amiss.infrastructure.persistence.jdbc.JdbcUserStatsRepository}.
+ * <p>Backed by {@link UserStatsJpaRepository} / {@link JpaUserStatsRepository}, the
+ * {@code UserStatsRepository} port adapter (KAN-34). The Swing client still
+ * reads/writes {@code tbluserstats} through the core's {@code JdbcUserStatsRepository}.
  */
 @Entity
 @Table(name = "tbluserstats")

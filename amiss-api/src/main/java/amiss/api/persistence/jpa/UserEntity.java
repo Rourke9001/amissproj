@@ -14,9 +14,9 @@ import jakarta.persistence.Table;
  * primitive. {@code time} is a reserved SQL word; the backtick-wrapped column name
  * tells Hibernate to quote it for MySQL, exactly as the Flyway migration does.
  *
- * <p>No repository exists yet for this entity — that lands in a later PR (KAN-34).
- * The running app still reads/writes {@code tbluser} through
- * {@code amiss.infrastructure.persistence.jdbc.JdbcUserRepository}.
+ * <p>Backed by {@link UserJpaRepository} / {@link JpaUserRepository}, the {@code
+ * UserRepository} port adapter (KAN-34). The Swing client still reads/writes {@code
+ * tbluser} through the core's {@code JdbcUserRepository}.
  */
 @Entity
 @Table(name = "tbluser")
