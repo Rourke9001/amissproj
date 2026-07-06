@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.config.GameServicesFactory;
+import amiss.api.security.SecurityConfig;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.PlayerStateDto;
 import amiss.application.config.ActionCosts;
@@ -35,7 +36,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 /** The KAN-32 employment endpoints: job catalog, applying, and working. */
 @WebMvcTest(EmploymentController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 class EmploymentControllerTest {
 
     @Autowired

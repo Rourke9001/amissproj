@@ -67,15 +67,23 @@ import org.testcontainers.utility.DockerImageName;
  * once here, in a static initializer, and never stopping it (Ryuk reaps it at JVM
  * exit) matches the container's lifecycle to the context's and sidesteps that
  * entirely — the documented Testcontainers "singleton container" pattern.
+ *
+ * <p>{@code MYSQL} is {@code public} so a *different* test slice can point at the exact
+ * same running container without starting a second one: {@code @DataJpaTest} (here) and
+ * {@code @SpringBootTest} (KAN-36's {@code AuthRoundTripIT}) can never share one cached
+ * {@code ApplicationContext} — their bootstrappers differ — but they can, and must, share
+ * one Docker container. See {@code amiss.api.AuthRoundTripSupport}, which registers the
+ * same {@link #MYSQL} instance's connection details as a second, independent {@code
+ * @SpringBootTest} context.
  */
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=validate")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(PersistenceConfig.class)
 @Testcontainers(disabledWithoutDocker = true)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-abstract class MySqlITSupport {
+public abstract class MySqlITSupport {
 
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>(DockerImageName.parse("mysql:9"))
+    public static final MySQLContainer<?> MYSQL = new MySQLContainer<>(DockerImageName.parse("mysql:9"))
             .withConfigurationOverride("testcontainers-mysql-conf");
 
     static {

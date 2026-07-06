@@ -57,6 +57,21 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!--
+          Stateless HS256 JWT auth (KAN-36): register/login mint a short-lived access
+          token, GET /api/auth/me requires it. Everything else stays permitAll until
+          KAN-37 locks down /api/**. No UserDetailsService/PasswordEncoder bean — login
+          verification deliberately reuses core PasswordHasher through UserRepository, the
+          one credential rule the Swing client also uses (see SecurityConfig javadoc).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
         <!-- Hikari DataSource auto-config; Jdbc borrows pooled connections from it. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -76,6 +91,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
 

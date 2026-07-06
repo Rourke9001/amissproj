@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.config.CostsConfig;
+import amiss.api.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -13,7 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /** The KAN-30 board contract: 13 ring stops in clockwise order + travel cost metadata. */
 @WebMvcTest(controllers = BoardController.class)
-@Import(CostsConfig.class)
+@Import({CostsConfig.class, SecurityConfig.class})
 class BoardControllerTest {
 
     @Autowired

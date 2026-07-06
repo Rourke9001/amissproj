@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.config.GameServicesFactory;
+import amiss.api.security.SecurityConfig;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.PlayerStateDto;
 import amiss.application.config.ActionCosts;
@@ -30,7 +31,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 /** The KAN-32 food endpoints: catalog, eating, groceries and clothes. */
 @WebMvcTest(FoodController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 class FoodControllerTest {
 
     @Autowired

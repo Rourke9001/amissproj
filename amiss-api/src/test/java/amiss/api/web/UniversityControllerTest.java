@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import amiss.api.config.CostsConfig;
 import amiss.api.config.GameServicesFactory;
+import amiss.api.security.SecurityConfig;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.PlayerStateDto;
 import amiss.application.config.ActionCosts;
@@ -29,7 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /** The KAN-32 university endpoints: course catalog, enrolling, and studying. */
 @WebMvcTest(UniversityController.class)
-@Import({GlobalExceptionHandler.class, CostsConfig.class})
+@Import({GlobalExceptionHandler.class, CostsConfig.class, SecurityConfig.class})
 class UniversityControllerTest {
 
     @Autowired

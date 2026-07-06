@@ -5,6 +5,8 @@ import amiss.api.error.EducationCompleteException;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InsufficientTimeException;
 import amiss.api.error.InvalidAmountException;
+import amiss.api.error.InvalidCredentialsException;
+import amiss.api.error.InvalidRegistrationException;
 import amiss.api.error.NoJobException;
 import amiss.api.error.NotEnrolledException;
 import amiss.api.error.PlayerNotFoundException;
@@ -13,6 +15,7 @@ import amiss.api.error.UnderdressedException;
 import amiss.api.error.UnknownItemException;
 import amiss.api.error.UnknownJobException;
 import amiss.api.error.UnknownLocationException;
+import amiss.api.error.UsernameTakenException;
 import amiss.api.error.WeekNotOverException;
 import amiss.api.error.WeekOverException;
 import amiss.api.error.WrongLocationException;
@@ -163,6 +166,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Education complete");
         problem.setType(URI.create("urn:amiss:education-complete"));
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidRegistrationException.class)
+    ProblemDetail invalidRegistration(InvalidRegistrationException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid registration");
+        problem.setType(URI.create("urn:amiss:invalid-registration"));
+        return problem;
+    }
+
+    @ExceptionHandler(UsernameTakenException.class)
+    ProblemDetail usernameTaken(UsernameTakenException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Username taken");
+        problem.setType(URI.create("urn:amiss:username-taken"));
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    ProblemDetail invalidCredentials(InvalidCredentialsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("Invalid credentials");
+        problem.setType(URI.create("urn:amiss:invalid-credentials"));
         return problem;
     }
 

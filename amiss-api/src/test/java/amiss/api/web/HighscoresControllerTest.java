@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import amiss.api.security.SecurityConfig;
 import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import java.sql.SQLException;
@@ -20,7 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /** The KAN-28 high-score board: ranked rows, highest round first. */
 @WebMvcTest(HighscoresController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 class HighscoresControllerTest {
 
     @Autowired
