@@ -367,3 +367,11 @@ Add to this after any correction or non-obvious gotcha.
   HMAC secret — pass `JwsHeader.with(MacAlgorithm.HS256)` explicitly or token
   verification fails. And `Jwt#getIssuer()` returns `java.net.URL`, so a plain-string
   issuer like "amiss-api" must be read via `getClaimAsString("iss")` in tests.
+- **"Green locally" can mean "the local MySQL silently answered."** The KAN-33 JPA
+  starter made every `@SpringBootTest(flyway off)` context test open a Hibernate
+  validate connection at startup; they stayed green locally (MySQL97 was up) and
+  failed only in DB-less CI. When a test is supposed to be DB-free, prove it that
+  way: run it once with `AMISS_DB_URL` pointed at a dead port. The JPA-off recipe is
+  ddl-auto=none + explicit dialect + `hibernate.boot.allow_jdbc_metadata_access=false`.
+  (Also: surefire's `-Dtest` takes comma-separated patterns — a `+`-joined string
+  matches nothing, and with `-Dsurefire.failIfNoSpecifiedTests=false` that "passes".)
