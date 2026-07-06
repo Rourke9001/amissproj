@@ -18,6 +18,18 @@ vi.mock('../api/player', () => ({
   endWeek: vi.fn(),
 }));
 
+// BoardScreen renders the current stop's panel (see game/panels/registry), so
+// its api modules must be mocked here even though BoardScreen itself never
+// imports them directly.
+vi.mock('../api/bank', () => ({
+  deposit: vi.fn(),
+  withdraw: vi.fn(),
+}));
+
+vi.mock('../api/rent', () => ({
+  payRent: vi.fn(),
+}));
+
 const getBoardMock = vi.mocked(getBoard);
 const getPlayerStateMock = vi.mocked(getPlayerState);
 const moveMock = vi.mocked(move);
@@ -228,6 +240,26 @@ describe('BoardScreen', () => {
     expect(screen.getByText('2 wk')).toBeInTheDocument();
     expect(screen.getByText('50')).toBeInTheDocument();
     expect(screen.getByText('500 / 5000')).toBeInTheDocument();
+  });
+
+  it('renders the Bank panel when standing at the Bank stop', async () => {
+    renderBoardScreen();
+    await screen.findByRole('button', { name: 'Bank' });
+
+    const centre = document.querySelector('.board-centre') as HTMLElement;
+    expect(within(centre).getByRole('heading', { name: 'Bank' })).toBeInTheDocument();
+    expect(within(centre).getByLabelText('Amount')).toBeInTheDocument();
+  });
+
+  it('renders the DefaultPanel for a stop with no registered panel', async () => {
+    getPlayerStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[1] })); // PAWN_SHOP
+    renderBoardScreen();
+    await screen.findByRole('button', { name: 'Pawn Shop' });
+
+    const centre = document.querySelector('.board-centre') as HTMLElement;
+    expect(
+      within(centre).getByText('Pawn Shop opens with the KAN-5 economy epic.'),
+    ).toBeInTheDocument();
   });
 
   it('does not show the End Week button while the week is still running', async () => {
