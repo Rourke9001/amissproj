@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -62,7 +63,7 @@ class UniversityControllerTest {
 
     @Test
     void courses_returnsTheDegreesAndConstants() throws Exception {
-        mvc.perform(get("/api/courses"))
+        mvc.perform(get("/api/courses").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.degrees.length()").value(8))
                 .andExpect(jsonPath("$.degrees[0].level").value(1))
@@ -80,7 +81,7 @@ class UniversityControllerTest {
     void enroll_wrongLocationIsA409Problem() throws Exception {
         mockServicesAt(Location.PAWN_SHOP);
 
-        mvc.perform(post("/api/players/bob/enroll"))
+        mvc.perform(post("/api/players/bob/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:wrong-location"));
@@ -93,7 +94,7 @@ class UniversityControllerTest {
         when(services.university()).thenReturn(university);
         when(university.enroll()).thenReturn(new EnrollOutcome(EnrollOutcome.Status.ALREADY_ENROLLED, 120));
 
-        mvc.perform(post("/api/players/bob/enroll"))
+        mvc.perform(post("/api/players/bob/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:already-enrolled"));
@@ -106,7 +107,7 @@ class UniversityControllerTest {
         when(services.university()).thenReturn(university);
         when(university.enroll()).thenReturn(new EnrollOutcome(EnrollOutcome.Status.EDUCATION_COMPLETE, 120));
 
-        mvc.perform(post("/api/players/bob/enroll"))
+        mvc.perform(post("/api/players/bob/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:education-complete"));
@@ -119,7 +120,7 @@ class UniversityControllerTest {
         when(services.university()).thenReturn(university);
         when(university.enroll()).thenReturn(new EnrollOutcome(EnrollOutcome.Status.INSUFFICIENT_CASH, 10));
 
-        mvc.perform(post("/api/players/bob/enroll"))
+        mvc.perform(post("/api/players/bob/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-funds"));
@@ -132,7 +133,7 @@ class UniversityControllerTest {
         when(services.university()).thenReturn(university);
         when(university.enroll()).thenReturn(new EnrollOutcome(EnrollOutcome.Status.WEEK_OVER, 120));
 
-        mvc.perform(post("/api/players/bob/enroll"))
+        mvc.perform(post("/api/players/bob/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:week-over"));
@@ -146,7 +147,7 @@ class UniversityControllerTest {
         when(university.enroll()).thenReturn(new EnrollOutcome(EnrollOutcome.Status.OK, 70));
         when(assembler.assemble("bob", services)).thenReturn(dto());
 
-        mvc.perform(post("/api/players/bob/enroll"))
+        mvc.perform(post("/api/players/bob/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.feePaid").value(50))
                 .andExpect(jsonPath("$.state.username").value("bob"));
@@ -158,7 +159,7 @@ class UniversityControllerTest {
     void study_wrongLocationIsA409Problem() throws Exception {
         mockServicesAt(Location.PAWN_SHOP);
 
-        mvc.perform(post("/api/players/bob/study"))
+        mvc.perform(post("/api/players/bob/study").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:wrong-location"));
@@ -171,7 +172,7 @@ class UniversityControllerTest {
         when(services.university()).thenReturn(university);
         when(university.study()).thenReturn(new StudyOutcome(StudyOutcome.Status.NOT_ENROLLED, -1, 0, 0, null));
 
-        mvc.perform(post("/api/players/bob/study"))
+        mvc.perform(post("/api/players/bob/study").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:not-enrolled"));
@@ -184,7 +185,7 @@ class UniversityControllerTest {
         when(services.university()).thenReturn(university);
         when(university.study()).thenReturn(new StudyOutcome(StudyOutcome.Status.EDUCATION_COMPLETE, -1, 0, 8, null));
 
-        mvc.perform(post("/api/players/bob/study"))
+        mvc.perform(post("/api/players/bob/study").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:education-complete"));
@@ -197,7 +198,7 @@ class UniversityControllerTest {
         when(services.university()).thenReturn(university);
         when(university.study()).thenReturn(new StudyOutcome(StudyOutcome.Status.INSUFFICIENT_TIME, 50, 2, 0, null));
 
-        mvc.perform(post("/api/players/bob/study"))
+        mvc.perform(post("/api/players/bob/study").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-time"));
@@ -210,7 +211,7 @@ class UniversityControllerTest {
         when(services.university()).thenReturn(university);
         when(university.study()).thenReturn(new StudyOutcome(StudyOutcome.Status.WEEK_OVER, 0, 2, 0, null));
 
-        mvc.perform(post("/api/players/bob/study"))
+        mvc.perform(post("/api/players/bob/study").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:week-over"));
@@ -224,7 +225,7 @@ class UniversityControllerTest {
         when(university.study()).thenReturn(new StudyOutcome(StudyOutcome.Status.OK, 3600, 2, 0, null));
         when(assembler.assemble("bob", services)).thenReturn(dto());
 
-        mvc.perform(post("/api/players/bob/study"))
+        mvc.perform(post("/api/players/bob/study").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.progress").value(2))
                 .andExpect(jsonPath("$.studiesRemaining").value(9))
@@ -242,7 +243,7 @@ class UniversityControllerTest {
                 .thenReturn(new StudyOutcome(StudyOutcome.Status.DEGREE_COMPLETED, 3600, 0, 1, "Junior College"));
         when(assembler.assemble("bob", services)).thenReturn(dto());
 
-        mvc.perform(post("/api/players/bob/study"))
+        mvc.perform(post("/api/players/bob/study").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.progress").value(0))
                 .andExpect(jsonPath("$.studiesRemaining").value(0))

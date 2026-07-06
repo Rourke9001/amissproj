@@ -661,8 +661,34 @@ decisions locked up front:
       deleted (FK cascade took the stats row with it), server killed, port 8080
       confirmed free. `git diff --stat feat/kan35-testcontainers` touches only
       `amiss-api/**` (+ this file))*
-- [ ] PR F `feat/kan37-route-protection` — lock `/api/**` (permit auth/highscores/health);
-      path-username == principal else 403; CORS from `amiss.cors.allowed-origins`; health
-      details tightened; anon 401 / cross-player 403 / own 200 tests
-- [ ] Bookkeeping: JIRA transitions + PR-link comments; ROADMAP ticks (JPA + Security);
-      lessons.md if corrections arise
+- [x] PR F `feat/kan37-route-protection` — lock `/api/**` (permit register/login/
+      highscores/actuator-health/error/OPTIONS-preflight; all else authenticated);
+      `PlayerScopeFilter` = one central IDOR guard on `/api/players/{username}/**`
+      (fail-closed strict equals, AccessDeniedException → shared 403 problem+json
+      `urn:amiss:forbidden`); CORS from `amiss.cors.allowed-origins` (Vite dev default);
+      actuator exposure → health only, show-details never; 64 existing web-slice tests
+      authenticated via `jwt()`; new SecurityRulesTest (8) + SecurityLockdownIT (6)
+      *(PR #31; 322 unit + 35 IT green; live smoke: anon 401, cross-player 403 read+write
+      with DB row unchanged, own 200, highscores/health public, CORS allow/deny)*
+- [x] Bookkeeping: JIRA — KAN-17/18 + all five subtasks In Progress with PR-link comments
+      (→ Done as PRs merge); ROADMAP JPA + Security items ticked (in PR F); README/SETUP
+      document AMISS_JWT_SECRET + AMISS_CORS_ALLOWED_ORIGINS; lessons.md updated (JPA
+      deferred-flush, @DataJpaTest tx trap, stale-target after branch switch, Nimbus
+      RS256 default, @WebMvcTest security-slice traps, Testcontainers MySQL 9 my.cnf)
+
+### Review — KAN-17 + KAN-18 chain (PRs #26 → #31)
+KAN-17 and KAN-18 shipped as a six-PR stacked chain off develop, implemented by cheaper
+subagents against locked handoff packets with plan/diff-review/verification kept in the
+orchestrating session. Merge order: #26 (KAN-33 entities) → #27 (KAN-17 port-exception
+refactor) → #28 (KAN-34 Spring Data swap) → #29 (KAN-35 Testcontainers) → #30 (KAN-36
+auth+JWT) → #31 (KAN-37 lockdown); each PR auto-retargets as its base merges. Final
+state: 322 unit tests + 35 Testcontainers ITs, all green; the API runs entirely on JPA
+(core JDBC adapters remain for Swing, whose behaviour is untouched); every /api/** route
+outside register/login/highscores/health requires a Bearer token and players can only
+touch their own state. Highlights worth remembering: the ports absorbed the whole
+JDBC→JPA swap with zero core changes (the clean-architecture bet paid off measurably —
+245 pre-existing tests passed unmodified through the swap PR); the new ITs immediately
+caught a real adapter bug (deferred-flush exception escaping translation) before any
+merge; and the API and Swing share one credential rule through PasswordHasher, so the
+legacy-plaintext upgrade works identically over HTTP and desktop. Next up per ROADMAP
+Phase 3: KAN-19 React SPA (KAN-38 scaffold onwards), then KAN-20 (OpenAPI + Docker).

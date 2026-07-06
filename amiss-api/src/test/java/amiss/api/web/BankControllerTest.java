@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -49,6 +50,7 @@ class BankControllerTest {
 
     private static MockHttpServletRequestBuilder postAmount(String path, int amount) {
         return post(path)
+                .with(jwt().jwt(j -> j.subject("bob")))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"amount\":" + amount + "}");
     }

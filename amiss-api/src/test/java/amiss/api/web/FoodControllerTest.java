@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -51,6 +52,7 @@ class FoodControllerTest {
 
     private static MockHttpServletRequestBuilder postBody(String path, String field, String value) {
         return post(path)
+                .with(jwt().jwt(j -> j.subject("bob")))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"" + field + "\":\"" + value + "\"}");
     }
@@ -69,7 +71,7 @@ class FoodControllerTest {
 
     @Test
     void catalog_returnsTheMenuAndPacks() throws Exception {
-        mvc.perform(get("/api/food"))
+        mvc.perform(get("/api/food").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.menu.length()").value(6))
                 .andExpect(jsonPath("$.menu[0].id").value("BURGER"))

@@ -114,8 +114,22 @@ class AuthRoundTripIT extends AuthRoundTripSupport {
     }
 
     @Test
-    void existingGameEndpoint_staysReachableUnauthenticated() {
-        ResponseEntity<String> response = rest.getForEntity("/api/board", String.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+    void existingGameEndpoint_nowRequiresTheBearerTokenMintedHere() {
+        // KAN-37 locks /api/board (and the rest of /api/**) behind the token this class
+        // mints/verifies — the KAN-36-era "stays reachable unauthenticated" behaviour is gone.
+        String username = newUsername("boardauth");
+        rest.postForEntity("/api/auth/register", new RegisterRequest(username, "secret1"), RegisterResponse.class);
+        LoginResponse login = rest.postForEntity(
+                        "/api/auth/login", new LoginRequest(username, "secret1"), LoginResponse.class)
+                .getBody();
+
+        ResponseEntity<String> anonymous = rest.getForEntity("/api/board", String.class);
+        assertEquals(HttpStatus.UNAUTHORIZED, anonymous.getStatusCode());
+
+        HttpHeaders authHeaders = new HttpHeaders();
+        authHeaders.setBearerAuth(login.accessToken());
+        ResponseEntity<String> authenticated = rest.exchange(
+                "/api/board", HttpMethod.GET, new HttpEntity<>(authHeaders), String.class);
+        assertEquals(HttpStatus.OK, authenticated.getStatusCode());
     }
 }
