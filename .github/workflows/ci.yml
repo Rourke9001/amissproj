@@ -55,12 +55,16 @@ jobs:
               }' amiss-coverage/target/site/jacoco-aggregate/jacoco.csv
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # Surefire = unit tests (*Test), Failsafe = the KAN-35 Testcontainers
+      # integration tests (*IT, amiss-api only) that `verify` now also runs.
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: '**/target/surefire-reports'
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
           if-no-files-found: ignore
 
       - name: Upload coverage report
