@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import java.sql.SQLException;
 import java.util.List;
@@ -47,7 +48,7 @@ class HighscoresControllerTest {
 
     @Test
     void highscores_sqlExceptionIsA500Problem() throws Exception {
-        when(users.highScores()).thenThrow(new SQLException("db down"));
+        when(users.highScores()).thenThrow(new PersistenceFailureException(new SQLException("db down")));
 
         mvc.perform(get("/api/highscores"))
                 .andExpect(status().isInternalServerError())

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
 import java.sql.SQLException;
@@ -45,21 +46,21 @@ class StatsServiceTest {
     // ---- buy ---------------------------------------------------------------
 
     @Test
-    void buy_deductsThePriceAndPersistsWhenAffordable() throws SQLException {
+    void buy_deductsThePriceAndPersistsWhenAffordable() {
         when(users.getCash(USER)).thenReturn(100);
         assertEquals("You spent R30, You have R70 left", newService().buy("30"));
         verify(users).updateCash(USER, 70);
     }
 
     @Test
-    void buy_rejectsAndDoesNotPersistWhenTooExpensive() throws SQLException {
+    void buy_rejectsAndDoesNotPersistWhenTooExpensive() {
         when(users.getCash(USER)).thenReturn(20);
         assertEquals("not enough cash, you only have R20", newService().buy("30"));
         verify(users, never()).updateCash(anyString(), anyInt());
     }
 
     @Test
-    void buy_treatsANonNumericPriceAsZero() throws SQLException {
+    void buy_treatsANonNumericPriceAsZero() {
         when(users.getCash(USER)).thenReturn(100);
         // Validation.parseIntOrDefault("abc", 0) -> 0, so nothing is actually spent.
         assertEquals("You spent R0, You have R100 left", newService().buy("abc"));
@@ -67,30 +68,30 @@ class StatsServiceTest {
     }
 
     @Test
-    void buy_reportsFailureWhenPersistenceThrows() throws SQLException {
+    void buy_reportsFailureWhenPersistenceThrows() {
         when(users.getCash(USER)).thenReturn(100);
-        doThrow(new SQLException("boom")).when(users).updateCash(USER, 70);
+        doThrow(new PersistenceFailureException(new SQLException("boom"))).when(users).updateCash(USER, 70);
         assertEquals("failed to purchase", newService().buy("30"));
     }
 
     // ---- getCash -----------------------------------------------------------
 
     @Test
-    void getCash_returnsTheStoredCash() throws SQLException {
+    void getCash_returnsTheStoredCash() {
         when(users.getCash(USER)).thenReturn(100);
         assertEquals(100, newService().getCash());
     }
 
     @Test
-    void getCash_returnsMinusOneOnSqlException() throws SQLException {
-        when(users.getCash(USER)).thenThrow(new SQLException("boom"));
+    void getCash_returnsMinusOneOnSqlException() {
+        when(users.getCash(USER)).thenThrow(new PersistenceFailureException(new SQLException("boom")));
         assertEquals(-1, newService().getCash());
     }
 
     // ---- setCash: rent-arrears penalty branch ------------------------------
 
     @Test
-    void setCash_deductsRentArrearsAndPaysDownDebtWhenInDebt() throws SQLException {
+    void setCash_deductsRentArrearsAndPaysDownDebtWhenInDebt() {
         when(users.getDebt(USER)).thenReturn(50);
         when(users.getCash(USER)).thenReturn(100);
 
@@ -102,7 +103,7 @@ class StatsServiceTest {
     }
 
     @Test
-    void setCash_justAddsEarningsWhenNotInDebt() throws SQLException {
+    void setCash_justAddsEarningsWhenNotInDebt() {
         when(users.getDebt(USER)).thenReturn(0);
         when(users.getCash(USER)).thenReturn(100);
 
@@ -112,65 +113,65 @@ class StatsServiceTest {
     }
 
     @Test
-    void setCash_reportsFailureWhenPersistenceThrows() throws SQLException {
+    void setCash_reportsFailureWhenPersistenceThrows() {
         when(users.getDebt(USER)).thenReturn(0);
         when(users.getCash(USER)).thenReturn(100);
-        doThrow(new SQLException("boom")).when(users).updateCash(USER, 120);
+        doThrow(new PersistenceFailureException(new SQLException("boom"))).when(users).updateCash(USER, 120);
         assertEquals("failed to update cash", newService().setCash(20));
     }
 
     // ---- rent / debt / experience / happiness ------------------------------
 
     @Test
-    void getRent_returnsTheStoredRentStatus() throws SQLException {
+    void getRent_returnsTheStoredRentStatus() {
         when(users.getRent(USER)).thenReturn(1);
         assertEquals(1, newService().getRent());
     }
 
     @Test
-    void setRent_persistsTheRentStatus() throws SQLException {
+    void setRent_persistsTheRentStatus() {
         newService().setRent(0);
         verify(users).updateRent(USER, 0);
     }
 
     @Test
-    void getDebt_returnsTheStoredDebt() throws SQLException {
+    void getDebt_returnsTheStoredDebt() {
         when(users.getDebt(USER)).thenReturn(0);
         assertEquals(0, newService().getDebt());
     }
 
     @Test
-    void setDebt_addsToTheStoredDebt() throws SQLException {
+    void setDebt_addsToTheStoredDebt() {
         newService().setDebt(50);
         verify(users).addDebt(USER, 50);
     }
 
     @Test
-    void payDebt_subtractsTenFromTheStoredDebt() throws SQLException {
+    void payDebt_subtractsTenFromTheStoredDebt() {
         newService().payDebt();
         verify(users).subtractDebt(USER, 10);
     }
 
     @Test
-    void updateWork_incrementsWorkExperience() throws SQLException {
+    void updateWork_incrementsWorkExperience() {
         newService().updateWork();
         verify(stats).incrementWork(USER);
     }
 
     @Test
-    void getWork_returnsFallbackStringOnSqlException() throws SQLException {
-        when(stats.getWork(USER)).thenThrow(new SQLException("boom"));
+    void getWork_returnsFallbackStringOnSqlException() {
+        when(stats.getWork(USER)).thenThrow(new PersistenceFailureException(new SQLException("boom")));
         assertEquals("Failed to get work", newService().getWork());
     }
 
     @Test
-    void updateHappiness_incrementsHappiness() throws SQLException {
+    void updateHappiness_incrementsHappiness() {
         newService().updateHappiness();
         verify(stats).incrementHappiness(USER);
     }
 
     @Test
-    void getHappiness_returnsTheStoredHappiness() throws SQLException {
+    void getHappiness_returnsTheStoredHappiness() {
         when(stats.getHappiness(USER)).thenReturn("3");
         assertEquals("3", newService().getHappiness());
     }
@@ -178,7 +179,7 @@ class StatsServiceTest {
     // ---- reset (start the game over) ---------------------------------------
 
     @Test
-    void reset_resetsBothTheStatsAndTheUserRows() throws SQLException {
+    void reset_resetsBothTheStatsAndTheUserRows() {
         newService().reset();
         verify(stats).resetStats(USER);
         verify(users).resetUser(USER);

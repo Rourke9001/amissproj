@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
@@ -31,19 +32,19 @@ class BankServiceTest {
     }
 
     @Test
-    void balance_returnsTheStoredBalance() throws SQLException {
+    void balance_returnsTheStoredBalance() {
         when(users.getBank(USER)).thenReturn(250);
         assertEquals(250, service().balance());
     }
 
     @Test
-    void balance_returnsMinusOneOnSqlException() throws SQLException {
-        when(users.getBank(USER)).thenThrow(new SQLException("boom"));
+    void balance_returnsMinusOneOnSqlException() {
+        when(users.getBank(USER)).thenThrow(new PersistenceFailureException(new SQLException("boom")));
         assertEquals(-1, service().balance());
     }
 
     @Test
-    void deposit_rejectsNonPositiveAmountsWithoutTouchingTheRepository() throws SQLException {
+    void deposit_rejectsNonPositiveAmountsWithoutTouchingTheRepository() {
         BankTransaction result = service().deposit(0);
 
         assertEquals(BankTransaction.Status.INVALID_AMOUNT, result.status());
@@ -51,7 +52,7 @@ class BankServiceTest {
     }
 
     @Test
-    void deposit_negativeAmountIsAlsoInvalid() throws SQLException {
+    void deposit_negativeAmountIsAlsoInvalid() {
         BankTransaction result = service().deposit(-5);
 
         assertEquals(BankTransaction.Status.INVALID_AMOUNT, result.status());
@@ -59,7 +60,7 @@ class BankServiceTest {
     }
 
     @Test
-    void deposit_movesMoneyAndReReadsBothBalancesOnSuccess() throws SQLException {
+    void deposit_movesMoneyAndReReadsBothBalancesOnSuccess() {
         when(users.depositToBank(USER, 50)).thenReturn(true);
         when(users.getCash(USER)).thenReturn(70);
         when(users.getBank(USER)).thenReturn(50);
@@ -71,7 +72,7 @@ class BankServiceTest {
     }
 
     @Test
-    void deposit_insufficientCashReportsCurrentBalancesUnchanged() throws SQLException {
+    void deposit_insufficientCashReportsCurrentBalancesUnchanged() {
         when(users.depositToBank(USER, 500)).thenReturn(false);
         when(users.getCash(USER)).thenReturn(20);
         when(users.getBank(USER)).thenReturn(0);
@@ -82,8 +83,8 @@ class BankServiceTest {
     }
 
     @Test
-    void deposit_sqlExceptionIsReportedAsFailed() throws SQLException {
-        when(users.depositToBank(USER, 50)).thenThrow(new SQLException("boom"));
+    void deposit_sqlExceptionIsReportedAsFailed() {
+        when(users.depositToBank(USER, 50)).thenThrow(new PersistenceFailureException(new SQLException("boom")));
 
         BankTransaction result = service().deposit(50);
 
@@ -91,7 +92,7 @@ class BankServiceTest {
     }
 
     @Test
-    void withdraw_movesMoneyAndReReadsBothBalancesOnSuccess() throws SQLException {
+    void withdraw_movesMoneyAndReReadsBothBalancesOnSuccess() {
         when(users.withdrawFromBank(USER, 30)).thenReturn(true);
         when(users.getCash(USER)).thenReturn(130);
         when(users.getBank(USER)).thenReturn(20);
@@ -104,7 +105,7 @@ class BankServiceTest {
     }
 
     @Test
-    void withdraw_insufficientBankBalanceIsReported() throws SQLException {
+    void withdraw_insufficientBankBalanceIsReported() {
         when(users.withdrawFromBank(USER, 999)).thenReturn(false);
         when(users.getCash(USER)).thenReturn(100);
         when(users.getBank(USER)).thenReturn(10);

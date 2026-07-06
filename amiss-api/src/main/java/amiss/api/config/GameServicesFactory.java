@@ -1,14 +1,13 @@
 package amiss.api.config;
 
-import amiss.api.error.PersistenceFailureException;
 import amiss.api.error.PlayerNotFoundException;
 import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
 import amiss.application.service.GameServices;
 import amiss.domain.model.User;
-import java.sql.SQLException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,12 +39,8 @@ public class GameServicesFactory {
      * @throws PersistenceFailureException if the lookup itself fails (→ 500)
      */
     public GameServices forPlayer(String username) {
-        try {
-            User user = users.findByName(username)
-                    .orElseThrow(() -> new PlayerNotFoundException(username));
-            return new GameServices(user, users, userStats, jobs, costs);
-        } catch (SQLException e) {
-            throw new PersistenceFailureException(e);
-        }
+        User user = users.findByName(username)
+                .orElseThrow(() -> new PlayerNotFoundException(username));
+        return new GameServices(user, users, userStats, jobs, costs);
     }
 }

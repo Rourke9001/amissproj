@@ -1,9 +1,7 @@
 package amiss.api.web;
 
-import amiss.api.error.PersistenceFailureException;
 import amiss.api.web.dto.HighscoreEntryDto;
 import amiss.application.port.UserRepository;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,16 +22,12 @@ public class HighscoresController {
 
     @GetMapping("/api/highscores")
     public List<HighscoreEntryDto> highscores() {
-        try {
-            List<String[]> rows = users.highScores();
-            List<HighscoreEntryDto> entries = new ArrayList<>(rows.size());
-            int rank = 1;
-            for (String[] row : rows) {
-                entries.add(new HighscoreEntryDto(rank++, row[0], Integer.parseInt(row[1])));
-            }
-            return entries;
-        } catch (SQLException e) {
-            throw new PersistenceFailureException(e);
+        List<String[]> rows = users.highScores();
+        List<HighscoreEntryDto> entries = new ArrayList<>(rows.size());
+        int rank = 1;
+        for (String[] row : rows) {
+            entries.add(new HighscoreEntryDto(rank++, row[0], Integer.parseInt(row[1])));
         }
+        return entries;
     }
 }

@@ -13,6 +13,7 @@ import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.PlayerStateDto;
 import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.service.ApplyOutcome;
 import amiss.application.service.GameServices;
 import amiss.application.service.JobService;
@@ -100,7 +101,7 @@ class EmploymentControllerTest {
 
     @Test
     void jobs_sqlExceptionIsA500Problem() throws Exception {
-        when(jobRepository.listAll()).thenThrow(new SQLException("db down"));
+        when(jobRepository.listAll()).thenThrow(new PersistenceFailureException(new SQLException("db down")));
 
         mvc.perform(get("/api/jobs"))
                 .andExpect(status().isInternalServerError())

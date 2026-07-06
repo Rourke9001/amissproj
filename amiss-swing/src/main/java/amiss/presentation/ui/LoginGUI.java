@@ -5,6 +5,7 @@
  */
 package amiss.presentation.ui;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
 import amiss.domain.model.User;
@@ -12,7 +13,6 @@ import amiss.domain.model.UserGoals;
 import amiss.domain.validation.Validation;
 import amiss.infrastructure.GameContext;
 import amiss.infrastructure.security.PasswordHasher;
-import java.sql.SQLException;
 import java.util.Optional;
 
 /**
@@ -143,7 +143,7 @@ public class LoginGUI extends javax.swing.JFrame {
             } else {
                 lblError.setText("Please Input a Valid Username and Password"); //messgae guide to the user
             }
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             lblError.setText("Cannot Load User");//message guide to the user
         }
 
@@ -165,7 +165,7 @@ public class LoginGUI extends javax.swing.JFrame {
             } else {
                 lblError.setText("Passwords Do Not Match");//message guide to user
             }
-        } catch (SQLException s) {
+        } catch (PersistenceFailureException s) {
             lblError.setText("Cannot Add New User");
         }
     }//GEN-LAST:event_btnCreateUserActionPerformed

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserStatsRepository;
 import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
@@ -29,50 +30,50 @@ class EducationServiceTest {
     }
 
     @Test
-    void getEducation_returnsTheStoredLevel() throws SQLException {
+    void getEducation_returnsTheStoredLevel() {
         when(stats.getEducation(USER)).thenReturn(3);
         assertEquals(3, newService().getEducation());
     }
 
     @Test
-    void getEducation_returnsMinusOneOnSqlException() throws SQLException {
-        when(stats.getEducation(USER)).thenThrow(new SQLException("boom"));
+    void getEducation_returnsMinusOneOnSqlException() {
+        when(stats.getEducation(USER)).thenThrow(new PersistenceFailureException(new SQLException("boom")));
         assertEquals(-1, newService().getEducation());
     }
 
     @Test
-    void setEducation_advancesTheStoredLevelByOne() throws SQLException {
+    void setEducation_advancesTheStoredLevelByOne() {
         when(stats.getEducation(USER)).thenReturn(2);
         newService().setEducation();
         verify(stats).updateEducation(USER, 3);
     }
 
     @Test
-    void hasEnrolled_isFalseWhenProgressIsZero() throws SQLException {
+    void hasEnrolled_isFalseWhenProgressIsZero() {
         when(stats.getEduprog(USER)).thenReturn(0);
         assertFalse(newService().hasEnrolled());
     }
 
     @Test
-    void hasEnrolled_isTrueWhenProgressIsOne() throws SQLException {
+    void hasEnrolled_isTrueWhenProgressIsOne() {
         when(stats.getEduprog(USER)).thenReturn(1);
         assertTrue(newService().hasEnrolled());
     }
 
     @Test
-    void hasEnrolled_isFalseForAnyOtherProgressValue() throws SQLException {
+    void hasEnrolled_isFalseForAnyOtherProgressValue() {
         when(stats.getEduprog(USER)).thenReturn(2);
         assertFalse(newService().hasEnrolled());
     }
 
     @Test
-    void getProg_returnsMinusOneOnSqlException() throws SQLException {
-        when(stats.getEduprog(USER)).thenThrow(new SQLException("boom"));
+    void getProg_returnsMinusOneOnSqlException() {
+        when(stats.getEduprog(USER)).thenThrow(new PersistenceFailureException(new SQLException("boom")));
         assertEquals(-1, newService().getProg());
     }
 
     @Test
-    void setProg_persistsTheGivenProgress() throws SQLException {
+    void setProg_persistsTheGivenProgress() {
         newService().setProg(1);
         verify(stats).updateEduprog(USER, 1);
     }

@@ -1,7 +1,7 @@
 package amiss.application.service;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public class TimeService {
     public int getX() {
         try {
             return users.getXpos(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to get x-pos", ex);
         }
         return 0;
@@ -42,7 +42,7 @@ public class TimeService {
     public int getY() {
         try {
             return users.getYpos(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to get y-pos", ex);
         }
         return 0;
@@ -56,7 +56,7 @@ public class TimeService {
     public void setPos(int xpos, int ypos) {
         try {
             users.updatePosition(username, xpos, ypos);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to update position", ex);
         }
     }
@@ -68,7 +68,7 @@ public class TimeService {
     public void setTime(int tm) {
         try {
             users.updateTime(username, tm);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to update time", ex);
         }
     }
@@ -93,7 +93,7 @@ public class TimeService {
                 setTime(remaining);
                 return new TimeSpend(remaining, false, remaining == 0);
             }
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to get time", ex);
         }
 
@@ -131,7 +131,7 @@ public class TimeService {
             if (round != -1) {
                 return round + "";
             }
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to get round", ex);
         }
         return "failed to get round";
@@ -144,7 +144,7 @@ public class TimeService {
         int round = Integer.parseInt(getRound()) + 1;
         try {
             users.updateRound(username, round);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to update round", ex);
         }
     }

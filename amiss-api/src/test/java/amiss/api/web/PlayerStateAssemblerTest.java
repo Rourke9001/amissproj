@@ -11,7 +11,6 @@ import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
 import amiss.application.service.GameServices;
 import amiss.domain.model.User;
-import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -41,7 +40,7 @@ class PlayerStateAssemblerTest {
         return new GameServices(user, users, userStats, jobs, ActionCosts.defaults());
     }
 
-    private void stubCommonState(String job) throws SQLException {
+    private void stubCommonState(String job) {
         when(users.getXpos(USER)).thenReturn(0);
         when(users.getYpos(USER)).thenReturn(2);
         when(users.getTime(USER)).thenReturn(3960);
@@ -60,7 +59,7 @@ class PlayerStateAssemblerTest {
     }
 
     @Test
-    void assemble_unemployedPlayerHasNullJobWageAndLocation() throws SQLException {
+    void assemble_unemployedPlayerHasNullJobWageAndLocation() {
         stubCommonState("Unemployed");
 
         PlayerStateDto dto = assembler.assemble(USER, services("Unemployed"));
@@ -71,7 +70,7 @@ class PlayerStateAssemblerTest {
     }
 
     @Test
-    void assemble_employedPlayerReportsWageAndLocation() throws SQLException {
+    void assemble_employedPlayerReportsWageAndLocation() {
         stubCommonState("Cook");
         when(jobs.getSalary("Cook")).thenReturn(6);
         when(jobs.getLocation("Cook")).thenReturn("Monolith Burgers");
@@ -84,7 +83,7 @@ class PlayerStateAssemblerTest {
     }
 
     @Test
-    void assemble_populatesStatsFoodClothingAndGoalTargets() throws SQLException {
+    void assemble_populatesStatsFoodClothingAndGoalTargets() {
         stubCommonState("Unemployed");
 
         PlayerStateDto dto = assembler.assemble(USER, services("Unemployed"));
@@ -108,7 +107,7 @@ class PlayerStateAssemblerTest {
     }
 
     @Test
-    void assemble_staleSavedPositionClampsToHome() throws SQLException {
+    void assemble_staleSavedPositionClampsToHome() {
         when(users.getXpos(USER)).thenReturn(9);
         when(users.getYpos(USER)).thenReturn(9);
         when(users.getTime(USER)).thenReturn(3960);

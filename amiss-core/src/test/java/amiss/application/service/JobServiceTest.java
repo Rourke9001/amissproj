@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class JobServiceTest {
     // ---- applyForJob -------------------------------------------------------
 
     @Test
-    void applyForJob_rejectsAndDoesNotPersistWhenEducationIsTooLow() throws SQLException {
+    void applyForJob_rejectsAndDoesNotPersistWhenEducationIsTooLow() {
         when(jobs.getRequiredEducation("Doctor")).thenReturn(5);
         when(education.getEducation()).thenReturn(2);
 
@@ -52,7 +53,7 @@ class JobServiceTest {
     }
 
     @Test
-    void applyForJob_hiresAndPersistsWhenEducationIsSufficient() throws SQLException {
+    void applyForJob_hiresAndPersistsWhenEducationIsSufficient() {
         when(jobs.getRequiredEducation("Janitor")).thenReturn(0);
         when(education.getEducation()).thenReturn(1);
         when(users.getJob(USER)).thenReturn("Janitor");
@@ -67,7 +68,7 @@ class JobServiceTest {
     // ---- apply ---------------------------------------------------------------
 
     @Test
-    void apply_unknownJobIsRejectedBeforeAnyCharge() throws SQLException {
+    void apply_unknownJobIsRejectedBeforeAnyCharge() {
         when(jobs.getRequiredEducation("Bogus")).thenReturn(-1);
 
         ApplyOutcome outcome = newService().apply("Bogus");
@@ -78,7 +79,7 @@ class JobServiceTest {
     }
 
     @Test
-    void apply_weekOverRejectsAndChargesNothing() throws SQLException {
+    void apply_weekOverRejectsAndChargesNothing() {
         when(jobs.getRequiredEducation("Janitor")).thenReturn(0);
         when(users.getTime(USER)).thenReturn(0);
 
@@ -89,7 +90,7 @@ class JobServiceTest {
     }
 
     @Test
-    void apply_insufficientTimeRejectsAndChargesNothing() throws SQLException {
+    void apply_insufficientTimeRejectsAndChargesNothing() {
         when(jobs.getRequiredEducation("Janitor")).thenReturn(0);
         when(users.getTime(USER)).thenReturn(100); // 100 - 240 < 0
 
@@ -100,7 +101,7 @@ class JobServiceTest {
     }
 
     @Test
-    void apply_chargesTheFourHoursEvenWhenEducationIsTooLow() throws SQLException {
+    void apply_chargesTheFourHoursEvenWhenEducationIsTooLow() {
         when(jobs.getRequiredEducation("Doctor")).thenReturn(5);
         when(users.getTime(USER)).thenReturn(4320);
         when(education.getEducation()).thenReturn(2);
@@ -113,7 +114,7 @@ class JobServiceTest {
     }
 
     @Test
-    void apply_hiresAndPersistsWhenEducationIsSufficient() throws SQLException {
+    void apply_hiresAndPersistsWhenEducationIsSufficient() {
         when(jobs.getRequiredEducation("Janitor")).thenReturn(0);
         when(users.getTime(USER)).thenReturn(4320);
         when(education.getEducation()).thenReturn(1);
@@ -127,8 +128,8 @@ class JobServiceTest {
     }
 
     @Test
-    void apply_returnsFailedOnSqlExceptionCheckingEducation() throws SQLException {
-        when(jobs.getRequiredEducation("Janitor")).thenThrow(new SQLException("boom"));
+    void apply_returnsFailedOnSqlExceptionCheckingEducation() {
+        when(jobs.getRequiredEducation("Janitor")).thenThrow(new PersistenceFailureException(new SQLException("boom")));
 
         ApplyOutcome outcome = newService().apply("Janitor");
 
@@ -139,21 +140,21 @@ class JobServiceTest {
     // ---- getEarnings / getLocation -----------------------------------------
 
     @Test
-    void getEarnings_returnsTheSalaryForTheCurrentJob() throws SQLException {
+    void getEarnings_returnsTheSalaryForTheCurrentJob() {
         when(users.getJob(USER)).thenReturn("Pilot");
         when(jobs.getSalary("Pilot")).thenReturn(100);
         assertEquals(100, newService().getEarnings());
     }
 
     @Test
-    void getEarnings_returnsMinusOneOnSqlException() throws SQLException {
+    void getEarnings_returnsMinusOneOnSqlException() {
         when(users.getJob(USER)).thenReturn("Pilot");
-        when(jobs.getSalary("Pilot")).thenThrow(new SQLException("boom"));
+        when(jobs.getSalary("Pilot")).thenThrow(new PersistenceFailureException(new SQLException("boom")));
         assertEquals(-1, newService().getEarnings());
     }
 
     @Test
-    void getLocation_returnsTheBuildingForTheCurrentJob() throws SQLException {
+    void getLocation_returnsTheBuildingForTheCurrentJob() {
         when(users.getJob(USER)).thenReturn("Pilot");
         when(jobs.getLocation("Pilot")).thenReturn("Airport");
         assertEquals("Airport", newService().getLocation());
@@ -162,7 +163,7 @@ class JobServiceTest {
     // ---- getJobClothes: dress-code check -----------------------------------
 
     @Test
-    void getJobClothes_warnsWhenUnderdressed() throws SQLException {
+    void getJobClothes_warnsWhenUnderdressed() {
         when(users.getJob(USER)).thenReturn("Pilot");
         when(jobs.getRequiredClothing("Pilot")).thenReturn("3");
         when(users.getUserClothing(USER)).thenReturn("1");
@@ -170,7 +171,7 @@ class JobServiceTest {
     }
 
     @Test
-    void getJobClothes_returnsNullWhenProperlyDressed() throws SQLException {
+    void getJobClothes_returnsNullWhenProperlyDressed() {
         when(users.getJob(USER)).thenReturn("Janitor");
         when(jobs.getRequiredClothing("Janitor")).thenReturn("1");
         when(users.getUserClothing(USER)).thenReturn("2");
@@ -178,7 +179,7 @@ class JobServiceTest {
     }
 
     @Test
-    void getJobClothes_returnsNullWhenTheJobHasNoClothingRequirement() throws SQLException {
+    void getJobClothes_returnsNullWhenTheJobHasNoClothingRequirement() {
         when(users.getJob(USER)).thenReturn("Unemployed");
         when(jobs.getRequiredClothing("Unemployed")).thenReturn(null);
         assertNull(newService().getJobClothes());
@@ -187,13 +188,13 @@ class JobServiceTest {
     // ---- setClothes / toString ---------------------------------------------
 
     @Test
-    void setClothes_persistsTheClothingLevel() throws SQLException {
+    void setClothes_persistsTheClothingLevel() {
         newService().setClothes(3);
         verify(users).updateClothing(USER, 3);
     }
 
     @Test
-    void toString_describesJobAndEarnings() throws SQLException {
+    void toString_describesJobAndEarnings() {
         when(users.getJob(USER)).thenReturn("Janitor");
         when(jobs.getSalary("Janitor")).thenReturn(20);
         assertEquals("You work as a Janitor and Earn R20", newService().toString());

@@ -13,7 +13,6 @@ import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
-import java.sql.SQLException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +54,7 @@ class TurnServiceTest {
     }
 
     @Test
-    void endWeek_refusesAndChangesNothingWhileTimeRemains() throws SQLException {
+    void endWeek_refusesAndChangesNothingWhileTimeRemains() {
         when(users.getTime(USER)).thenReturn(300);
 
         assertEquals(WeekSummary.weekStillRunning(), service.endWeek());
@@ -68,7 +67,7 @@ class TurnServiceTest {
     }
 
     @Test
-    void endWeek_fedPlayerStartsTheLongerWeekAndConsumesOneStoredFood() throws SQLException {
+    void endWeek_fedPlayerStartsTheLongerWeekAndConsumesOneStoredFood() {
         when(users.getTime(USER)).thenReturn(0);
         when(users.getRound(USER)).thenReturn(5);
         when(users.getEat(USER)).thenReturn(2);
@@ -83,7 +82,7 @@ class TurnServiceTest {
     }
 
     @Test
-    void endWeek_unfedPlayerStartsTheBaseWeek() throws SQLException {
+    void endWeek_unfedPlayerStartsTheBaseWeek() {
         when(users.getTime(USER)).thenReturn(0);
         when(users.getRound(USER)).thenReturn(1);
         when(users.getEat(USER)).thenReturn(0);
@@ -96,7 +95,7 @@ class TurnServiceTest {
     }
 
     @Test
-    void endWeek_chargesLateRentDebtWhenARentRoundClosesUnpaid() throws SQLException {
+    void endWeek_chargesLateRentDebtWhenARentRoundClosesUnpaid() {
         when(users.getTime(USER)).thenReturn(0);
         when(users.getRound(USER)).thenReturn(4);
         when(users.getRent(USER)).thenReturn(1);
@@ -111,7 +110,7 @@ class TurnServiceTest {
     }
 
     @Test
-    void endWeek_chargesNoDebtWhenTheRentRoundWasPaid() throws SQLException {
+    void endWeek_chargesNoDebtWhenTheRentRoundWasPaid() {
         when(users.getTime(USER)).thenReturn(0);
         when(users.getRound(USER)).thenReturn(4);
         when(users.getRent(USER)).thenReturn(0);
@@ -124,7 +123,7 @@ class TurnServiceTest {
     }
 
     @Test
-    void endWeek_flagsRentDueOnEnteringEveryFourthRound() throws SQLException {
+    void endWeek_flagsRentDueOnEnteringEveryFourthRound() {
         when(users.getTime(USER)).thenReturn(0);
         when(users.getRound(USER)).thenReturn(3);
         when(users.getEat(USER)).thenReturn(0);
@@ -137,7 +136,7 @@ class TurnServiceTest {
     }
 
     @Test
-    void endWeek_paysNoWagesAtRollover() throws SQLException {
+    void endWeek_paysNoWagesAtRollover() {
         when(users.getTime(USER)).thenReturn(0);
         when(users.getRound(USER)).thenReturn(1);
         when(users.getEat(USER)).thenReturn(0);

@@ -14,7 +14,6 @@ import amiss.application.config.ActionCosts;
 import amiss.application.port.JobRepository;
 import amiss.application.port.UserRepository;
 import amiss.application.port.UserStatsRepository;
-import java.sql.SQLException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,7 +56,7 @@ class StatsServiceOrchestrationTest {
     // ---- workMain ----------------------------------------------------------
 
     @Test
-    void workMain_paysAndAdvancesWhenDressedWithEnoughTime() throws SQLException {
+    void workMain_paysAndAdvancesWhenDressedWithEnoughTime() {
         when(users.getJob(USER)).thenReturn("Janitor");
         when(jobRepo.getRequiredClothing("Janitor")).thenReturn(null); // no dress code
         when(users.getTime(USER)).thenReturn(4320);
@@ -76,7 +75,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void workMain_reportsNotEnoughTimeAndChangesNothing() throws SQLException {
+    void workMain_reportsNotEnoughTimeAndChangesNothing() {
         when(users.getJob(USER)).thenReturn("Janitor");
         when(jobRepo.getRequiredClothing("Janitor")).thenReturn(null);
         when(users.getTime(USER)).thenReturn(300); // 300 - 360 < 0
@@ -92,7 +91,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void workMain_refusesWhenUnderdressed() throws SQLException {
+    void workMain_refusesWhenUnderdressed() {
         when(users.getJob(USER)).thenReturn("Pilot");
         when(jobRepo.getRequiredClothing("Pilot")).thenReturn("3");
         when(users.getUserClothing(USER)).thenReturn("1");
@@ -110,7 +109,7 @@ class StatsServiceOrchestrationTest {
     // ---- eatMain -----------------------------------------------------------
 
     @Test
-    void eatMain_buysFoodAndAddsHappinessOnSuccess() throws SQLException {
+    void eatMain_buysFoodAndAddsHappinessOnSuccess() {
         when(users.getEat(USER)).thenReturn(0);
         when(users.getTime(USER)).thenReturn(4320);
         when(users.getCash(USER)).thenReturn(100);
@@ -128,7 +127,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void eatMain_reportsNotEnoughTimeAndChangesNothing() throws SQLException {
+    void eatMain_reportsNotEnoughTimeAndChangesNothing() {
         when(users.getEat(USER)).thenReturn(0);
         when(users.getTime(USER)).thenReturn(0); // 0 - 60 < 0
 
@@ -142,7 +141,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void eatMain_reportsNotEnoughCashWithoutBuying() throws SQLException {
+    void eatMain_reportsNotEnoughCashWithoutBuying() {
         when(users.getEat(USER)).thenReturn(0);
         when(users.getTime(USER)).thenReturn(72);
         when(users.getCash(USER)).thenReturn(10); // 10 < price 50
@@ -160,7 +159,7 @@ class StatsServiceOrchestrationTest {
     // ---- work ----------------------------------------------------------------
 
     @Test
-    void work_paysAndDocksDebtWhenInDebt() throws SQLException {
+    void work_paysAndDocksDebtWhenInDebt() {
         when(users.getJob(USER)).thenReturn("Janitor");
         when(jobRepo.getRequiredClothing("Janitor")).thenReturn(null);
         when(users.getTime(USER)).thenReturn(4320);
@@ -181,7 +180,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void work_reportsInsufficientTimeAndChangesNothing() throws SQLException {
+    void work_reportsInsufficientTimeAndChangesNothing() {
         when(users.getJob(USER)).thenReturn("Janitor");
         when(jobRepo.getRequiredClothing("Janitor")).thenReturn(null);
         when(users.getTime(USER)).thenReturn(300); // 300 - 360 < 0
@@ -194,7 +193,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void work_refusesWhenUnderdressedAndChargesNothing() throws SQLException {
+    void work_refusesWhenUnderdressedAndChargesNothing() {
         when(users.getJob(USER)).thenReturn("Pilot");
         when(jobRepo.getRequiredClothing("Pilot")).thenReturn("3");
         when(users.getUserClothing(USER)).thenReturn("1");
@@ -209,7 +208,7 @@ class StatsServiceOrchestrationTest {
     // ---- eat -------------------------------------------------------------------
 
     @Test
-    void eat_buysFoodAndAddsHappinessOnSuccess() throws SQLException {
+    void eat_buysFoodAndAddsHappinessOnSuccess() {
         when(users.getEat(USER)).thenReturn(0);
         when(users.getTime(USER)).thenReturn(4320);
         when(users.getCash(USER)).thenReturn(100);
@@ -225,7 +224,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void eat_reportsInsufficientCashButStillChargesTheHour() throws SQLException {
+    void eat_reportsInsufficientCashButStillChargesTheHour() {
         when(users.getEat(USER)).thenReturn(0);
         when(users.getTime(USER)).thenReturn(72);
         when(users.getCash(USER)).thenReturn(10); // 10 < price 50
@@ -242,7 +241,7 @@ class StatsServiceOrchestrationTest {
     // ---- buyGroceries ------------------------------------------------------------
 
     @Test
-    void buyGroceries_succeedsAndAddsFoodWeeks() throws SQLException {
+    void buyGroceries_succeedsAndAddsFoodWeeks() {
         when(users.getTime(USER)).thenReturn(4320);
         when(users.getCash(USER)).thenReturn(100);
         when(users.getEat(USER)).thenReturn(0);
@@ -256,7 +255,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void buyGroceries_insufficientCashRejectsAndChangesNothing() throws SQLException {
+    void buyGroceries_insufficientCashRejectsAndChangesNothing() {
         when(users.getTime(USER)).thenReturn(4320);
         when(users.getCash(USER)).thenReturn(10); // 10 < price 25
 
@@ -269,7 +268,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void buyGroceries_insufficientTimeRejectsAndChangesNothing() throws SQLException {
+    void buyGroceries_insufficientTimeRejectsAndChangesNothing() {
         // Swing's shopMinutes default is 0 (always affordable time-wise); override it here
         // to exercise the branch a deployment-configured non-zero shop cost would reach.
         ActionCosts nonZeroShop = new ActionCosts(360, 360, 360, 240, 120, 60, 100, 40, 120, 3600, 4320);
@@ -290,7 +289,7 @@ class StatsServiceOrchestrationTest {
     // ---- buyClothes (incl. the free-clothes-on-failed-purchase bug fix) ---------
 
     @Test
-    void buyClothes_succeedsAndUpdatesClothingLevel() throws SQLException {
+    void buyClothes_succeedsAndUpdatesClothingLevel() {
         when(users.getTime(USER)).thenReturn(4320);
         when(users.getCash(USER)).thenReturn(100);
 
@@ -303,7 +302,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void buyClothes_weekOverRejectsAndDoesNotGiveFreeClothes() throws SQLException {
+    void buyClothes_weekOverRejectsAndDoesNotGiveFreeClothes() {
         when(users.getTime(USER)).thenReturn(0); // week over
 
         PurchaseOutcome outcome = service.buyClothes(3, 55);
@@ -316,7 +315,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void buyClothes_insufficientCashRejectsAndDoesNotGiveFreeClothes() throws SQLException {
+    void buyClothes_insufficientCashRejectsAndDoesNotGiveFreeClothes() {
         when(users.getTime(USER)).thenReturn(4320);
         when(users.getCash(USER)).thenReturn(10); // 10 < price 55
 
@@ -330,7 +329,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void buyClothes_insufficientTimeRejectsAndDoesNotGiveFreeClothes() throws SQLException {
+    void buyClothes_insufficientTimeRejectsAndDoesNotGiveFreeClothes() {
         ActionCosts nonZeroShop = new ActionCosts(360, 360, 360, 240, 120, 60, 100, 40, 120, 3600, 4320);
         EducationService education = new EducationService(userStats, USER);
         TimeService time = new TimeService(users, USER);

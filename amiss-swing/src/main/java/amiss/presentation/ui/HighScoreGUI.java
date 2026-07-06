@@ -5,9 +5,9 @@
  */
 package amiss.presentation.ui;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserRepository;
 import amiss.infrastructure.GameContext;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +87,7 @@ public class HighScoreGUI extends javax.swing.JFrame {
                 temp = temp + row[0] + "\t\t\t" + row[1] + "\n";
             }
             txaHighScore.setText(temp);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to load high scores", ex);
         }
     }//GEN-LAST:event_btnShowHighScoreActionPerformed
