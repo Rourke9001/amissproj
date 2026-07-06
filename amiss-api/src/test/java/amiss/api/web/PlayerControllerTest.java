@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -63,7 +64,7 @@ class PlayerControllerTest {
         when(factory.forPlayer("bob")).thenReturn(services);
         when(assembler.assemble("bob", services)).thenReturn(dto());
 
-        mvc.perform(get("/api/players/bob"))
+        mvc.perform(get("/api/players/bob").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("bob"))
                 .andExpect(jsonPath("$.timeMinutes").value(3960))
@@ -82,7 +83,7 @@ class PlayerControllerTest {
         when(services.turn()).thenReturn(turn);
         when(turn.endWeek()).thenReturn(WeekSummary.weekStillRunning());
 
-        mvc.perform(post("/api/players/bob/end-week"))
+        mvc.perform(post("/api/players/bob/end-week").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:week-not-over"))
@@ -98,7 +99,7 @@ class PlayerControllerTest {
         when(turn.endWeek()).thenReturn(new WeekSummary(true, 4, true, 4320, true, false));
         when(assembler.assemble("bob", services)).thenReturn(dto());
 
-        mvc.perform(post("/api/players/bob/end-week"))
+        mvc.perform(post("/api/players/bob/end-week").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.round").value(4))
                 .andExpect(jsonPath("$.fed").value(true))
@@ -109,6 +110,7 @@ class PlayerControllerTest {
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder moveTo(String target) {
         return post("/api/players/bob/move")
+                .with(jwt().jwt(j -> j.subject("bob")))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"target\":\"" + target + "\"}");
     }

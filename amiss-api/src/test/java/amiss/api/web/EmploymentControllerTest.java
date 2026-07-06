@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -59,6 +60,7 @@ class EmploymentControllerTest {
 
     private static MockHttpServletRequestBuilder postJob(String path, String job) {
         return post(path)
+                .with(jwt().jwt(j -> j.subject("bob")))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"job\":\"" + job + "\"}");
     }
@@ -81,7 +83,7 @@ class EmploymentControllerTest {
                 new JobListing("Cook", 0, 6, "Monolith Burgers", 1),
                 new JobListing("Clerk", 1, 10, "Socket City", 2)));
 
-        mvc.perform(get("/api/jobs"))
+        mvc.perform(get("/api/jobs").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].name").value("Cook"))
@@ -95,7 +97,7 @@ class EmploymentControllerTest {
     void jobs_emptyCatalogReturnsEmptyList() throws Exception {
         when(jobRepository.listAll()).thenReturn(List.of());
 
-        mvc.perform(get("/api/jobs"))
+        mvc.perform(get("/api/jobs").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -104,7 +106,7 @@ class EmploymentControllerTest {
     void jobs_sqlExceptionIsA500Problem() throws Exception {
         when(jobRepository.listAll()).thenThrow(new PersistenceFailureException(new SQLException("db down")));
 
-        mvc.perform(get("/api/jobs"))
+        mvc.perform(get("/api/jobs").with(jwt()))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:persistence-failure"));
@@ -216,7 +218,7 @@ class EmploymentControllerTest {
     void work_noJobIsA409Problem() throws Exception {
         mockServicesWithJob("Unemployed", null, Location.MONOLITH_BURGERS);
 
-        mvc.perform(post("/api/players/bob/work"))
+        mvc.perform(post("/api/players/bob/work").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:no-job"));
@@ -226,7 +228,7 @@ class EmploymentControllerTest {
     void work_wrongLocationIsA409Problem() throws Exception {
         mockServicesWithJob("Cook", "Monolith Burgers", Location.PAWN_SHOP);
 
-        mvc.perform(post("/api/players/bob/work"))
+        mvc.perform(post("/api/players/bob/work").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:wrong-location"));
@@ -239,7 +241,7 @@ class EmploymentControllerTest {
         when(services.stats()).thenReturn(stats);
         when(stats.work()).thenReturn(new WorkOutcome(WorkOutcome.Status.UNDERDRESSED, -1, -1, "Cook", 6, false));
 
-        mvc.perform(post("/api/players/bob/work"))
+        mvc.perform(post("/api/players/bob/work").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:underdressed"));
@@ -252,7 +254,7 @@ class EmploymentControllerTest {
         when(services.stats()).thenReturn(stats);
         when(stats.work()).thenReturn(new WorkOutcome(WorkOutcome.Status.INSUFFICIENT_TIME, 50, -1, "Cook", 6, false));
 
-        mvc.perform(post("/api/players/bob/work"))
+        mvc.perform(post("/api/players/bob/work").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-time"));
@@ -266,7 +268,7 @@ class EmploymentControllerTest {
         when(stats.work()).thenReturn(new WorkOutcome(WorkOutcome.Status.OK, 3600, 76, "Cook", 6, false));
         when(assembler.assemble("bob", services)).thenReturn(dto());
 
-        mvc.perform(post("/api/players/bob/work"))
+        mvc.perform(post("/api/players/bob/work").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.job").value("Cook"))
                 .andExpect(jsonPath("$.hourlyWage").value(6))

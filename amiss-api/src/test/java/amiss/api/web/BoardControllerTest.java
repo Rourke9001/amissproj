@@ -1,5 +1,6 @@
 package amiss.api.web;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,7 +23,7 @@ class BoardControllerTest {
 
     @Test
     void board_returnsTheThirteenStopsAndTravelMetadata() throws Exception {
-        mvc.perform(get("/api/board"))
+        mvc.perform(get("/api/board").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stops.length()").value(13))
                 .andExpect(jsonPath("$.stops[0].id").value("LOW_COST_HOUSING"))

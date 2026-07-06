@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -67,7 +68,7 @@ class RentControllerTest {
         stubPayRent(services, new RentPayment(RentPayment.Status.OK, 4200, 20));
         when(assembler.assemble("bob", services)).thenReturn(dto());
 
-        mvc.perform(post("/api/players/bob/rent/pay"))
+        mvc.perform(post("/api/players/bob/rent/pay").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.amountPaid").value(RentService.WEEKLY_RENT))
                 .andExpect(jsonPath("$.minutesCharged").value(120))
@@ -78,7 +79,7 @@ class RentControllerTest {
     void pay_wrongLocationIsA409Problem() throws Exception {
         mockServicesAt(Location.PAWN_SHOP);
 
-        mvc.perform(post("/api/players/bob/rent/pay"))
+        mvc.perform(post("/api/players/bob/rent/pay").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:wrong-location"));
@@ -89,7 +90,7 @@ class RentControllerTest {
         GameServices services = mockServicesAt(Location.RENT_OFFICE);
         stubPayRent(services, new RentPayment(RentPayment.Status.NOT_DUE, 4320, 100));
 
-        mvc.perform(post("/api/players/bob/rent/pay"))
+        mvc.perform(post("/api/players/bob/rent/pay").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:rent-not-due"));
@@ -100,7 +101,7 @@ class RentControllerTest {
         GameServices services = mockServicesAt(Location.RENT_OFFICE);
         stubPayRent(services, new RentPayment(RentPayment.Status.WEEK_OVER, 0, 100));
 
-        mvc.perform(post("/api/players/bob/rent/pay"))
+        mvc.perform(post("/api/players/bob/rent/pay").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:week-over"));
@@ -111,7 +112,7 @@ class RentControllerTest {
         GameServices services = mockServicesAt(Location.RENT_OFFICE);
         stubPayRent(services, new RentPayment(RentPayment.Status.INSUFFICIENT_CASH, 300, 50));
 
-        mvc.perform(post("/api/players/bob/rent/pay"))
+        mvc.perform(post("/api/players/bob/rent/pay").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-funds"));
@@ -122,7 +123,7 @@ class RentControllerTest {
         GameServices services = mockServicesAt(Location.RENT_OFFICE);
         stubPayRent(services, new RentPayment(RentPayment.Status.INSUFFICIENT_TIME, 50, 100));
 
-        mvc.perform(post("/api/players/bob/rent/pay"))
+        mvc.perform(post("/api/players/bob/rent/pay").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-time"));

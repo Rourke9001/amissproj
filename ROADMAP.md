@@ -121,8 +121,21 @@ banking roles hire for.*
       `amiss-core`'s rules untouched (Swing and the API share one source). Login/auth is
       deferred to KAN-36 (Spring Security, below); everything else in KAN-16's acceptance
       (load player, move, work, study, shop, pay-rent) is HTTP-callable.
-- [ ] Persistence via **Spring Data JPA / Hibernate** (entities replace raw JDBC)
-- [ ] **Spring Security** auth (hashed credentials, sessions or JWT)
+- [x] Persistence via **Spring Data JPA / Hibernate** (entities replace raw JDBC) (July 2026) —
+      three stacked PRs (KAN-33 entities → KAN-34 adapters → KAN-35 Testcontainers): JPA
+      `@Entity` classes map the Flyway-owned schema validate-only (`ddl-auto=validate`, Flyway
+      stays the sole schema owner); Spring Data repositories sit behind the same
+      `UserRepository`/`UserStatsRepository`/`JobRepository`/`HelpRepository` ports the JDBC
+      adapters implemented, so `amiss-core`'s services never noticed the swap; a MySQL 9
+      Testcontainers suite proves every adapter against a real, freshly-migrated database.
+- [x] **Spring Security** auth (hashed credentials, sessions or JWT) (July 2026) — two stacked
+      PRs: KAN-36 mints/verifies stateless HS256 JWTs on register/login, reusing the same
+      `PasswordHasher` credential rule (with its transparent legacy-plaintext upgrade) the
+      Swing client uses so the two front ends never diverge on who's allowed to log in;
+      KAN-37 locks every other `/api/**` route behind that token, adds a central
+      `PlayerScopeFilter` so a valid token for one player can't read or write another's state
+      (403 IDOR guard, not just a 401), wires CORS for the future SPA, and tightens the
+      actuator health probe to status-only.
 - [ ] A **web frontend** consuming the API (Thymeleaf, or a React/TypeScript SPA)
 - [ ] OpenAPI / Swagger API documentation
 - [ ] **Dockerfile + docker-compose** (app + MySQL) → clone-and-run in one command
