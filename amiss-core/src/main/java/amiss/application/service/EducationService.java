@@ -1,7 +1,7 @@
 package amiss.application.service;
 
+import amiss.application.port.PersistenceFailureException;
 import amiss.application.port.UserStatsRepository;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public class EducationService {
     public int getEducation() {
         try {
             return stats.getEducation(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return (-1);
         }
     }
@@ -41,7 +41,7 @@ public class EducationService {
         int edu = getEducation() + 1;
         try {
             stats.updateEducation(username, edu);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to update education", ex);
         }
     }
@@ -67,7 +67,7 @@ public class EducationService {
     public int getProg() {
         try {
             return stats.getEduprog(username);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             return (-1);
         }
     }
@@ -78,7 +78,7 @@ public class EducationService {
     public void setProg(int prog) {
         try {
             stats.updateEduprog(username, prog);
-        } catch (SQLException ex) {
+        } catch (PersistenceFailureException ex) {
             log.warn("Failed to set progress", ex);
         }
     }

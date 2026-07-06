@@ -23,6 +23,12 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  jpa:
+    # Flyway owns the schema; Hibernate only validates its entity mappings
+    # against it at startup — never generates or alters DDL (KAN-33).
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
 
 # Game balance (KAN-29): any amiss.costs.* key overrides the built-in ActionCosts
 # default (all values are integer minutes). Same table the Swing client reads via
@@ -33,13 +39,31 @@ spring:
 #       travel-per-step-minutes: 40
 #       base-week-minutes: 3600
 #       fed-week-minutes: 4320
+amiss:
+  security:
+    jwt:
+      # HS256 signing secret for the register/login access tokens (KAN-36). This default
+      # is DEV-ONLY (>= 32 ASCII chars so SecurityConfig's startup length check passes) —
+      # every real deployment MUST override it via AMISS_JWT_SECRET, or anyone who reads
+      # this file could forge tokens.
+      secret: ${AMISS_JWT_SECRET:AmissProj-DEV-ONLY-JWT-secret-CHANGE-ME-1234567890}
+      # Access-token lifetime (ISO-8601 duration); override via AMISS_JWT_TTL.
+      ttl: ${AMISS_JWT_TTL:PT60M}
+  cors:
+    # Comma-separated origins allowed to call the API cross-origin (KAN-37), for the future
+    # web frontend. Defaults to the Vite dev server; add the production origin here (or via
+    # AMISS_CORS_ALLOWED_ORIGINS) at deploy time.
+    allowed-origins: ${AMISS_CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,flyway
+        # Only health is public (KAN-37) — info/flyway leaked build/migration detail to any
+        # anonymous caller and are no longer exposed over HTTP.
+        include: health
   endpoint:
     health:
-      # Convenient while the API has no auth; tighten with KAN-36 (Spring Security).
-      show-details: always
+      # Status-only for anonymous callers (KAN-37): no component breakdown (DB, disk, etc.)
+      # leaks over the public, unauthenticated health probe.
+      show-details: never

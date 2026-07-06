@@ -6,10 +6,10 @@
 package amiss.presentation.ui;
 import amiss.domain.model.User;
 
+import amiss.application.service.ApplyOutcome;
 import amiss.application.service.GameServices;
 import amiss.application.service.JobService;
 import amiss.application.service.TimeService;
-import amiss.application.service.TimeSpend;
 
 /**
  * The Employment Office Screen
@@ -317,17 +317,25 @@ public class EmploymentGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnCookActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCookActionPerformed
-        if (dist.spendMinutes(0).weekOver()) { //checks if the user enough time to apply for a job
-            txaNotification.setText(txaNotification.getText() + "\n\nRound Has Ended");
-        } else {
-            TimeSpend spend = dist.spendMinutes(services.costs().applyJobMinutes());
-            if (spend.rejected()) {
+        ApplyOutcome outcome = job.apply(evt.getActionCommand());
+        switch (outcome.status()) {
+            case WEEK_OVER:
+                txaNotification.setText(txaNotification.getText() + "\n\nRound Has Ended");
+                break;
+            case INSUFFICIENT_TIME:
                 txaNotification.setText(txaNotification.getText() + "\n\nNot Enough Time");
-            } else { //checks if the user has enough education for a job
-                lblTimer.setText(TimeService.format(spend.remainingMinutes()));
-                String jb = job.applyForJob(evt.getActionCommand());
-                txaNotification.setText(txaNotification.getText() + "\n\n" + jb);
-            }
+                break;
+            case INSUFFICIENT_EDUCATION:
+                lblTimer.setText(TimeService.format(outcome.remainingMinutes()));
+                txaNotification.setText(txaNotification.getText() + "\n\nnot enough education");
+                break;
+            case HIRED:
+                lblTimer.setText(TimeService.format(outcome.remainingMinutes()));
+                txaNotification.setText(txaNotification.getText() + "\n\nWell Done! You Got The Job, You will earn R"
+                        + outcome.hourlyWage() + " for every hour you Work!");
+                break;
+            default:
+                break;
         }
     }//GEN-LAST:event_btnCookActionPerformed
 

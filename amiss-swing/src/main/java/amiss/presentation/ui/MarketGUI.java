@@ -5,15 +5,14 @@
  */
 package amiss.presentation.ui;
 import amiss.domain.model.User;
-import amiss.domain.validation.Validation;
 
 import amiss.domain.model.ActionResult;
-import amiss.application.service.FoodService;
+import amiss.domain.model.FoodPack;
 import amiss.application.service.GameServices;
 import amiss.application.service.JobService;
+import amiss.application.service.PurchaseOutcome;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
-import amiss.application.service.TimeSpend;
 
 /**
  * The Market Screen
@@ -30,7 +29,6 @@ public class MarketGUI extends javax.swing.JFrame {
     private TimeService dist;
     private JobService job;
     private StatsService stat;
-    private FoodService eat;
 
     /**
      *
@@ -45,7 +43,6 @@ public class MarketGUI extends javax.swing.JFrame {
         dist = services.time();
         job = services.jobs();
         stat = services.stats();
-        eat = services.food();
 
         lblTimer.setText(dist.readClock()); //gets the time left in the round
         lblMoney.setText(Integer.toString(stat.getCash())); //gets the users cash
@@ -194,35 +191,39 @@ public class MarketGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnWorkActionPerformed
 
     private void btn1WeeksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn1WeeksActionPerformed
-        int food = 0; //gets the food value of the item purchased
+        FoodPack pack;
         switch (evt.getActionCommand()) {
             case "25":
-                food = 1;
+                pack = FoodPack.ONE_WEEK;
                 break;
             case "48":
-                food = 2;
+                pack = FoodPack.TWO_WEEKS;
                 break;
             case "90":
-                food = 4;
+                pack = FoodPack.FOUR_WEEKS;
                 break;
             case "140":
-                food = 8;
+                pack = FoodPack.EIGHT_WEEKS;
                 break;
             default:
                 txaNotification.setText("An Error occured");
-                break;
+                return;
         }
-        
-        TimeSpend spend = dist.spendMinutes(services.costs().shopMinutes()); //checks if the user has enough time and cash to pay for item
-        if (spend.rejected()) {
-            txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
-        } else if (stat.getCash() < Validation.parseIntOrDefault(evt.getActionCommand(), 0)) {
-            txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash, You only have R" + stat.getCash());
-        } else {
-            txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(evt.getActionCommand()));
-            eat.setFood(food);
-            lblTimer.setText(TimeService.format(spend.remainingMinutes()));
-            lblMoney.setText(Integer.toString(stat.getCash()));
+
+        PurchaseOutcome outcome = stat.buyGroceries(pack.price(), pack.weeks());
+        switch (outcome.status()) {
+            case INSUFFICIENT_TIME:
+                txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
+                break;
+            case INSUFFICIENT_CASH:
+                txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash, You only have R" + outcome.cash());
+                break;
+            default:
+                txaNotification.setText(txaNotification.getText() + "\n" + "You spent R" + pack.price()
+                        + ", You have R" + outcome.cash() + " left");
+                lblTimer.setText(TimeService.format(outcome.remainingMinutes()));
+                lblMoney.setText(Integer.toString(outcome.cash()));
+                break;
         }
     }//GEN-LAST:event_btn1WeeksActionPerformed
 

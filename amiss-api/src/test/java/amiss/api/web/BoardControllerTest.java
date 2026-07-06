@@ -1,10 +1,12 @@
 package amiss.api.web;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.config.CostsConfig;
+import amiss.api.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -13,7 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /** The KAN-30 board contract: 13 ring stops in clockwise order + travel cost metadata. */
 @WebMvcTest(controllers = BoardController.class)
-@Import(CostsConfig.class)
+@Import({CostsConfig.class, SecurityConfig.class})
 class BoardControllerTest {
 
     @Autowired
@@ -21,7 +23,7 @@ class BoardControllerTest {
 
     @Test
     void board_returnsTheThirteenStopsAndTravelMetadata() throws Exception {
-        mvc.perform(get("/api/board"))
+        mvc.perform(get("/api/board").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stops.length()").value(13))
                 .andExpect(jsonPath("$.stops[0].id").value("LOW_COST_HOUSING"))

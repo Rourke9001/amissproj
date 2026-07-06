@@ -56,6 +56,13 @@ database the login window still opens, but you cannot create or load a player.
      `AMISS_DB_MIGRATOR_USER` / `AMISS_DB_MIGRATOR_PASSWORD` environment
      variables — no need to edit Java or rebuild.
 
+> **`amiss-api` only:** two further env vars configure the REST API's Spring Security layer
+> (`amiss-api/src/main/resources/application.yml`) — `AMISS_JWT_SECRET`, the HS256 signing key
+> for register/login access tokens (32+ bytes; a dev-only default is built in, but every real
+> deployment must override it), and `AMISS_CORS_ALLOWED_ORIGINS`, a comma-separated list of
+> origins allowed to call the API cross-origin (defaults to the Vite dev server,
+> `http://localhost:5173`, for the future web frontend).
+
 Verify the service is up:
 
 ```powershell

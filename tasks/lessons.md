@@ -283,6 +283,36 @@ Add to this after any correction or non-obvious gotcha.
   original base. Merge with merge commits (this repo's norm) so the retargeted diff stays
   empty of PR1's changes.
 
+## Phase 3 / KAN-28 + KAN-31 + KAN-32 (state enrichment, bank/rent, jobs/university/food)
+- **Found via characterization, fixed deliberately (the one approved behaviour change in this
+  whole chain):** `ClothesStoreGUI.btnCasualActionPerformed` called `job.setClothes(level)`
+  *before* checking `weekOver`/cash, so clicking a clothing button with insufficient cash still
+  upgraded the player's clothing level for free. `StatsService.buyClothes()` (PR8) now validates
+  and charges first, matching every other purchase handler's order; pinned with a regression
+  test in `StatsServiceOrchestrationTest`. Every other rule extracted in this chain
+  (work/apply/study/eat/groceries) is a byte-identical delegation — the pre-existing
+  message-pinning tests stayed green *unmodified*, which is the proof.
+- **A "requires being at location X" guard needs a `String` overload when X isn't a fixed board
+  stop.** `LocationGuard`/`WrongLocationException` (PR7) assume the required location is one
+  `Location` enum constant, which holds for bank/rent/university/food (each building is a single
+  fixed stop). A job's work location isn't — it's whatever `tbljobs.location` says for that
+  specific job, read as a plain string. Rather than adding a `Location.byDisplayName(String)`
+  reverse lookup to the domain enum (a core change for one API-layer edge case), PR9 added a
+  second `WrongLocationException(String required, Location actual)` constructor and checks the
+  work guard inline in `EmploymentController` instead of via `LocationGuard`.
+- **`JobRepository.listAll()` needed no string-parsing, unlike the per-job lookups.**
+  `JobService.getJobClothes()` parses `getRequiredClothing()`'s `String` return because the port
+  method predates typed columns being trusted; but `tbljobs.education`/`salary`/`clothing` are
+  all plain `INT` per `V1__baseline_schema.sql`, so the new catalog adapter method
+  (`JdbcJobRepository.listAll()`, backing `GET /api/jobs`) reads them with `rs.getInt(...)`
+  directly via `Jdbc.query(sql, RowMapper, ...)` — no `Validation.parseIntOrDefault` needed.
+- **A derived response field that isn't in the core outcome record is fine, as long as the
+  derivation is verified against the real arithmetic.** `StudyResponse.studiesRemaining` doesn't
+  exist on `StudyOutcome` — it's computed in `UniversityController` as `0` when
+  `DEGREE_COMPLETED`, else `STUDIES_PER_DEGREE - progress + 1` (progress is 1-based right after
+  enrolling, per `UniversityService.study()`'s `prog` arithmetic). Verified both in
+  `UniversityControllerTest` and against a live degree-in-progress player before trusting it.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an
@@ -305,3 +335,43 @@ Add to this after any correction or non-obvious gotcha.
   Converting `try { if (rs.next()) return x; } catch { return s; } return s;` to
   `try { return db.queryForX(...); } catch { return s; }` — drop the now-dead
   trailing `return`, or javac errors with "unreachable statement".
+
+## Phase 3 / KAN-17 JPA + KAN-18 security (2026-07-05/06)
+- **JPA `save()` with an assigned id defers the INSERT to the transaction commit** (no
+  IDENTITY generation forcing an immediate flush). Any try/catch *inside* the
+  @Transactional method returns before the SQL runs, so constraint violations escape
+  the exception-translation boundary as raw Spring DataAccessExceptions. Use
+  `saveAndFlush()` when the adapter contract promises a translated exception. Found by
+  the KAN-35 Testcontainers ITs — exactly what real-DB integration tests are for.
+- **`@DataJpaTest`'s default test-wrapping transaction lies about `@Modifying` code.**
+  The shared EntityManager's first-level cache masks JPQL UPDATEs (stale reads). Run
+  port-contract ITs with `@Transactional(propagation = NOT_SUPPORTED)` so each call
+  manages its own transaction like production, and clean up rows manually.
+- **After switching branches in a working tree a subagent built on, always `clean`.**
+  A no-clean `mvnw -pl amiss-api -am test` showed 58 phantom errors from stale
+  target/ classes; the clean run was green. Corollary: never chain
+  `... | grep ... && git commit && git push` — the grep eats the build's exit code, so
+  the push happens even on red. Verify first, then commit/push as a separate command.
+- **Testcontainers `MySQLContainer` mounts a legacy my.cnf** with
+  `innodb_log_file_size`, which MySQL 9 removed — the container won't boot. Override
+  with `withConfigurationOverride()` pointing at a near-empty conf dir. Also: with one
+  cached Spring context across IT classes, use the singleton-container pattern (static
+  start, never stop; Ryuk reaps it) — `@Container` per-class restarts leave the cached
+  connection pool pointing at a dead container.
+- **`@WebMvcTest` + spring-boot-starter-security = Boot's default lockdown inside the
+  slice** (401s/CSRF on every POST) because the slice doesn't load the app's
+  SecurityConfig. `@Import(SecurityConfig.class)` on every web-slice test; when routes
+  are protected, authenticate with the `spring-security-test` `jwt()` post-processor.
+  Never `addFilters=false` — it hides the very rules KAN-37 needed tested.
+- **Nimbus `JwtEncoder` defaults its JWS header to RS256** even when the key is an
+  HMAC secret — pass `JwsHeader.with(MacAlgorithm.HS256)` explicitly or token
+  verification fails. And `Jwt#getIssuer()` returns `java.net.URL`, so a plain-string
+  issuer like "amiss-api" must be read via `getClaimAsString("iss")` in tests.
+- **"Green locally" can mean "the local MySQL silently answered."** The KAN-33 JPA
+  starter made every `@SpringBootTest(flyway off)` context test open a Hibernate
+  validate connection at startup; they stayed green locally (MySQL97 was up) and
+  failed only in DB-less CI. When a test is supposed to be DB-free, prove it that
+  way: run it once with `AMISS_DB_URL` pointed at a dead port. The JPA-off recipe is
+  ddl-auto=none + explicit dialect + `hibernate.boot.allow_jdbc_metadata_access=false`.
+  (Also: surefire's `-Dtest` takes comma-separated patterns — a `+`-joined string
+  matches nothing, and with `-Dsurefire.failIfNoSpecifiedTests=false` that "passes".)

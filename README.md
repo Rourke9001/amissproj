@@ -20,13 +20,13 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 |---|---|
 | Language / UI | Java 21, Swing (`amiss.presentation` in `amiss-swing`) |
 | Modules | Maven reactor: `amiss-core` (rules + persistence + migrations), `amiss-swing` (desktop client), `amiss-api` (REST API), `amiss-coverage` (JaCoCo aggregate) |
-| REST API | Spring Boot 3.5 (`amiss-api`) over the same core services — `.\mvnw -f amiss-api spring-boot:run`, health at `/actuator/health`, RFC 7807 error responses |
+| REST API | Spring Boot 3.5 (`amiss-api`) over the same core services — `.\mvnw -f amiss-api spring-boot:run`, health at `/actuator/health`, RFC 7807 error responses. `POST /api/auth/register`, `POST /api/auth/login` and `GET /api/highscores` are public; every other `/api/**` route requires a `Bearer` JWT (`GET /api/auth/me`), and a player-scoped route (`/api/players/{username}/...`) 403s if the token's subject doesn't match `{username}` |
 | Database | MySQL 8.4+ / 9.x (`amissdb`); app runs as least-privilege `amiss` user |
 | Migrations | Flyway 11 — versioned SQL in `amiss-core/src/main/resources/db/migration`, applied automatically at app start (by a dedicated `amiss_migrator` account) |
 | JDBC driver | MySQL Connector/J 9.7 (Maven-managed) |
-| Security | BCrypt password hashing (jbcrypt) + parameterised JDBC throughout |
+| Security | BCrypt password hashing (jbcrypt) + parameterised JDBC throughout; the API additionally issues/verifies stateless HS256 JWTs (`amiss-api`) |
 | Logging | SLF4J + Logback (`amiss-swing/src/main/resources/logback.xml`) |
-| Config | `amiss-swing/src/main/resources/application.properties`, overridable via `AMISS_DB_*` env vars |
+| Config | `amiss-swing/src/main/resources/application.properties`, overridable via `AMISS_DB_*` env vars; `amiss-api` additionally reads `AMISS_JWT_SECRET` (JWT signing key, 32+ bytes — a dev-only default is built in) and `AMISS_CORS_ALLOWED_ORIGINS` (comma-separated origins allowed to call the API cross-origin) |
 | Build | Maven via the committed `mvnw` wrapper (no global Maven needed); the Swing client ships as one shaded runnable jar |
 | Entry point | `amiss.presentation.ui.LoginGUI` |
 
@@ -127,7 +127,9 @@ amiss-swing/                  The Swing desktop client (amiss.presentation), bun
                               images, application.properties + logback.xml; shades the
                               runnable amiss-swing/target/AmissProj.jar
 amiss-api/                    Spring Boot REST API over amiss-core (Phase 3, in progress):
-                              actuator health, RFC 7807 error envelope, application.yml
+                              actuator health, RFC 7807 error envelope, application.yml,
+                              JPA entities/adapters over the Flyway schema, and JWT auth with
+                              full route lockdown + player-scoping (see Tech stack above)
 amiss-coverage/               Aggregates per-module JaCoCo coverage for CI
 mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install needed)
 .github/workflows/ci.yml      GitHub Actions CI (build + tests + coverage badges on push/PR)

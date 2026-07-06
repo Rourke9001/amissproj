@@ -5,13 +5,12 @@
  */
 package amiss.presentation.ui;
 import amiss.domain.model.User;
-import amiss.domain.validation.Validation;
+import amiss.domain.model.ClothingItem;
 
 import amiss.application.service.GameServices;
-import amiss.application.service.JobService;
+import amiss.application.service.PurchaseOutcome;
 import amiss.application.service.StatsService;
 import amiss.application.service.TimeService;
-import amiss.application.service.TimeSpend;
 
 /**
  * The Clothes Store Screen
@@ -26,7 +25,6 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
     GameServices services;
 
     private TimeService dist;
-    private JobService job;
     private StatsService stat;
 
     /**
@@ -40,7 +38,6 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
         user = u;
         this.services = services;
         dist = services.time();
-        job = services.jobs();
         stat = services.stats();
 
         lblTimer.setText(dist.readClock()); //displays the remaining time of the round
@@ -151,37 +148,41 @@ public class ClothesStoreGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnExitActionPerformed
 
     private void btnCasualActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCasualActionPerformed
-        int price = 0;
-        job.setClothes(Validation.parseIntOrDefault(evt.getActionCommand(), 0));
-        switch (evt.getActionCommand()) { //gets the price of the clothing item
+        ClothingItem item;
+        switch (evt.getActionCommand()) { //gets the clothing item purchased
             case "1":
-                price = 20;
+                item = ClothingItem.CASUAL;
                 break;
             case "2":
-                price = 35;
+                item = ClothingItem.FORMAL;
                 break;
             case "3":
-                price = 55;
+                item = ClothingItem.SUIT;
                 break;
             default:
                 txaNotification.setText("An Error occured"); //message guide to user
-                break;
+                return;
         }
-        if (dist.spendMinutes(0).weekOver()) { //checks if the user has enough time and cash to purchase an item
-            txaNotification.setText(txaNotification.getText() + "\nRound Has Ended");
-        } else if (stat.getCash() < price) {
-            txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash,\n You only have R" + stat.getCash());
-            lblMoney.setText(Integer.toString(stat.getCash()));
-        } else {
-            TimeSpend spend = dist.spendMinutes(services.costs().shopMinutes());
-            if (spend.rejected()) {
-                txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
-            } else {
-                lblTimer.setText(TimeService.format(spend.remainingMinutes()));
 
-                txaNotification.setText(txaNotification.getText() + "\n" + stat.buy(Integer.toString(price)));
-                lblMoney.setText(Integer.toString(stat.getCash()));
-            }
+        // Validates and charges BEFORE setClothes (fixes the old free-clothes-on-failed-purchase bug).
+        PurchaseOutcome outcome = stat.buyClothes(item.level(), item.price());
+        switch (outcome.status()) {
+            case WEEK_OVER:
+                txaNotification.setText(txaNotification.getText() + "\nRound Has Ended");
+                break;
+            case INSUFFICIENT_CASH:
+                txaNotification.setText(txaNotification.getText() + "\nNot Enough Cash,\n You only have R" + outcome.cash());
+                lblMoney.setText(Integer.toString(outcome.cash()));
+                break;
+            case INSUFFICIENT_TIME:
+                txaNotification.setText(txaNotification.getText() + "\nNot Enough Time");
+                break;
+            default:
+                lblTimer.setText(TimeService.format(outcome.remainingMinutes()));
+                txaNotification.setText(txaNotification.getText() + "\n" + "You spent R" + item.price()
+                        + ", You have R" + outcome.cash() + " left");
+                lblMoney.setText(Integer.toString(outcome.cash()));
+                break;
         }
     }//GEN-LAST:event_btnCasualActionPerformed
 

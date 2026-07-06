@@ -27,5 +27,10 @@ class GameServicesTest {
         assertNotNull(services.jobs(), "job service");
         assertNotNull(services.food(), "food service");
         assertNotNull(services.stats(), "stats service");
+        assertNotNull(services.turn(), "turn service");
+        assertNotNull(services.travel(), "travel service");
+        assertNotNull(services.bank(), "bank service");
+        assertNotNull(services.rent(), "rent service");
+        assertNotNull(services.university(), "university service");
     }
 }

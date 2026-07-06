@@ -57,15 +57,67 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!--
+          Stateless HS256 JWT auth (KAN-36): register/login mint a short-lived access
+          token, GET /api/auth/me requires it. Everything else stays permitAll until
+          KAN-37 locks down /api/**. No UserDetailsService/PasswordEncoder bean — login
+          verification deliberately reuses core PasswordHasher through UserRepository, the
+          one credential rule the Swing client also uses (see SecurityConfig javadoc).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
         <!-- Hikari DataSource auto-config; Jdbc borrows pooled connections from it. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
+        <!--
+          JPA entity layer over the Flyway-owned schema (KAN-33). ddl-auto is
+          validate-only: Flyway remains the sole schema owner. No Spring Data
+          repositories yet — the game still runs on the JDBC adapters wired in
+          PersistenceConfig; that swap is a later PR (KAN-17/KAN-34).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+          Testcontainers MySQL integration tests (KAN-35): the *IT.java suites in
+          amiss.api.persistence.jpa run the four JPA port adapters against a real,
+          freshly-Flyway-migrated MySQL container instead of mocks. Versions come from
+          the Boot BOM (spring-boot-dependencies manages the Testcontainers BOM too).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -84,6 +136,36 @@
                 <executions>
                     <execution>
                         <goals><goal>repackage</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+              Runs the *IT.java Testcontainers suites in integration-test, then fails the
+              build in verify if any failed (KAN-35). Surefire (bound in the parent) only
+              ever sees *Test classes, so `mvnw test` — and even `mvnw package`, which stops
+              before integration-test — stays Docker-free; only `mvnw verify` reaches these.
+
+              classesDirectory is pinned explicitly: `package` (spring-boot:repackage, right
+              above) runs before `integration-test` and replaces this module's own jar with
+              Boot's exploded nested-jar layout (classes under BOOT-INF/classes/, not the
+              jar root). Without this override Failsafe puts that repackaged jar on the IT
+              classpath instead of the plain target/classes Surefire uses, and every one of
+              this module's own classes (entities, adapters, AmissApiApplication) fails to
+              load — surfaced as NoClassDefFoundError / "no @SpringBootConfiguration found".
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

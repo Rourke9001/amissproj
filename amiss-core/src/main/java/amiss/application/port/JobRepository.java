@@ -1,6 +1,7 @@
 package amiss.application.port;
 
-import java.sql.SQLException;
+import amiss.domain.model.JobListing;
+import java.util.List;
 
 /**
  * Read-only port for the {@code tbljobs} reference table (the jobs the game offers and
@@ -8,19 +9,23 @@ import java.sql.SQLException;
  *
  * <p>Application-layer port; the JDBC implementation is
  * {@code amiss.infrastructure.persistence.jdbc.JdbcJobRepository}. Each lookup returns the
- * game's original fallback when the job is unknown, and propagates {@link SQLException}.
+ * game's original fallback when the job is unknown, and throws the unchecked
+ * {@link PersistenceFailureException} on failure.
  */
 public interface JobRepository {
 
     /** Minimum education a player needs for {@code job}, or -1 if the job is unknown. */
-    int getRequiredEducation(String job) throws SQLException;
+    int getRequiredEducation(String job);
 
     /** Hourly salary {@code job} pays, or -1 if the job is unknown. */
-    int getSalary(String job) throws SQLException;
+    int getSalary(String job);
 
     /** The building {@code job} is worked at, or null if the job is unknown. */
-    String getLocation(String job) throws SQLException;
+    String getLocation(String job);
 
     /** Minimum clothing level for {@code job}, read as text (callers {@code parseInt} it), or null if unknown. */
-    String getRequiredClothing(String job) throws SQLException;
+    String getRequiredClothing(String job);
+
+    /** Every job the game offers, ordered by location then education requirement. */
+    List<JobListing> listAll();
 }

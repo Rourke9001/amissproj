@@ -1,4 +1,5 @@
 package amiss.infrastructure.persistence.jdbc;
+import amiss.application.port.PersistenceFailureException;
 import amiss.infrastructure.config.Config;
 
 import java.sql.*;
@@ -98,15 +99,19 @@ public class Jdbc implements AutoCloseable {
      * @param sql    the statement, using {@code ?} for each parameter
      * @param params the values to bind, in order
      * @return the number of rows affected
-     * @throws SQLException if the statement fails
+     * @throws PersistenceFailureException if the statement fails
      */
-    public int update(String sql, Object... params) throws SQLException {
-        return withConnection(con -> {
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                bind(ps, params);
-                return ps.executeUpdate();
-            }
-        });
+    public int update(String sql, Object... params) {
+        try {
+            return withConnection(con -> {
+                try (PreparedStatement ps = con.prepareStatement(sql)) {
+                    bind(ps, params);
+                    return ps.executeUpdate();
+                }
+            });
+        } catch (SQLException e) {
+            throw new PersistenceFailureException(e);
+        }
     }
 
     /**
@@ -115,55 +120,63 @@ public class Jdbc implements AutoCloseable {
      * @param mapper turns the current row into a {@code T}
      * @param params the values to bind, in order
      * @return the mapped rows (empty if none matched)
-     * @throws SQLException if the query fails
+     * @throws PersistenceFailureException if the query fails
      */
-    public <T> List<T> query(String sql, RowMapper<T> mapper, Object... params) throws SQLException {
-        return withConnection(con -> {
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                bind(ps, params);
-                try (ResultSet rs = ps.executeQuery()) {
-                    List<T> rows = new ArrayList<>();
-                    while (rs.next()) {
-                        rows.add(mapper.map(rs));
+    public <T> List<T> query(String sql, RowMapper<T> mapper, Object... params) {
+        try {
+            return withConnection(con -> {
+                try (PreparedStatement ps = con.prepareStatement(sql)) {
+                    bind(ps, params);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        List<T> rows = new ArrayList<>();
+                        while (rs.next()) {
+                            rows.add(mapper.map(rs));
+                        }
+                        return rows;
                     }
-                    return rows;
                 }
-            }
-        });
+            });
+        } catch (SQLException e) {
+            throw new PersistenceFailureException(e);
+        }
     }
 
     /**
      * Runs a SELECT expected to match at most one row.
      * @return the mapped row, or {@link Optional#empty()} if nothing matched
-     * @throws SQLException if the query fails
+     * @throws PersistenceFailureException if the query fails
      */
-    public <T> Optional<T> queryForObject(String sql, RowMapper<T> mapper, Object... params) throws SQLException {
-        return withConnection(con -> {
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                bind(ps, params);
-                try (ResultSet rs = ps.executeQuery()) {
-                    return rs.next() ? Optional.ofNullable(mapper.map(rs)) : Optional.empty();
+    public <T> Optional<T> queryForObject(String sql, RowMapper<T> mapper, Object... params) {
+        try {
+            return withConnection(con -> {
+                try (PreparedStatement ps = con.prepareStatement(sql)) {
+                    bind(ps, params);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        return rs.next() ? Optional.ofNullable(mapper.map(rs)) : Optional.empty();
+                    }
                 }
-            }
-        });
+            });
+        } catch (SQLException e) {
+            throw new PersistenceFailureException(e);
+        }
     }
 
     /**
      * Convenience for a single-column {@code int} SELECT.
      * @param defaultValue value to return if the query matched no row
      * @return the first column of the first row, or {@code defaultValue}
-     * @throws SQLException if the query fails
+     * @throws PersistenceFailureException if the query fails
      */
-    public int queryForInt(String sql, int defaultValue, Object... params) throws SQLException {
+    public int queryForInt(String sql, int defaultValue, Object... params) {
         return queryForObject(sql, rs -> rs.getInt(1), params).orElse(defaultValue);
     }
 
     /**
      * Convenience for a single-column {@code String} SELECT.
      * @return the first column of the first row, or {@code defaultValue} if none matched
-     * @throws SQLException if the query fails
+     * @throws PersistenceFailureException if the query fails
      */
-    public String queryForString(String sql, String defaultValue, Object... params) throws SQLException {
+    public String queryForString(String sql, String defaultValue, Object... params) {
         return queryForObject(sql, rs -> rs.getString(1), params).orElse(defaultValue);
     }
 

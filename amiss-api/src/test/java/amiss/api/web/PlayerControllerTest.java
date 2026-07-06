@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -9,8 +10,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.config.GameServicesFactory;
+import amiss.api.security.SecurityConfig;
+import amiss.api.web.dto.GoalDto;
+import amiss.api.web.dto.GoalsDto;
+import amiss.api.web.dto.JobDto;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.PlayerStateDto;
+import amiss.api.web.dto.StatsDto;
 import amiss.application.service.GameServices;
 import amiss.application.service.MoveResult;
 import amiss.application.service.TravelService;
@@ -30,7 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * 409 while time remains (no silent rollover), rollover summary + fresh state on success.
  */
 @WebMvcTest(PlayerController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 class PlayerControllerTest {
 
     @Autowired
@@ -43,7 +49,12 @@ class PlayerControllerTest {
     private PlayerStateAssembler assembler;
 
     private static PlayerStateDto dto() {
-        return new PlayerStateDto("bob", 3, 3960, "66h", false, 120, 0, false,
+        return new PlayerStateDto("bob", 3, 3960, "66h", false, 120, 0, 0, false,
+                1, 1,
+                new JobDto("Unemployed", null, null),
+                new StatsDto(0, 0, 0, 0),
+                new GoalsDto(new GoalDto(120, 1000), new GoalDto(0, 200),
+                        new GoalDto(0, 200), new GoalDto(0, 8)),
                 new LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2));
     }
 
@@ -53,7 +64,7 @@ class PlayerControllerTest {
         when(factory.forPlayer("bob")).thenReturn(services);
         when(assembler.assemble("bob", services)).thenReturn(dto());
 
-        mvc.perform(get("/api/players/bob"))
+        mvc.perform(get("/api/players/bob").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("bob"))
                 .andExpect(jsonPath("$.timeMinutes").value(3960))
@@ -72,7 +83,7 @@ class PlayerControllerTest {
         when(services.turn()).thenReturn(turn);
         when(turn.endWeek()).thenReturn(WeekSummary.weekStillRunning());
 
-        mvc.perform(post("/api/players/bob/end-week"))
+        mvc.perform(post("/api/players/bob/end-week").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:week-not-over"))
@@ -88,7 +99,7 @@ class PlayerControllerTest {
         when(turn.endWeek()).thenReturn(new WeekSummary(true, 4, true, 4320, true, false));
         when(assembler.assemble("bob", services)).thenReturn(dto());
 
-        mvc.perform(post("/api/players/bob/end-week"))
+        mvc.perform(post("/api/players/bob/end-week").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.round").value(4))
                 .andExpect(jsonPath("$.fed").value(true))
@@ -99,6 +110,7 @@ class PlayerControllerTest {
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder moveTo(String target) {
         return post("/api/players/bob/move")
+                .with(jwt().jwt(j -> j.subject("bob")))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"target\":\"" + target + "\"}");
     }
