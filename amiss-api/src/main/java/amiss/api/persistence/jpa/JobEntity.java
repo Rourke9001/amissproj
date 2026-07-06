@@ -13,9 +13,9 @@ import jakarta.persistence.Table;
  *
  * <p>{@code job} is the natural primary key — no surrogate id, matching the schema.
  *
- * <p>No repository exists yet for this entity — that lands in a later PR (KAN-34).
- * The running app still reads {@code tbljobs} through
- * {@code amiss.infrastructure.persistence.jdbc.JdbcJobRepository}.
+ * <p>Backed by {@link JobJpaRepository} / {@link JpaJobRepository}, the {@code
+ * JobRepository} port adapter (KAN-34). The Swing client still reads {@code tbljobs}
+ * through the core's {@code JdbcJobRepository}.
  */
 @Entity
 @Table(name = "tbljobs")

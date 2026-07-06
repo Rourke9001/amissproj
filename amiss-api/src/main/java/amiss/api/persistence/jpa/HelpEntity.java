@@ -12,9 +12,9 @@ import jakarta.persistence.Table;
  *
  * <p>{@code topic} is the natural primary key — no surrogate id, matching the schema.
  *
- * <p>No repository exists yet for this entity — that lands in a later PR (KAN-34).
- * The running app still reads {@code tblhelp} through
- * {@code amiss.infrastructure.persistence.jdbc.JdbcHelpRepository}.
+ * <p>Backed by {@link HelpJpaRepository} / {@link JpaHelpRepository}, the {@code
+ * HelpRepository} port adapter (KAN-34). The Swing client still reads {@code tblhelp}
+ * through the core's {@code JdbcHelpRepository}.
  */
 @Entity
 @Table(name = "tblhelp")
