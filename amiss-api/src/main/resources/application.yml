@@ -39,6 +39,16 @@ spring:
 #       travel-per-step-minutes: 40
 #       base-week-minutes: 3600
 #       fed-week-minutes: 4320
+amiss:
+  security:
+    jwt:
+      # HS256 signing secret for the register/login access tokens (KAN-36). This default
+      # is DEV-ONLY (>= 32 ASCII chars so SecurityConfig's startup length check passes) —
+      # every real deployment MUST override it via AMISS_JWT_SECRET, or anyone who reads
+      # this file could forge tokens.
+      secret: ${AMISS_JWT_SECRET:AmissProj-DEV-ONLY-JWT-secret-CHANGE-ME-1234567890}
+      # Access-token lifetime (ISO-8601 duration); override via AMISS_JWT_TTL.
+      ttl: ${AMISS_JWT_TTL:PT60M}
 
 management:
   endpoints:
@@ -47,5 +57,6 @@ management:
         include: health,info,flyway
   endpoint:
     health:
-      # Convenient while the API has no auth; tighten with KAN-36 (Spring Security).
+      # Still open — KAN-36 only mints/verifies tokens, it doesn't gate routes yet;
+      # tighten alongside the rest of /api/** in KAN-37.
       show-details: always

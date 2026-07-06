@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.config.GameServicesFactory;
+import amiss.api.security.SecurityConfig;
 import amiss.api.web.dto.GoalDto;
 import amiss.api.web.dto.GoalsDto;
 import amiss.api.web.dto.JobDto;
@@ -34,7 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * 409 while time remains (no silent rollover), rollover summary + fresh state on success.
  */
 @WebMvcTest(PlayerController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 class PlayerControllerTest {
 
     @Autowired

@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.error.PlayerNotFoundException;
+import amiss.api.security.SecurityConfig;
 import amiss.application.port.PersistenceFailureException;
 import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  * problem document with a stable machine-readable {@code type}.
  */
 @WebMvcTest(controllers = ProblemDetailContractTest.ThrowingController.class)
-@Import({GlobalExceptionHandler.class, ProblemDetailContractTest.ThrowingController.class})
+@Import({GlobalExceptionHandler.class, ProblemDetailContractTest.ThrowingController.class, SecurityConfig.class})
 class ProblemDetailContractTest {
 
     @Autowired

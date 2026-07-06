@@ -626,12 +626,41 @@ decisions locked up front:
       245 tests pass unmodified + 53 new adapter tests = 298; bank ops stay atomic
       @Modifying JPQL; live parity smoke green *(PR #28; fallback defaults cross-checked
       against JdbcUserRepository line-by-line)*
-- [ ] PR D `feat/kan35-testcontainers` — failsafe + Testcontainers MySQL ITs (Flyway →
-      JPA repos; port-contract CRUD, stats round-trip, BCrypt hash survives);
-      `disabledWithoutDocker` keeps plain builds green; CI runs them (ubuntu has Docker)
-- [ ] PR E `feat/kan36-auth-jwt` — register (Validation rules, 409 taken) + login → short-lived
+- [x] PR D `feat/kan35-testcontainers` — failsafe + Testcontainers `mysql:9` ITs (Flyway
+      V1→V4 from scratch + ddl-validate = CI drift check; 24 ITs: port CRUD, BCrypt
+      round-trip, atomic bank ops, seeded refs, FK cascade; NOT_SUPPORTED propagation to
+      mirror prod one-call-one-tx); `disabledWithoutDocker`; CI uploads failsafe reports
+      *(PR #29; ITs caught a real KAN-34 defect — save() deferred the INSERT past the
+      translation boundary → raw DataIntegrityViolationException; fixed with saveAndFlush
+      on the KAN-34 branch (76b75da) and the IT re-pinned to the contract. Local run:
+      298 unit + 24 IT green with Docker Desktop)*
+- [x] PR E `feat/kan36-auth-jwt` — register (Validation rules, 409 taken) + login → short-lived
       HS256 JWT; legacy rehash parity; game endpoints stay permitAll this PR; problem+json 401
-      entry point; slices import SecurityConfig
+      entry point; slices import SecurityConfig *(branch `feat/kan36-auth-jwt` off
+      `feat/kan35-testcontainers`, committed locally, not pushed/PR'd yet. New
+      `amiss.api.security` package (`SecurityConfig` — stateless HS256 resource-server
+      chain, `GET /api/auth/me` authenticated, everything else interim `permitAll()`, no
+      `UserDetailsService`/`PasswordEncoder` bean by design; `AuthService`/`AuthResult`);
+      `AuthController` (`/api/auth/register|login|me`) + 5 DTOs; 3 new exceptions
+      (`InvalidRegistrationException` 400, `UsernameTakenException` 409,
+      `InvalidCredentialsException` 401) + handler rows; `application.yml`
+      `amiss.security.jwt.secret/ttl` (dev-only default ≥32 chars, `AMISS_JWT_SECRET`
+      override); every existing `@WebMvcTest` slice (Board/Highscores/Player/Bank/Rent/
+      Employment/University/Food/ProblemDetailContract) gained `@Import(SecurityConfig
+      .class)` to survive Boot's default-lockdown trap, unchanged otherwise.
+      `MySqlITSupport.MYSQL`/the class widened to `public` so the new
+      `AuthRoundTripIT`/`AuthRoundTripSupport` (`@SpringBootTest(RANDOM_PORT)`) shares the
+      exact same Testcontainers `mysql:9` container instead of starting a second one.
+      Tests: `AuthServiceTest` (9, mocked ports + a real HS256 encoder/decoder pair),
+      `AuthControllerTest` (7, `@WebMvcTest` + `jwt()` post-processor), `AuthRoundTripIT`
+      (5, full stack against the shared container). Full `mvnw -B clean verify`: 314 unit
+      (was 298, +16) + 29 IT (was 24, +5), all green. Live smoke against MySQL97 (root):
+      register→201, login→200+token, `/api/auth/me` with Bearer→200, without→401
+      `urn:amiss:unauthenticated`, wrong password→401 `urn:amiss:invalid-credentials`,
+      `GET /api/board` still 200 unauthenticated (no premature lockdown); `kan36test` rows
+      deleted (FK cascade took the stats row with it), server killed, port 8080
+      confirmed free. `git diff --stat feat/kan35-testcontainers` touches only
+      `amiss-api/**` (+ this file))*
 - [ ] PR F `feat/kan37-route-protection` — lock `/api/**` (permit auth/highscores/health);
       path-username == principal else 403; CORS from `amiss.cors.allowed-origins`; health
       details tightened; anon 401 / cross-player 403 / own 200 tests
