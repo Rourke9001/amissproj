@@ -313,6 +313,30 @@ Add to this after any correction or non-obvious gotcha.
   enrolling, per `UniversityService.study()`'s `prog` arithmetic). Verified both in
   `UniversityControllerTest` and against a live degree-in-progress player before trusting it.
 
+## Phase 3 / KAN-38 React SPA scaffold
+- **`npm create vite@latest` is a moving target — pin the create-vite major.** Between
+  writing the KAN-38 spec and running it, create-vite 9 changed the react-ts template's
+  toolchain: Vite 8, **oxlint instead of ESLint** (no `eslint.config.js` at all), and
+  TypeScript 6.0. A scaffold spec that says "append X to the ESLint config" silently has
+  nothing to append to. `npm create -y vite@7 frontend -- --template react-ts` still
+  produces the ESLint-9-flat-config + TS 5.8 template. General rule: for any
+  `npm create`/`npx` scaffolder in a handoff packet, pin the major and state what the
+  output must contain, so drift trips a stop condition instead of an improvisation.
+- **Vitest 4 pairs fine with Vite 7** (no peer conflict as of 4.1.10) — no need to pin
+  vitest@3 the way vite-major/vitest-major pairings sometimes require.
+- **Match-by-CommandLine process kills: the pattern must not match the workspace path.**
+  The earlier lesson ("never blanket `Stop-Process -Name java`, match the command line")
+  has a sharp edge on this repo: the project folder is `...\Amiss Proj\...`, so a
+  case-insensitive `-match 'amiss'` also catches the VS Code Java language-server
+  processes (their command lines embed the workspace path) — exactly the IDE-knifing the
+  lesson exists to prevent. Match on something only the target has:
+  `'spring-boot:run'`, `'AmissProj\.jar'`, or the specific module dir — never a substring
+  of the repo path.
+- **PowerShell 5.1 `Invoke-WebRequest` needs `-UseBasicParsing`** on a machine without
+  IE initialisation, and reading an error response's body goes via
+  `$_.Exception.Response.GetResponseStream()` — plain `-SkipHttpErrorCheck` is
+  PowerShell 7-only.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an

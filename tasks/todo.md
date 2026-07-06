@@ -692,3 +692,65 @@ caught a real adapter bug (deferred-flush exception escaping translation) before
 merge; and the API and Swing share one credential rule through PasswordHasher, so the
 legacy-plaintext upgrade works identically over HTTP and desktop. Next up per ROADMAP
 Phase 3: KAN-19 React SPA (KAN-38 scaffold onwards), then KAN-20 (OpenAPI + Docker).
+
+---
+
+## Phase 3 / KAN-19 start — KAN-38 React SPA scaffold  (2026-07-06)
+Branch `feat/kan38-react-spa-scaffold` off `develop`. First PR of the KAN-19 SPA chain
+(KAN-38 scaffold → KAN-39 login → KAN-40 board → KAN-41 HUD → KAN-42..44 buildings →
+KAN-45 highscores/win). Locked decisions: monorepo (`frontend/`), React Query for server
+state, 1 PR = 1 subtask; implementation delegated to a cheaper subagent, diff review +
+verification here. Note: the API has **no refresh-token endpoint** (KAN-36 mints 60-min
+access tokens only), so "refresh handling" = proactive expiry check + reactive 401 →
+clear token + redirect to /login; documented in the PR.
+
+- [x] `frontend/`: Vite + React 19 + TypeScript scaffold — **pinned `create-vite@7`**
+      (the `@latest` v9 template now ships Vite 8 + oxlint + TS 6.0 and no ESLint;
+      see lessons.md), plus react-router 7.18, @tanstack/react-query 5.101,
+      Prettier 3.9 + eslint-config-prettier; the 8 planned npm scripts
+- [x] Typed API client (hand-rolled until KAN-20 OpenAPI): `api/http.ts` fetch wrapper —
+      `/api` base, Bearer header from token store, RFC 7807 problem+json → typed
+      `ApiError`, 401-with-token → onUnauthorized callback (a 401 on a token-less
+      request, e.g. failed login, deliberately does NOT fire it); `api/types.ts`
+      mirrors the Java DTOs; `api/auth.ts` (register/login/me), `api/highscores.ts`
+- [x] JWT plumbing: `auth/tokenStore.ts` (localStorage `amiss.auth.v1`, expiresAt from
+      `expiresInSeconds`, 30s clock-skew, corrupt/expired → removed),
+      `auth/AuthContext.tsx` (login/logout, synchronous hydrate + background
+      `/api/auth/me` validation — only an ApiError logs out, so a down API doesn't
+      nuke the session), `routes/RequireAuth.tsx` guard
+- [x] Shell pages: `/` HomePage renders live `GET /api/highscores` via React Query
+      (the KAN-38 acceptance call), `/login` placeholder (form lands with KAN-39),
+      `/game` placeholder behind RequireAuth (proves the guard)
+- [x] Vite dev proxy `/api` → `http://localhost:8080`; `npm run build` → `frontend/dist`
+      (Docker-ready for KAN-20)
+- [x] Vitest 4 (jsdom): 11 tests — tokenStore round-trip/expiry/skew/corrupt + http
+      200-parse/ApiError-mapping/Bearer-attach/401-handler matrix
+- [x] CI: new `frontend` job in `.github/workflows/ci.yml` (setup-node 24 + npm cache →
+      `npm ci` → lint → format:check → typecheck → test → build); `build` job untouched
+      (stays the required check)
+- [x] Root `.gitignore`: `node_modules/`, `frontend/dist/`
+- [x] Docs: README (stack row, structure, CI line), SETUP.md (Node prerequisite +
+      frontend dev loop), project-specific `frontend/README.md`
+- [x] JIRA: KAN-19 + KAN-38 → In Progress (done at session start); PR-link comment on
+      KAN-38; → Done when the PR merges
+- [x] Verify: lint/format:check/typecheck/test (11/11)/build all re-run green by the
+      orchestrator; live verify against MySQL97 — API UP, Vite proxy returns the real
+      highscores JSON (`[{"rank":1,"username":"rourke","round":1}]`), problem+json 401s
+      pass through the proxy, and in a real Chrome session the shell page renders the
+      highscores table and clicking Game unauthenticated redirects to `/login`
+
+### Review — KAN-38 (React SPA scaffold)
+KAN-38 shipped on `feat/kan38-react-spa-scaffold` (implementation by a Sonnet subagent
+against a locked handoff packet; scaffold decision, shared files, diff review and all
+verification kept here). The one real decision this PR surfaced: `npm create vite@latest`
+now scaffolds the brand-new toolchain (Vite 8, oxlint instead of ESLint, TypeScript 6.0)
+— the subagent hit its stop condition and reported instead of improvising, and the
+orchestrator pinned `create-vite@7` (Vite 7.3 + TS 5.8 + ESLint 9 flat config) because
+the ticket names ESLint/Prettier explicitly and that's the ecosystem-proven combo;
+revisit the newer template when the ecosystem catches up (a scaffold this thin upgrades
+trivially). "JWT refresh handling" was scoped to reality: the API issues no refresh
+tokens, so expiry (30s skew) treats the session as absent and any authenticated 401
+clears it — documented in code where the constraint lives. The acceptance criterion was
+verified end-to-end in a real browser: dev-server shell page renders live
+`GET /api/highscores` data through the `/api` proxy, and the RequireAuth guard bounces
+`/game` to `/login`. Next: KAN-39 (login/register screen over this plumbing).

@@ -27,6 +27,9 @@ database the login window still opens, but you cannot create or load a player.
    The whole reactor compiles with `--release 21` (Phase 3), so older JDKs no
    longer build it.
 2. **MySQL Community Server 8.x or 9.x** — see step 3.
+3. **Node.js 20+ with npm** *(web frontend only)* — needed only to build/run the
+   React SPA in `frontend/` (Phase 3, in progress); the Swing game and the REST
+   API build without it. Developed on Node 24 (https://nodejs.org).
 
 > **Driver note:** the project originally shipped MySQL Connector/J **5.1.22 (2012)**,
 > which cannot authenticate to MySQL 8/9. It has been replaced with
@@ -120,6 +123,25 @@ On launch the console should print **`Connection Successful`**. In the login
 window, type a username + password and click **Logging In** — it will say the
 user doesn't exist and reveal a **Create New User** button. Create the player and
 the main city screen opens.
+
+### Web frontend (React SPA, in progress)
+
+The SPA in `frontend/` consumes the REST API, so start `amiss-api` first, then
+the Vite dev server (which proxies every `/api` request to `:8080` — no CORS
+setup needed in dev):
+
+```powershell
+.\mvnw -f amiss-api spring-boot:run   # REST API on http://localhost:8080
+
+# in a second shell:
+cd frontend
+npm install                           # first time only
+npm run dev                           # http://localhost:5173
+```
+
+The home page lists the live high scores straight from `GET /api/highscores` —
+if it shows a connection error, the API isn't running. `npm run build` produces
+the static production bundle in `frontend/dist/`.
 
 ---
 
