@@ -13,6 +13,11 @@ import org.springframework.boot.test.context.SpringBootTest;
  */
 @SpringBootTest(properties = {
         "spring.flyway.enabled=false",
+        // DB-free context (same recipe as AmissApiApplicationTest): with JPA on the
+        // classpath (KAN-33), ddl-auto=validate would open a connection at startup.
+        "spring.jpa.hibernate.ddl-auto=none",
+        "spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect",
+        "spring.jpa.properties.hibernate.boot.allow_jdbc_metadata_access=false",
         "amiss.costs.work-minutes=300"
 })
 class CostsPropertiesBindingTest {
