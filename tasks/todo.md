@@ -832,8 +832,21 @@ PlayerStateDto (cash/bank/time/round/job/education+progress/clothing/foodWeeks/h
 goal progress bars), notification feed replacing BoardScreen's single `notice` line,
 clock/time in the timer cell (3,2) behind the asset manifest, End Week button →
 POST end-week → EndWeekResponse modal (fed/rentDue/debtCharged), rent-due warning.
-**Rourke has design input to give before PR C** — capture it on the KAN-41 JIRA ticket
-(or here) before implementing. KAN-45 remains on hold (never start autonomously).
+**Rourke's design input (2026-07-06, also commented on KAN-41 + KAN-50):**
+- **No movement confirmation** — like the original Jones: clicking a stop immediately
+  POSTs the move (and, once panels exist, opens the building). Travel/enter cost becomes
+  a hover tooltip on the hotspot. Fold into PR C.
+- **Round start = the player's apartment.** Current server behaviour (end-week resets to
+  Low-Cost Housing) is correct for now; starting at Le Security after a Rent Office
+  upgrade is a future backend mechanic → noted on KAN-50. Frontend stays data-driven off
+  `PlayerStateDto.location`.
+- Rourke will **redesign the board bitmap**: keep it a uniform 5×4 grid (any resolution,
+  5:4 overall ratio; current art 1402×1122 → ~280 px squares). The centre 3×2 block
+  (left 20% / top 25% / 60% × 50%) is overlaid by the dynamic panel, bottom-middle cell
+  (3,2) is the clock. Replace `frontend/public/assets/board/board.png` + rerun
+  `scripts/gen-frontend-placeholders.ps1`.
+- Screen-by-screen polish input comes after the chain ships — build functional-first.
+KAN-45 remains on hold (never start autonomously).
 **Environment note:** the API (`mvnw -f amiss-api spring-boot:run`, port 8080) and Vite
 dev server (`:5173`, serving the kan40 branch) were left running detached for Rourke to
 review the board live; kill via Get-CimInstance match on 'spring-boot:run' / the node
