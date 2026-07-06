@@ -807,8 +807,37 @@ the screen live in Chrome against the running API (MySQL97 + `spring-boot:run` +
 proxy), commits/pushes, opens the stacked PR (`gh pr create`), PR-link comment on the
 ticket; → Done as PRs merge.
 
-### Review
-*(pending — filled in as the chain ships)*
+### Review — interim handoff (2026-07-06, session paused before PR C on Rourke's request)
+**Shipped this session:**
+- **PR #35** `feat/kan39-login-registration` → develop (KAN-39, In Progress + PR comment):
+  login/register forms, client validation mirroring core `Validation`, problem+json →
+  inline errors, register auto-login, `state.from` redirect. 11 new component tests
+  (22 total). Verified live in Chrome (register 201 → login 200 → /game; wrong-password;
+  taken-username). New dev deps: @testing-library/react@16, user-event@14, jest-dom@6
+  (+ `src/test/setup.ts` with explicit RTL cleanup — no vitest globals in this repo).
+- **PR #36** `feat/kan40-board-screen` → stacked on #35 (KAN-40, In Progress + PR
+  comment): board bitmap + 13 data-driven hotspots (cell = col×20% / row×25% from
+  GET /api/board), sliding SVG token, centre-panel storefront preview, inline
+  travel/enter cost confirm → POST move → `setQueryData(['player', username])`.
+  Asset pipeline: `frontend/public/assets/board/board.png` + 13 placeholder 16:9
+  storefront crops from `scripts/gen-frontend-placeholders.ps1`; single lookup point
+  `src/assets/manifest.ts` — final art replaces the PNGs, zero code changes.
+  Tests 22 → 38. Verified live: Low-Cost Housing → Bank = 4 stops / "4h 40m"
+  (72h → 67h 20m), enter-current = "2h" (→ 65h 20m) — exact Swing ring maths.
+**Merge order:** #35 first, then #36 (auto-retargets to develop).
+**Next session starts at PR C — KAN-41 HUD & week flow** (branch `feat/kan41-hud-week-flow`
+off `feat/kan40-board-screen`; if #35/#36 merged first, branch off develop instead).
+The plan for C–F is in the section above; PR C spec essentials: centre-panel HUD from
+PlayerStateDto (cash/bank/time/round/job/education+progress/clothing/foodWeeks/happiness,
+goal progress bars), notification feed replacing BoardScreen's single `notice` line,
+clock/time in the timer cell (3,2) behind the asset manifest, End Week button →
+POST end-week → EndWeekResponse modal (fed/rentDue/debtCharged), rent-due warning.
+**Rourke has design input to give before PR C** — capture it on the KAN-41 JIRA ticket
+(or here) before implementing. KAN-45 remains on hold (never start autonomously).
+**Environment note:** the API (`mvnw -f amiss-api spring-boot:run`, port 8080) and Vite
+dev server (`:5173`, serving the kan40 branch) were left running detached for Rourke to
+review the board live; kill via Get-CimInstance match on 'spring-boot:run' / the node
+vite process when done. kan39test/kan40test DB rows already deleted.
 
 ---
 
