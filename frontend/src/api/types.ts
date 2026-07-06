@@ -113,3 +113,11 @@ export interface MoveResponse {
   minutesCharged: number;
   state: PlayerStateDto;
 }
+
+export interface EndWeekResponse {
+  round: number;
+  fed: boolean;
+  rentDue: boolean;
+  debtCharged: boolean;
+  state: PlayerStateDto;
+}
