@@ -7,6 +7,10 @@ target/
 # ─── Runtime logs (written by Logback's file appender) ───
 /logs/
 
+# ─── Frontend (React SPA in frontend/, KAN-38) ───
+node_modules/
+frontend/dist/
+
 # Note: third-party dependencies are now managed by Maven (see pom.xml) and are
 # NOT committed. The sole exception is vendor/AbsoluteLayout.jar (not on Maven
 # Central), installed into the committed project-local repo vendor-repo/ — both

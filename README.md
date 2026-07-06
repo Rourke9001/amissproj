@@ -20,6 +20,7 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 |---|---|
 | Language / UI | Java 21, Swing (`amiss.presentation` in `amiss-swing`) |
 | Modules | Maven reactor: `amiss-core` (rules + persistence + migrations), `amiss-swing` (desktop client), `amiss-api` (REST API), `amiss-coverage` (JaCoCo aggregate) |
+| Web frontend | React + TypeScript SPA (Vite) in `frontend/` (Phase 3, in progress — KAN-38 scaffold). Consumes the REST API only (no game rules in JS): typed fetch client, JWT auth plumbing + route guard, TanStack React Query, React Router. Dev server `npm run dev` on `:5173` proxies `/api` → `:8080` |
 | REST API | Spring Boot 3.5 (`amiss-api`) over the same core services — `.\mvnw -f amiss-api spring-boot:run`, health at `/actuator/health`, RFC 7807 error responses. `POST /api/auth/register`, `POST /api/auth/login` and `GET /api/highscores` are public; every other `/api/**` route requires a `Bearer` JWT (`GET /api/auth/me`), and a player-scoped route (`/api/players/{username}/...`) 403s if the token's subject doesn't match `{username}` |
 | Database | MySQL 8.4+ / 9.x (`amissdb`); app runs as least-privilege `amiss` user |
 | Migrations | Flyway 11 — versioned SQL in `amiss-core/src/main/resources/db/migration`, applied automatically at app start (by a dedicated `amiss_migrator` account) |
@@ -131,8 +132,12 @@ amiss-api/                    Spring Boot REST API over amiss-core (Phase 3, in 
                               JPA entities/adapters over the Flyway schema, and JWT auth with
                               full route lockdown + player-scoping (see Tech stack above)
 amiss-coverage/               Aggregates per-module JaCoCo coverage for CI
+frontend/                     React + TypeScript SPA (Vite) consuming amiss-api (Phase 3,
+                              in progress): typed API client, JWT auth plumbing, route
+                              guard, React Query; `npm run dev` proxies /api to :8080
 mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install needed)
-.github/workflows/ci.yml      GitHub Actions CI (build + tests + coverage badges on push/PR)
+.github/workflows/ci.yml      GitHub Actions CI (backend build + tests + coverage badges,
+                              frontend lint/typecheck/tests/build, on push/PR)
 db/bootstrap.sql              One-time bootstrap: database + the two MySQL accounts
                               (schema itself lives in the Flyway migrations)
 scripts/                      build.ps1 (mvnw wrapper), run.ps1 (launch),
