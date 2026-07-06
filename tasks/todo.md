@@ -985,3 +985,63 @@ a real 4th-round rent payment — the HUD rent banner clearing off the mutation
 response, with the DB cross-checked after each step. No backend changes were
 needed; the KAN-31 endpoints held as-designed. **Next: PR E (KAN-43
 employment/university) — awaiting Rourke's go-ahead.**
+
+---
+
+## Phase 3 / KAN-43 PR E — Employment Office & Hi-Tech U panels + Work  (2026-07-07)
+Rourke approved after PR D. Branch `feat/kan43-employment-university` **stacked on
+`feat/kan42-bank-rent`** (#37/#38 still open). **Approval gate: STOP after this PR;
+PR F (KAN-44) needs Rourke's go-ahead. KAN-45 never starts autonomously.**
+
+- [x] JIRA: KAN-43 → In Progress (+ PR-link comment once open)
+- [x] `api/jobs.ts` (`getJobs` → `GET /api/jobs`; `applyForJob` →
+      `POST .../jobs/apply {job}` → `ApplyResponse` incl. the **charged 200
+      rejection** `hired:false reason:"INSUFFICIENT_EDUCATION"`; `work` →
+      `POST .../work` → `WorkResponse`) + `api/university.ts` (`getCourses` →
+      `GET /api/courses` → `CoursesDto`; `enroll`/`study`); DTO mirrors
+- [x] EmploymentOfficePanel (registry: EMPLOYMENT_OFFICE): job list from the
+      catalog — wage, location, education/clothing requirement badges with
+      met/unmet state vs the live player ("needs …" prefix, not colour-only),
+      current job highlighted; Apply blocked client-side when education unmet
+      (charged cost from `minutesCharged`, not hardcoded — orchestrator fix);
+      `hired:false` renders as an outcome (feed + state update — the interview
+      time is charged), envelopes inline
+- [x] UniversityPanel (registry: HI_TECH_U): degree list with completed/current
+      levels, enrolled state from `stats.educationProgress > 0`, Enroll (R50) /
+      Study (6h, progress n/10) actions, which jobs each degree level unlocks
+      (join vs the jobs catalog); degree-completion outcome; envelopes inline
+- [x] Work action (BoardScreen, above the stop panel): visible when
+      `job != null && currentStop.name === job.location`; `POST work` → wages
+      feed message (+ debt-docked variant); errors → feed; invalidate on
+      rejection (standing rule)
+- [x] **Found live, copy fixed:** `hourlyWage` is the per-SHIFT payout despite
+      its DTO name (core pays `salary` once per shift, Jones-style — 6h as Cook
+      pays R6, verified in `StatsService.work()`); the work toast now says
+      "earned R{n}" instead of implying an hourly rate. The `R{n}/h` badges and
+      the DTO naming flagged to Rourke (backend rename = KAN-5 territory)
+- [x] Tests 75 → 101: both panels' render/action/envelope matrices,
+      charged-rejection apply, WorkAction visibility + outcomes, registry rows
+- [x] Verify: lint / format:check / typecheck / test (101/101) / build re-run by
+      the orchestrator; live Chrome with disposable `kan43test`: jobs list with
+      met/unmet badges + disabled unmet Apply, hired as Cook ("(current)" row
+      highlight, 4h charged), Work button only at Monolith Burgers → worked 6h
+      (+R6, work exp 0→1), Hi-Tech U enroll R50 → study 2/10 → degree completion
+      via root eduprog=10 ("Degree completed: Junior College — education level
+      1!", Level 2 "(in progress)", Enroll returns); kan43test deleted as root,
+      cascade verified
+- [x] Push; `gh pr create --base feat/kan42-bank-rent`; PR-link comment on KAN-43
+
+### Review — PR E (KAN-43)
+The registry pattern held: both screens were exactly "one component + one
+registry row + one api module", and BoardScreen only gained the WorkAction slot.
+The two subtleties this PR surfaced were both contract-level, not UI-level:
+(1) an insufficient-education application is a **200 with `hired:false` and the
+interview time charged** — rendered as an outcome in the feed with the state
+updated, per the locked "charged rejections are outcomes, not errors" rule; and
+(2) `hourlyWage` across the job DTOs is actually the per-shift payout (core pays
+`tbljobs.salary` once per 6h shift, original-Jones style) — the work toast was
+corrected to "earned R{n}", the misleading-name question flagged to Rourke
+rather than papered over. Live verification covered the full progression loop:
+apply → work → enroll → study → degree completion, with the HUD tracking every
+mutation response. **Next: PR F (KAN-44 food/shops + `GET /api/clothes` backend
+addition) — awaiting Rourke's go-ahead. KAN-45 stays on hold.**

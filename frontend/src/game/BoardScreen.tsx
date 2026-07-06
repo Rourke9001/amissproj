@@ -9,6 +9,7 @@ import { formatMinutes } from './formatMinutes';
 import { ringSteps } from './ring';
 import { Hud } from './Hud';
 import { EndWeekModal } from './EndWeekModal';
+import { WorkAction } from './WorkAction';
 import { resolvePanel } from './panels/registry';
 import './board.css';
 
@@ -154,6 +155,7 @@ export function BoardScreen({ username }: BoardScreenProps) {
             onEndWeek={() => endWeekMutation.mutate()}
             endWeekPending={endWeekMutation.isPending}
           />
+          <WorkAction username={username} player={player} onNotify={pushNotification} />
           <StopPanel username={username} player={player} onNotify={pushNotification} />
         </div>
         <div className="board-clock" style={{ left: '40%', top: '75%' }}>

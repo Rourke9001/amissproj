@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react';
 import { BankPanel } from './BankPanel';
 import { RentOfficePanel } from './RentOfficePanel';
+import { EmploymentOfficePanel } from './EmploymentOfficePanel';
+import { UniversityPanel } from './UniversityPanel';
 import { DefaultPanel } from './DefaultPanel';
 import type { PanelProps } from './types';
 
@@ -10,6 +12,8 @@ import type { PanelProps } from './types';
 const PANEL_REGISTRY: Record<string, ComponentType<PanelProps>> = {
   BANK: BankPanel,
   RENT_OFFICE: RentOfficePanel,
+  EMPLOYMENT_OFFICE: EmploymentOfficePanel,
+  HI_TECH_U: UniversityPanel,
 };
 
 export function resolvePanel(locationId: string): ComponentType<PanelProps> {

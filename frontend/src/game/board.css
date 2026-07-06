@@ -249,3 +249,84 @@
   max-width: 360px;
   width: calc(100% - 2rem);
 }
+
+.work-action {
+  padding: 0.4rem 0.5rem 0;
+  text-align: center;
+}
+
+.work-action-button {
+  padding: 0.4rem 0.9rem;
+  font-weight: 700;
+}
+
+.job-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.job-listing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.job-listing--current {
+  background: rgba(80, 200, 255, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(80, 200, 255, 0.6);
+}
+
+.job-listing-name {
+  font-weight: 600;
+  min-width: 8rem;
+}
+
+.job-req {
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+.job-req--met {
+  background: rgba(80, 220, 120, 0.25);
+}
+
+.job-req--unmet {
+  background: rgba(255, 100, 90, 0.25);
+}
+
+.degree-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.degree {
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+}
+
+.degree--completed {
+  background: rgba(80, 220, 120, 0.15);
+}
+
+.degree--next {
+  background: rgba(255, 209, 60, 0.15);
+}
+
+.degree-jobs {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}

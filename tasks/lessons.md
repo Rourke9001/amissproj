@@ -358,6 +358,22 @@ Add to this after any correction or non-obvious gotcha.
   (TurnService) on 4th rounds. Frontend renders it faithfully; flagged to Rourke as a
   design question, not silently "fixed".
 
+## Phase 3 / KAN-43 employment & university panels
+- **`hourlyWage` in the job DTOs is the per-SHIFT payout, not an hourly rate.** Core's
+  `StatsService.work()` pays `tbljobs.salary` once per 6h shift (`cash + hourlyWage`,
+  −10 when debt-docked) — original Jones behaviour pinned by characterization tests.
+  KAN-28 named the DTO field `hourlyWage`, which the frontend faithfully propagated
+  into "R6/h" copy until live verification showed a 6h Cook shift paying R6, not R36.
+  Frontend toast now says "earned R{n}"; renaming the DTO/badges is a backend/design
+  decision flagged to Rourke. General rule: **verify what a money/time field actually
+  pays out against the core rule before writing UI copy that interprets it.**
+- **An insufficient-education job application is a charged 200, not an error.**
+  `ApplyResponse` comes back `hired:false, reason:"INSUFFICIENT_EDUCATION"` with the
+  interview minutes already spent — the client must `setQueryData` from that response
+  exactly like a success, and render it as an outcome in the feed. Same family as the
+  exact-zero move 409: this API charges on rejection paths, so never skip the state
+  update just because the action "failed".
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an
