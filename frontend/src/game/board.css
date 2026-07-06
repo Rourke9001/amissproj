@@ -1,0 +1,132 @@
+.board-screen {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.board-status {
+  font-weight: 500;
+  margin: 0 0 0.75rem;
+}
+
+.board-frame {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 1402 / 1122;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #111;
+}
+
+.board-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.stop-hotspot {
+  position: absolute;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stop-hotspot:hover,
+.stop-hotspot:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px rgba(255, 209, 60, 0.9);
+  background: rgba(255, 209, 60, 0.12);
+}
+
+.stop-hotspot--current {
+  box-shadow: inset 0 0 0 3px rgba(80, 200, 255, 0.85);
+}
+
+.stop-hotspot--current:hover,
+.stop-hotspot--current:focus-visible {
+  box-shadow:
+    inset 0 0 0 3px rgba(80, 200, 255, 0.85),
+    inset 0 0 0 6px rgba(255, 209, 60, 0.6);
+}
+
+.player-token {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  transition:
+    left 0.3s ease,
+    top 0.3s ease;
+  pointer-events: none;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
+}
+
+.player-token circle {
+  fill: #ffcc00;
+  stroke: #111;
+  stroke-width: 2;
+}
+
+.board-centre {
+  position: absolute;
+  left: 20%;
+  top: 25%;
+  width: 60%;
+  height: 50%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.board-storefront {
+  width: 100%;
+  max-height: 55%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.board-location-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.board-muted {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.board-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.board-confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.board-notice {
+  min-height: 1.25rem;
+  margin: 0.75rem 0 0;
+}

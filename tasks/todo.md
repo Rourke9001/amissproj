@@ -776,7 +776,7 @@ is on hold for Rourke's design input — hold comment on the ticket).
       (username `^[A-Za-z0-9_]{1,50}$`, password ≥ 4); ApiError → inline errors
       (401 invalid-credentials, 409 username-taken, 400 invalid-registration);
       register auto-logs-in; success lands on `state.from ?? /game`. Component tests.
-- [ ] **PR B — KAN-40** `feat/kan40-board-screen`: board asset + manifest + placeholder
+- [x] **PR B — KAN-40** `feat/kan40-board-screen`: board asset + manifest + placeholder
       generator; `api/board.ts` + `api/player.ts`; hotspot grid + SVG token; click stop →
       cost preview (ring distance × minutesPerStep + enterBuildingMinutes) → confirm →
       `POST move` → cache update; insufficient-time / week-over as notices; centre panel

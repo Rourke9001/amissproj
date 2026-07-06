@@ -1,8 +1,13 @@
+import { BoardScreen } from '../game/BoardScreen';
+import { useAuth } from '../auth/AuthContext';
+
 export function GamePage() {
-  return (
-    <section>
-      <h1>Game</h1>
-      <p>The game board ships with KAN-40.</p>
-    </section>
-  );
+  const { username } = useAuth();
+
+  if (username === null) {
+    // RequireAuth already guards this route; this is just a defensive no-op.
+    return null;
+  }
+
+  return <BoardScreen username={username} />;
 }
