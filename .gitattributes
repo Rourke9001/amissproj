@@ -1,6 +1,10 @@
 # Keep the Maven wrapper shell script LF so it runs on Linux/CI runners.
 mvnw text eol=lf
 
+# The frontend is LF-normalized (Prettier's default and what KAN-38 committed),
+# so core.autocrlf=true checkouts stop flagging every file as modified.
+frontend/** text eol=lf
+
 # Windows-only scripts stay CRLF.
 *.ps1 text eol=crlf
 *.cmd text eol=crlf
