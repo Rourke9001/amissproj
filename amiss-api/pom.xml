@@ -62,6 +62,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
+        <!--
+          JPA entity layer over the Flyway-owned schema (KAN-33). ddl-auto is
+          validate-only: Flyway remains the sole schema owner. No Spring Data
+          repositories yet — the game still runs on the JDBC adapters wired in
+          PersistenceConfig; that swap is a later PR (KAN-17/KAN-34).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
