@@ -44,6 +44,17 @@ vi.mock('../api/university', () => ({
   study: vi.fn(),
 }));
 
+vi.mock('../api/food', () => ({
+  getFoodCatalog: vi.fn(),
+  eat: vi.fn(),
+  buyGroceries: vi.fn(),
+}));
+
+vi.mock('../api/clothes', () => ({
+  getClothesCatalog: vi.fn(),
+  buyClothes: vi.fn(),
+}));
+
 const getBoardMock = vi.mocked(getBoard);
 const getPlayerStateMock = vi.mocked(getPlayerState);
 const moveMock = vi.mocked(move);
@@ -313,6 +324,15 @@ describe('BoardScreen', () => {
 
     const centre = document.querySelector('.board-centre') as HTMLElement;
     expect(within(centre).getByRole('button', { name: 'Work a shift (6h)' })).toBeInTheDocument();
+  });
+
+  it('renders the Home panel when standing at Low-Cost Housing', async () => {
+    getPlayerStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[0] })); // LOW_COST_HOUSING
+    renderBoardScreen();
+    await screen.findByRole('button', { name: 'Low-Cost Housing' });
+
+    const centre = document.querySelector('.board-centre') as HTMLElement;
+    expect(await within(centre).findByRole('heading', { name: 'Home' })).toBeInTheDocument();
   });
 
   it('renders the DefaultPanel for a stop with no registered panel', async () => {

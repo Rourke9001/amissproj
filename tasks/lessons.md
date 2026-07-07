@@ -374,6 +374,19 @@ Add to this after any correction or non-obvious gotcha.
   exact-zero move 409: this API charges on rejection paths, so never skip the state
   update just because the action "failed".
 
+## Phase 3 / KAN-44 food & shops panels
+- **`FoodService.getEat()` is a read WITH a side effect** — it decrements stored food
+  (`setFood(-1)`) whenever food > 0, because TurnService uses it as the once-per-rollover
+  "consume one week" call. Never call it from an assembler/DTO path; the safe fed
+  indicator is the `eat` column value already exposed as `foodWeeks` (a burger tops it
+  to 1 when hungry, groceries add weeks). Rule: before exposing a core getter on the
+  wire, read its body — Swing-era "getters" sometimes mutate.
+- **Buying a 1-week food pack when you have 0–1 weeks stored tops the counter to 1, it
+  doesn't add** (`FoodService.setFood`'s `(eat==0||eat==1)&&count==1` branch — original
+  Swing rule). Observed live: eat burger (→1 wk) then buy 1-week pack → still 1 wk, R25
+  spent. UI reports the server's `foodWeeks` verbatim so it never lies; rebalancing is
+  KAN-5 territory.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an

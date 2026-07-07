@@ -184,3 +184,52 @@ export interface StudyResponse {
   minutesCharged: number;
   state: PlayerStateDto;
 }
+
+export interface MenuItemDto {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface FoodPackDto {
+  id: string;
+  name: string;
+  price: number;
+  weeks: number;
+}
+
+export interface FoodCatalogDto {
+  menu: MenuItemDto[];
+  packs: FoodPackDto[];
+}
+
+export interface EatResponse {
+  item: string;
+  price: number;
+  ate: boolean;
+  reason: string | null;
+  minutesCharged: number;
+  state: PlayerStateDto;
+}
+
+export interface GroceriesResponse {
+  pack: string;
+  price: number;
+  weeksAdded: number;
+  foodWeeks: number;
+  state: PlayerStateDto;
+}
+
+export interface ClothingItemDto {
+  id: string;
+  name: string;
+  price: number;
+  level: number;
+}
+
+export interface ClothesResponse {
+  item: string;
+  price: number;
+  clothingLevel: number;
+  state: PlayerStateDto;
+}

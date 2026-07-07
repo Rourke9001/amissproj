@@ -330,3 +330,37 @@
   font-size: 0.75rem;
   opacity: 0.85;
 }
+
+.store-panel-status {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.store-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.store-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.store-row-label {
+  font-weight: 600;
+  min-width: 8rem;
+}
+
+.store-row-detail {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}

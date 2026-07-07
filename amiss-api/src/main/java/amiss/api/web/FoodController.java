@@ -7,6 +7,7 @@ import amiss.api.error.UnknownItemException;
 import amiss.api.error.WeekOverException;
 import amiss.api.web.dto.ClothesRequest;
 import amiss.api.web.dto.ClothesResponse;
+import amiss.api.web.dto.ClothingItemDto;
 import amiss.api.web.dto.EatRequest;
 import amiss.api.web.dto.EatResponse;
 import amiss.api.web.dto.FoodCatalogDto;
@@ -58,6 +59,15 @@ public class FoodController {
             packs.add(new FoodPackDto(pack.name(), pack.displayName(), pack.price(), pack.weeks()));
         }
         return new FoodCatalogDto(menu, packs);
+    }
+
+    @GetMapping("/api/clothes")
+    public List<ClothingItemDto> clothesCatalog() {
+        List<ClothingItemDto> items = new ArrayList<>(ClothingItem.values().length);
+        for (ClothingItem item : ClothingItem.values()) {
+            items.add(new ClothingItemDto(item.name(), item.displayName(), item.price(), item.level()));
+        }
+        return items;
     }
 
     @PostMapping("/api/players/{username}/eat")

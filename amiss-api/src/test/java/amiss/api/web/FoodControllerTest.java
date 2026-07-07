@@ -83,6 +83,22 @@ class FoodControllerTest {
                 .andExpect(jsonPath("$.packs[0].weeks").value(1));
     }
 
+    // ---- GET /api/clothes ------------------------------------------------------
+
+    @Test
+    void clothesCatalog_returnsTheStock() throws Exception {
+        mvc.perform(get("/api/clothes").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].id").value("CASUAL"))
+                .andExpect(jsonPath("$[0].name").value("Casual Clothes"))
+                .andExpect(jsonPath("$[0].price").value(20))
+                .andExpect(jsonPath("$[0].level").value(1))
+                .andExpect(jsonPath("$[2].id").value("SUIT"))
+                .andExpect(jsonPath("$[2].price").value(55))
+                .andExpect(jsonPath("$[2].level").value(3));
+    }
+
     // ---- POST /api/players/{u}/eat --------------------------------------------
 
     @Test

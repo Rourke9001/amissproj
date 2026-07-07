@@ -1045,3 +1045,67 @@ rather than papered over. Live verification covered the full progression loop:
 apply → work → enroll → study → degree completion, with the HUD tracking every
 mutation response. **Next: PR F (KAN-44 food/shops + `GET /api/clothes` backend
 addition) — awaiting Rourke's go-ahead. KAN-45 stays on hold.**
+
+---
+
+## Phase 3 / KAN-44 PR F — food & shops panels + GET /api/clothes  (2026-07-07)
+Rourke approved after PR E. Branch `feat/kan44-food-shops` **stacked on
+`feat/kan43-employment-university`** (#37/#38/#39 all open; merge in order).
+**Last PR of this chain: STOP after it ships — KAN-45 (highscores/win) stays on
+hold for Rourke's design input, never start it autonomously.**
+
+- [x] JIRA: KAN-44 → In Progress (+ PR-link comment once open)
+- [x] **Backend addition (orchestrator-written): `GET /api/clothes`** —
+      `ClothingItemDto(id,name,price,level)` list from the `ClothingItem` catalog,
+      added to `FoodController` mirroring `GET /api/food`; pinned in
+      `FoodControllerTest` (stock of 3, CASUAL/SUIT fields)
+- [x] **Scope check on "fed indicator":** `FoodService.getEat()` is side-effectful
+      (consumes one stored food — TurnService-only), and the `eat` column IS the
+      food-weeks counter (a meal tops it to 1 when hungry, groceries add weeks) —
+      so `foodWeeks` (already on the DTO) is the fed indicator; no DTO change,
+      the assembler stays side-effect-free
+- [x] `api/food.ts` (`getFoodCatalog`, `eat {item}` — **charged 200 rejection**
+      `ate:false reason:INSUFFICIENT_CASH`, `buyGroceries {pack}`) +
+      `api/clothes.ts` (`getClothesCatalog`, `buyClothes {item}`); DTO mirrors
+- [x] Shared presentational `StorePanel` (ticket: one component, many stops) +
+      thin per-shop containers: Monolith Burgers (menu, Eat, fed line off
+      `foodWeeks`), Black's Market (packs, Buy → stored-weeks outcome),
+      QT Clothing (stock with level vs `player.clothing`; current/lower levels
+      visible but disabled, Buy → level outcome)
+- [x] HomePanel (LOW_COST_HOUSING): informational (food stored + rent hint;
+      rest/relax arrives with KAN-5 — no relax endpoint exists)
+- [x] Registry rows: MONOLITH_BURGERS, BLACKS_MARKET, QT_CLOTHING,
+      LOW_COST_HOUSING; Pawn Shop / Z-Mart / Socket City / Le Security stay on
+      DefaultPanel ("opens with the KAN-5 economy epic") — every stop opens
+      something (acceptance)
+- [x] Tests 101 → 131 frontend (+1 backend): catalogs render, buy/eat flows
+      (incl. charged eat rejection as a feed outcome + cache update), envelopes
+      inline, invalidate-on-rejection, registry rows, HomePanel
+- [x] Verify: full frontend suite (131/131) + `mvnw -pl amiss-api -am clean test`
+      green; API restarted with the new endpoint (anon /api/clothes → 401,
+      locked as intended); live Chrome with disposable `kan44test`: Home panel
+      (food 0 wk + rent line), Monolith Burgers menu — ate a Burger (fed line
+      flipped + food 0→1 wk in HUD), charged `ate:false` rejection ("Couldn't
+      afford the Cheese Burger (1h spent)" with the clock still debited),
+      Black's Market — 409 insufficient-funds inline, bought a 1-week pack,
+      QT Clothing — Casual disabled "(current)", bought Formal → level 2 and
+      the stock re-disabled itself, Z-Mart → DefaultPanel; kan44test deleted
+      as root, cascade verified
+- [x] Push; `gh pr create --base feat/kan43-employment-university`; PR-link
+      comment on KAN-44
+
+### Review — PR F (KAN-44)
+The KAN-19 building chain is complete: every one of the 13 stops now opens
+something real or an honest placeholder, and the store screens are one shared
+presentational `StorePanel` + thin containers, exactly as the ticket asked. The
+`GET /api/clothes` gap was closed with a 10-line mirror of `GET /api/food`
+(orchestrator-written, pinned in `FoodControllerTest`). Two core-rule findings
+surfaced live and were left intact as original-game behaviour: (1) the fed
+indicator IS the `eat` column — `FoodService.getEat()` is side-effectful
+(consumes stored food, TurnService-only), so the DTO's `foodWeeks` is the safe
+display source and no backend change was needed; (2) buying a 1-week pack when
+you already have 0–1 weeks stored tops the counter to 1 rather than stacking
+(`FoodService.setFood`'s historical branch) — the outcome message reports the
+server's number faithfully, so the UI never lies about it. **The KAN-39→44
+chain is done: #35/#36 merged, #37 → #38 → #39 → #40 stacked and CI-green.
+KAN-45 (highscores/win) stays on hold for Rourke's design input.**
