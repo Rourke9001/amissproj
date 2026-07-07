@@ -13,6 +13,13 @@ Add to this after any correction or non-obvious gotcha.
   with `$ErrorActionPreference='Stop'`, aborts the script. Capture such output via
   `cmd /c "java ... 2>&1"` to keep it as plain text.
 
+- **WebFetch can 402 (Payment Required) at the tool/service level** — it's the fetch
+  service's billing/quota, not the target site, and retrying won't help. Read the page
+  through the **Claude-in-Chrome browser tools** instead (`tabs_create_mcp` → `navigate`
+  → `get_page_text`); subagents can use them too if told to load the tools via
+  ToolSearch. Known hit: jonesinthefastlane.fandom.com (the canonical rules wiki).
+  Sandbox `curl` has no network egress (exit 43), so Chrome is the only fallback.
+
 ## Build / resources
 - **`javac` does not copy non-`.java` resources.** Images under `src` won't reach
   `build/classes` (or the jar) unless the build copies them. `scripts/build.ps1` now
