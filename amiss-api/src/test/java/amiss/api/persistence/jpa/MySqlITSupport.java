@@ -15,7 +15,7 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * Shared Testcontainers / {@code @DataJpaTest} base for the KAN-35 {@code *IT} classes:
  * the JPA port adapters ({@link PersistenceConfig}'s beans) run against a real MySQL
- * container that Flyway migrates from scratch (V1 -> V4) with {@code ddl-auto=validate}
+ * container that Flyway migrates from scratch (V1 -> current) with {@code ddl-auto=validate}
  * still effective — a green boot here is itself the no-schema-drift proof.
  *
  * <p>{@code disabledWithoutDocker = true} is the only Docker gate (no Maven profile):
