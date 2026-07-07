@@ -23,10 +23,15 @@ export function MonolithBurgersPanel({ username, player, onNotify }: PanelProps)
     onSuccess: (res: EatResponse) => {
       queryClient.setQueryData(['player', username], res.state);
       const name = foodQuery.data?.menu.find((item) => item.id === res.item)?.name ?? res.item;
+      // Eating is free by default (purchases cost no time in the reference game);
+      // only mention time when a deployment configures an eat cost.
+      const charged = res.minutesCharged > 0 ? `, ${formatMinutes(res.minutesCharged)}` : '';
       onNotify(
         res.ate
-          ? `Ate a ${name} (R${res.price}, ${formatMinutes(res.minutesCharged)})`
-          : `Couldn't afford the ${name} (${formatMinutes(res.minutesCharged)} spent)`,
+          ? `Ate a ${name} (R${res.price}${charged})`
+          : `Couldn't afford the ${name}${
+              res.minutesCharged > 0 ? ` (${formatMinutes(res.minutesCharged)} spent)` : ''
+            }`,
       );
     },
     onError: () => {

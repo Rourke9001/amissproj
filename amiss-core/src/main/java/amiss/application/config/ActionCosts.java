@@ -12,7 +12,9 @@ package amiss.application.config;
  *
  * <p>Reference values (from the Jones-in-the-Fast-Lane design notes): a 60-hour week
  * (72 if fed), 2h to enter a building, 40 min per ring step so the longest walk
- * (6 steps) is 4h — "cross-town ≈ 4h".
+ * (6 steps) is 4h — "cross-town ≈ 4h". Purchases cost no time in the reference —
+ * "some actions (like purchasing Items) cost none" — so eating and shopping both
+ * default to 0; a player out of hours can still buy and eat inside a building.
  */
 public record ActionCosts(
         int workMinutes,
@@ -29,6 +31,6 @@ public record ActionCosts(
 
     /** The built-in cost table; used wherever no configuration override is supplied. */
     public static ActionCosts defaults() {
-        return new ActionCosts(360, 360, 360, 240, 120, 60, 0, 40, 120, 3600, 4320);
+        return new ActionCosts(360, 360, 360, 240, 120, 0, 0, 40, 120, 3600, 4320);
     }
 }

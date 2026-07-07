@@ -118,20 +118,29 @@ class StatsServiceOrchestrationTest {
 
         assertEquals("\nYou spent R30, You have R70 left\nThat Was Yummy, One point into happiness",
                 r.message());
-        assertEquals("71h", r.timer());            // 4320 - 60 = 4260 min = 71h
+        assertEquals("72h", r.timer());            // eating costs no time (reference rule)
         assertEquals("100", r.money());
         verify(users).updateEat(USER, 1);           // had none -> store one
         verify(users).updateCash(USER, 70);
         verify(userStats).incrementHappiness(USER);
-        verify(users).updateTime(USER, 4260);
+        verify(users).updateTime(USER, 4320);
     }
 
     @Test
-    void eatMain_reportsNotEnoughTimeAndChangesNothing() {
+    void eatMain_reportsNotEnoughTimeWhenAnEatCostIsConfigured() {
+        // Eating is free by default; the branch stays reachable only through a
+        // configured override, so wire a service with an explicit eat cost.
+        ActionCosts costed = new ActionCosts(360, 360, 360, 240, 120, 60, 0, 40, 120, 3600, 4320);
+        EducationService education = new EducationService(userStats, USER);
+        TimeService time = new TimeService(users, USER);
+        JobService jobs = new JobService(jobRepo, users, education, time, costed, USER);
+        FoodService food = new FoodService(users, USER);
+        StatsService costedService = new StatsService(users, userStats, jobs, time, food, costed, USER);
+
         when(users.getEat(USER)).thenReturn(0);
         when(users.getTime(USER)).thenReturn(0); // 0 - 60 < 0
 
-        ActionResult r = service.eatMain(30);
+        ActionResult r = costedService.eatMain(30);
 
         assertEquals("\nNot Enough Time", r.message());
         assertNull(r.timer());
@@ -216,7 +225,7 @@ class StatsServiceOrchestrationTest {
         EatOutcome outcome = service.eat(30);
 
         assertEquals(EatOutcome.Status.OK, outcome.status());
-        assertEquals(4260, outcome.remainingMinutes());
+        assertEquals(4320, outcome.remainingMinutes()); // eating costs no time
         assertEquals(70, outcome.cash());
         verify(users).updateEat(USER, 1);
         verify(users).updateCash(USER, 70);
@@ -224,7 +233,7 @@ class StatsServiceOrchestrationTest {
     }
 
     @Test
-    void eat_reportsInsufficientCashButStillChargesTheHour() {
+    void eat_reportsInsufficientCashWithoutChargingTime() {
         when(users.getEat(USER)).thenReturn(0);
         when(users.getTime(USER)).thenReturn(72);
         when(users.getCash(USER)).thenReturn(10); // 10 < price 50
@@ -233,7 +242,7 @@ class StatsServiceOrchestrationTest {
 
         assertEquals(EatOutcome.Status.INSUFFICIENT_CASH, outcome.status());
         assertEquals(10, outcome.cash());
-        verify(users).updateTime(USER, 12); // 72 - 60: the hour is charged even though cash failed
+        verify(users).updateTime(USER, 72); // eating is free, so nothing was charged
         verify(users, never()).updateCash(anyString(), anyInt());
         verify(users, never()).updateEat(anyString(), anyInt());
     }

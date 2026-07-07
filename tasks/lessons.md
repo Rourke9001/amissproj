@@ -387,6 +387,22 @@ Add to this after any correction or non-obvious gotcha.
   spent. UI reports the server's `foodWeeks` verbatim so it never lies; rebalancing is
   KAN-5 territory.
 
+## Fix: eat costs no time (reference parity)
+- **The Jones wiki (jonesinthefastlane.fandom.com) is the canonical rules source for
+  cost/balance questions** — check it before inventing a value. Its Hour page settled
+  eat=0 ("purchasing Items cost none"; no-cost actions remain legal at 0 Hours — which
+  our `spendMinutes(0)` semantics already honoured for free) and contradicts two other
+  current rules, now logged for KAN-5: work should pay **Wage × 8 pro-rated**
+  (`Wage*8*HoursRemaining/6` on a short shift), and over-clock actions should clamp the
+  clock and still succeed rather than reject. WebFetch gets a 402 from fandom.com —
+  read it through the Chrome tools instead.
+- **Killing the API by matching 'amiss-api'/'spring-boot' in CommandLine no longer
+  works**: spring-boot-maven-plugin launches the Boot child with `-cp @<argfile>` in
+  %TEMP%, so neither string appears in the java command line. Find the owner of port
+  8080 (`Get-NetTCPConnection -LocalPort 8080 -State Listen`) and stop that pid —
+  otherwise you kill the mvnw wrapper, the orphaned server keeps answering, and a
+  "restarted" API is silently the stale build.
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an

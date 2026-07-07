@@ -18,7 +18,7 @@ class ActionCostsTest {
         assertEquals(360, d.relaxMinutes());           // 6h
         assertEquals(240, d.applyJobMinutes());        // 4h
         assertEquals(120, d.payRentMinutes());         // 2h
-        assertEquals(60, d.eatMinutes());              // 1h
+        assertEquals(0, d.eatMinutes());               // purchases cost no time (reference)
         assertEquals(0, d.shopMinutes());
         assertEquals(40, d.travelPerStepMinutes());    // cross-town (6 steps) = 4h
         assertEquals(120, d.enterBuildingMinutes());   // 2h
