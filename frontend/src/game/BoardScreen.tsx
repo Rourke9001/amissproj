@@ -9,6 +9,7 @@ import { formatMinutes } from './formatMinutes';
 import { ringSteps } from './ring';
 import { Hud } from './Hud';
 import { EndWeekModal } from './EndWeekModal';
+import { resolvePanel } from './panels/registry';
 import './board.css';
 
 interface BoardScreenProps {
@@ -111,6 +112,8 @@ export function BoardScreen({ username }: BoardScreenProps) {
     moveMutation.mutate(stop.id);
   };
 
+  const StopPanel = resolvePanel(currentStop.id);
+
   return (
     <section className="board-screen">
       <h1>Game</h1>
@@ -151,6 +154,7 @@ export function BoardScreen({ username }: BoardScreenProps) {
             onEndWeek={() => endWeekMutation.mutate()}
             endWeekPending={endWeekMutation.isPending}
           />
+          <StopPanel username={username} player={player} onNotify={pushNotification} />
         </div>
         <div className="board-clock" style={{ left: '40%', top: '75%' }}>
           <p className="board-clock-time">{player.timeDisplay}</p>

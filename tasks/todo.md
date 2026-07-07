@@ -933,3 +933,55 @@ mid-session (token cleared) that never recurred across later reloads with the
 network tracked (all /me calls 200) — likely the long-running Vite server serving
 half-swapped modules across the branch switch; watch for it in PR D's session.
 **Next: PR D (KAN-42 bank/rent panels) — awaiting Rourke's go-ahead.**
+
+---
+
+## Phase 3 / KAN-42 PR D — Bank & Rent Office panels  (2026-07-06, session 2 cont.)
+Rourke approved after PR C. Branch `feat/kan42-bank-rent` **stacked on
+`feat/kan41-hud-week-flow`** (#37 still open; auto-retargets to develop on merge).
+**Approval gate: STOP after this PR ships; PR E (KAN-43) needs Rourke's go-ahead.**
+
+- [x] JIRA: KAN-42 → In Progress (+ PR-link comment once open)
+- [x] Panel registry (`src/game/panels/registry.ts`): `locationId → PanelComponent`;
+      BoardScreen renders the current stop's panel in the centre under the HUD;
+      missing entry → `DefaultPanel` ("opens with the KAN-5 economy epic") so every
+      stop opens something
+- [x] `api/bank.ts` (`deposit`/`withdraw` → `POST .../bank/{op}` `{amount}` →
+      `BankTransactionResponse`) + `api/rent.ts` (`payRent` → `POST .../rent/pay` →
+      `RentPaymentResponse`); types mirroring the Java records
+- [x] Bank panel: bank balance, amount input, Deposit/Withdraw; client-side amount
+      validation mirroring the server (positive integer; deposit ≤ cash,
+      withdraw ≤ bank) with inline errors; server envelopes (400 invalid-amount /
+      409 insufficient-funds) also inline; success → feed + `setQueryData` from
+      `response.state`
+- [x] Rent Office panel: rent-due state (R80 due vs not due), Pay Rent button;
+      rent-not-due/insufficient-* envelopes inline; success → feed
+      (`Paid R80 rent (2h)`) + state update
+- [x] Every panel mutation invalidates `['player', username]` on rejection
+      (the KAN-41 charged-409 lesson)
+- [x] Tests 55 → 75: registry fallback, Bank validation matrix + envelope rendering
+      + invalidate-on-error, RentOffice due/not-due/pay/409, BoardScreen renders the
+      current stop's panel (BANK) and the DefaultPanel fallback
+- [x] Verify: lint / format:check / typecheck / test (75/75) / build re-run by the
+      orchestrator; live Chrome against MySQL97 + API with disposable `kan42test`:
+      DefaultPanel at Low-Cost Housing, Bank panel post-move — "abc" and
+      over-deposit/over-withdraw inline errors with no request, deposit R60 /
+      withdraw R25 (HUD + feed + panel balance all updated from the response),
+      Rent Office — rent-not-due 409 detail inline on round 1, then round 4 via
+      root: Pay Rent → "Paid R80 rent (2h)", cash 100→20, clock −2h, banner cleared,
+      panel flips to "No rent is due." (DB confirmed rent=0/cash=20/bank=35);
+      kan42test deleted as root, cascade verified
+- [x] Push; `gh pr create --base feat/kan41-hud-week-flow`; PR-link comment on KAN-42
+
+### Review — PR D (KAN-42)
+The panel registry is in and the pattern for KAN-43/44 is set: a building screen is
+one `PanelProps` component + a registry row + an api module, with the centre panel
+composition (HUD + current stop's panel) already handled by BoardScreen. Bank and
+Rent Office are fully playable: client validation mirrors the server so the round
+trip is only spent on real transactions, server problem-details render inline in
+the panel (feed stays for outcomes), and every rejection invalidates the player
+query per the KAN-41 lesson. Live verification exercised the full matrix including
+a real 4th-round rent payment — the HUD rent banner clearing off the mutation
+response, with the DB cross-checked after each step. No backend changes were
+needed; the KAN-31 endpoints held as-designed. **Next: PR E (KAN-43
+employment/university) — awaiting Rourke's go-ahead.**

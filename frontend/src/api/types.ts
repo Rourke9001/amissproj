@@ -121,3 +121,15 @@ export interface EndWeekResponse {
   debtCharged: boolean;
   state: PlayerStateDto;
 }
+
+export interface BankTransactionResponse {
+  operation: string;
+  amount: number;
+  state: PlayerStateDto;
+}
+
+export interface RentPaymentResponse {
+  amountPaid: number;
+  minutesCharged: number;
+  state: PlayerStateDto;
+}
