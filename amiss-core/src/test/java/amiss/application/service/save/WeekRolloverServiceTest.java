@@ -1,0 +1,166 @@
+package amiss.application.service.save;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import amiss.application.config.ActionCosts;
+import amiss.application.port.SaveDegrees;
+import amiss.application.port.SaveRepository;
+import amiss.domain.model.SaveState;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class WeekRolloverServiceTest {
+
+    @Mock
+    private SaveRepository saves;
+    @Mock
+    private SaveDegrees degrees;
+
+    private WeekRolloverService service() {
+        return new WeekRolloverService(saves, new GoalService(degrees), ActionCosts.defaults());
+    }
+
+    /** A save with the clock run out, ready to roll over. */
+    private SaveState weekOverSave() {
+        SaveState save = TestSaves.newSave();
+        save.setTimeMinutes(0);
+        return save;
+    }
+
+    @Test
+    void refusesWhileTimeRemains() {
+        SaveState save = TestSaves.newSave();
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertFalse(result.rolled());
+        verifyNoInteractions(saves);
+    }
+
+    @Test
+    void anUnfedWeekRollsToTheBaseBudgetAndDecaysDependability() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertTrue(result.rolled());
+        assertEquals(2, result.newRound());
+        assertFalse(result.fed());
+        assertEquals(3600, save.timeMinutes());
+        assertEquals(17, save.dependability());   // 20 - 3
+        verify(saves).update(save);
+    }
+
+    @Test
+    void aFedWeekConsumesFoodAndGetsTheLongBudget() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setEat(2);
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertTrue(result.fed());
+        assertEquals(4320, save.timeMinutes());
+        assertEquals(1, save.eat());
+    }
+
+    @Test
+    void dependabilityNeverDecaysBelowZero() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setDependability(2);
+
+        service().endWeek(save);
+
+        assertEquals(0, save.dependability());
+    }
+
+    @Test
+    void aClosedRentRoundWithUnpaidRentChargesTheLateDebt() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setRound(4);
+        save.setRent(1);
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertTrue(result.debtCharged());
+        assertEquals(80, save.debt());
+        assertFalse(result.rentDue());   // round 5 isn't a rent round
+    }
+
+    @Test
+    void everyFourthRoundFlagsRentDue() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setRound(3);
+        save.setRent(0);
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertTrue(result.rentDue());
+        assertEquals(1, save.rent());
+    }
+
+    @Test
+    void winningRequiresAllFourGoalsAtRollover() {
+        // Goals are 50/50/50/50. Build a state meeting all four:
+        // wealth (cash+bank)/100 >= 50, happiness >= 50, education 1+9*6=55 >= 50,
+        // career 1.25*40=50 >= 50 while employed.
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of(1, 2, 3, 4, 5, 6));
+        SaveState save = weekOverSave();
+        save.setCash(3000);
+        save.setBank(2000);
+        save.setJobId(TestSaves.CLERK.id());
+        save.setDependability(43);   // decays to 40 before the check: career hits exactly 50
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertTrue(result.won());
+        assertTrue(save.won());
+    }
+
+    @Test
+    void oneMissingGoalIsNotAWin() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of(1, 2, 3, 4, 5, 6));
+        SaveState save = weekOverSave();
+        save.setCash(3000);
+        save.setBank(2000);
+        save.setJobId(TestSaves.CLERK.id());
+        save.setDependability(42);   // decays to 39: career 48 < 50
+
+        assertFalse(service().endWeek(save).won());
+    }
+
+    @Test
+    void unemployedCareerIsZeroSoNoWin() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of(1, 2, 3, 4, 5, 6));
+        SaveState save = weekOverSave();
+        save.setCash(9000);
+        save.setDependability(90);
+        save.addHappiness(50);
+
+        assertFalse(service().endWeek(save).won());
+    }
+
+    @Test
+    void wonIsStickyEvenIfGoalsLaterSlip() {
+        // No degrees stub: a won save short-circuits the goal check entirely.
+        SaveState save = weekOverSave();
+        save.setWon(true);
+        save.setCash(0);
+
+        assertTrue(service().endWeek(save).won());
+        assertTrue(save.won());
+    }
+}
