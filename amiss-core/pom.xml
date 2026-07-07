@@ -14,9 +14,9 @@
     <packaging>jar</packaging>
 
     <name>AmissProj :: core</name>
-    <description>Game rules and persistence: domain model + board, application
-        services behind repository ports, JDBC adapters, Flyway migrations.
-        UI-free — consumed by both the Swing client and the REST API.</description>
+    <description>Game rules: domain model + board, application services behind
+        repository ports, Flyway migration sources. UI- and Spring-free —
+        consumed by the amiss-api REST module.</description>
 
     <dependencies>
         <!-- MySQL JDBC driver (Community build from Maven Central). -->
@@ -27,8 +27,10 @@
 
         <!--
           Flyway versioned schema migrations (classpath:db/migration), applied at
-          app start by FlywayMigrator as the amiss_migrator user (the runtime
-          amiss user has no DDL rights). flyway-mysql is the MySQL support module.
+          API startup by Spring Boot's auto-configured Flyway as the amiss_migrator
+          user (the runtime amiss user has no DDL rights). The SQL lives here so the
+          rules and their schema version together; flyway-mysql is the MySQL support
+          module. amiss-api takes flyway + the JDBC driver transitively from this pom.
         -->
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -40,9 +42,8 @@
         </dependency>
 
         <!--
-          Logging: core only speaks the SLF4J facade. The backend is the app's
-          choice — logback ships with amiss-swing; Spring Boot brings its own in
-          amiss-api. (Test scope below still needs a real backend so
+          Logging: core only speaks the SLF4J facade; Spring Boot brings the
+          backend in amiss-api. (Test scope below still needs a real backend so
           logback-test.xml can silence the deliberate SQLException fallbacks.)
         -->
         <dependency>

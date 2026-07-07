@@ -8,12 +8,12 @@ import amiss.domain.model.User;
 
 /**
  * Wires up the game's service layer for one signed-in {@link User} over a set of
- * repository <em>ports</em>. Given the ports (whose concrete JDBC adapters are built by the
- * infrastructure composition root, {@code amiss.infrastructure.GameContext}), it constructs
- * every service once in dependency order. A screen holds a single {@code GameServices} and
- * reaches the rules through {@link #time()}, {@link #stats()}, {@link #jobs()},
- * {@link #food()} and {@link #education()}. This class depends only on ports and the domain,
- * never on a database — so the same wiring survives a swap of the persistence technology.
+ * repository <em>ports</em> (whose concrete JPA adapters are built by the API's composition
+ * root, {@code amiss.api.config.PersistenceConfig}), constructing every service once in
+ * dependency order. A caller holds a single {@code GameServices} and reaches the rules
+ * through {@link #time()}, {@link #stats()}, {@link #jobs()}, {@link #food()} and
+ * {@link #education()}. This class depends only on ports and the domain, never on a
+ * database — so the same wiring survives a swap of the persistence technology.
  */
 public class GameServices {
 

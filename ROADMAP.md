@@ -152,7 +152,9 @@ banking roles hire for.*
 *Stray thoughts land here until they're promoted into a phase.*
 
 ### Epic: UI standardization & polish
-*Make the Swing screens look like one coherent app before any bigger UI work.*
+*Was: make the Swing screens coherent. **The Swing client was retired in July 2026
+(KAN-51)** once the REST API + React SPA covered the game — the remaining items
+apply to the SPA where still relevant.*
 - [x] **UI foundation** (June 2026) — removed the NetBeans coupling that blocked
       hand-editing: deleted the `.form` designer files, fixed the IDE classpath
       (`.vscode/settings.json` → `dist/lib`), and replaced the dead hard-coded
