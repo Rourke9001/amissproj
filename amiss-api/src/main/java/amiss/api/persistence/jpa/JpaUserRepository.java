@@ -15,11 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link UserJpaRepository} (KAN-34). Reproduces the core's {@code
  * JdbcUserRepository}'s exact missing-row fallbacks and bank-transfer semantics;
  * each mutating method is its own transaction, mirroring the JDBC adapter's
- * autocommit-per-call behaviour (no broader transaction spans multiple port calls).
+ * autocommit-per-call behaviour.
  *
  * <p>Not a Spring stereotype bean: wired explicitly by {@code
  * amiss.api.config.PersistenceConfig} so exactly one {@link UserRepository} bean
- * exists, the same way the JDBC adapter was.
+ * exists, matching the JDBC adapter's wiring.
  */
 public class JpaUserRepository implements UserRepository {
 

@@ -1,21 +1,20 @@
 package amiss.domain.board;
 
 /**
- * The game board: a 5-wide by 4-tall grid whose perimeter forms a loop of 13 stops, with the
- * bottom-middle cell {@code (3,2)} reserved for the turn timer and the inner cells left blank
- * (they hold the board art and the notification area). Laid out like a clock face: the starting
- * apartment, Low-Cost Housing, sits at top-middle {@code (0,2)} (12 o'clock) and the timer sits
- * directly opposite at bottom-middle {@code (3,2)} (6 o'clock). The remaining stops are ordered
- * clockwise from there.
+ * The game board: a 5-wide by 4-tall grid whose perimeter forms a loop of 13 stops. The
+ * bottom-middle cell {@code (3,2)} is reserved for the turn timer; inner cells are left blank
+ * for the board art and notification area. Laid out like a clock face: the starting apartment
+ * (Low-Cost Housing) sits at top-middle {@code (0,2)} (12 o'clock), the timer sits opposite at
+ * {@code (3,2)} (6 o'clock), and the remaining stops run clockwise from there.
  *
- * <p>This replaces the old {@code TwoDGrid} 4x4 model and the hard-coded distance maths in
- * {@code TimeService.getMulti}. Movement cost is a clean <em>ring distance</em> — the fewer of
- * the clockwise / anticlockwise steps around the loop — so the model scales to any number of
- * stops and has no special-case wrap-around branches.
+ * <p>Replaces the old {@code TwoDGrid} 4x4 model and the hard-coded distance maths in
+ * {@code TimeService.getMulti}. Movement cost is a clean <em>ring distance</em> (the fewer of
+ * clockwise/anticlockwise steps around the loop), so the model scales to any number of stops
+ * with no special-case wrap-around branches.
  *
- * <p>Coordinates are {@code (row, col)} with {@code row} 0..3 (top to bottom) and {@code col}
- * 0..4 (left to right), matching how the player's position is stored ({@code xpos=row},
- * {@code ypos=col}). Pure domain: no Swing, no persistence.
+ * <p>Coordinates are {@code (row, col)}, {@code row} 0..3 top-to-bottom and {@code col} 0..4
+ * left-to-right, matching the stored player position ({@code xpos=row}, {@code ypos=col}).
+ * Pure domain: no Swing, no persistence.
  */
 public final class Board {
 

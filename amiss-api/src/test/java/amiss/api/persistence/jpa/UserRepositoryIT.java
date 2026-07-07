@@ -15,12 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Integration test for {@link JpaUserRepository} (the {@link UserRepository} port,
- * {@code tbluser}) against a real, freshly-migrated MySQL container (KAN-35). Exercises
- * the exact behaviour {@code JpaUserRepositoryTest}'s mocks only assert was *called*:
- * real defaults, real atomic conditional bank UPDATEs, and real missing-row SQL.
- *
- * <p>See {@link MySqlITSupport} for the container/transaction wiring. Every test cleans
- * up the rows it inserted in {@link #cleanUp()} — there is no free rollback.
+ * {@code tbluser}) against a real, freshly-migrated MySQL container (KAN-35). Exercises the
+ * exact behaviour {@code JpaUserRepositoryTest}'s mocks only assert was *called* — real
+ * defaults, real atomic conditional bank UPDATEs, real missing-row SQL. See
+ * {@link MySqlITSupport} for the container/transaction wiring; every test cleans up the
+ * rows it inserted in {@link #cleanUp()} — there is no free rollback.
  */
 class UserRepositoryIT extends MySqlITSupport {
 

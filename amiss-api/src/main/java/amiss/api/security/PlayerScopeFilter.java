@@ -16,20 +16,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * IDOR guard (KAN-37): the single enforcement point for "an authenticated player may only
- * touch their own state". Every {@code /api/players/{username}} and
- * {@code /api/players/{username}/**} route is matched here by path alone, rather than by a
- * per-method annotation on each controller that a future endpoint could simply forget to add.
+ * touch their own state", matching {@code /api/players/{username}} and
+ * {@code .../{username}/**} by path alone — not a per-method annotation a future endpoint
+ * could forget to add.
  *
- * <p>{@link SecurityConfig} registers this with
- * {@code addFilterAfter(..., AuthorizationFilter.class)}, so it only ever runs once the
- * {@code authorizeHttpRequests} rules have already let an <em>authenticated</em> request
- * through — an anonymous caller is rejected with 401 by that chain first and never reaches
- * this filter.
+ * <p>{@link SecurityConfig} registers this with {@code addFilterAfter(...,
+ * AuthorizationFilter.class)}, so it runs only after {@code authorizeHttpRequests} has let an
+ * <em>authenticated</em> request through; anonymous callers are already rejected with 401.
  *
- * <p>On a mismatch this throws {@link AccessDeniedException} rather than writing the HTTP
- * response itself: {@code ExceptionTranslationFilter} (upstream in the chain) catches it and
- * hands it to the {@code AccessDeniedHandler} bean, so this filter and any future
- * access-denied path share the exact same RFC 7807 envelope.
+ * <p>On a mismatch this throws {@link AccessDeniedException} instead of writing the response:
+ * {@code ExceptionTranslationFilter} hands it to the {@code AccessDeniedHandler} bean, so this
+ * filter shares the same RFC 7807 envelope as any other access-denied path.
  */
 public class PlayerScopeFilter extends OncePerRequestFilter {
 

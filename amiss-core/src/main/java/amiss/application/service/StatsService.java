@@ -12,11 +12,10 @@ import org.slf4j.LoggerFactory;
 /**
  * The player's money, rent/debt, work experience and happiness, plus the work/eat/shop action
  * orchestration (was {@code Stats}). {@link #work()}, {@link #eat(int)},
- * {@link #buyGroceries(int, int)} and {@link #buyClothes(int, int)} are the typed rule
- * methods shared by Swing and the REST API; {@link #workMain()} and {@link #eatMain(int)}
- * are thin Swing-era formatters over {@link #work()}/{@link #eat(int)} that rebuild the
- * exact same {@link ActionResult} strings. Persistence failures are logged, not shown in
- * the UI.
+ * {@link #buyGroceries(int, int)} and {@link #buyClothes(int, int)} are the typed rule methods
+ * shared by Swing and the REST API; {@link #workMain()}/{@link #eatMain(int)} are thin
+ * Swing-era formatters over them producing the same {@link ActionResult} strings. Persistence
+ * failures are logged, not shown in the UI.
  */
 public class StatsService {
 
@@ -323,10 +322,9 @@ public class StatsService {
 
     /**
      * Checks if the user has enough time and cash to buy clothes (was the body of
-     * {@code ClothesStoreGUI.btnCasualActionPerformed}), <strong>then</strong> updates the
-     * clothing level. The original Swing handler set the clothing level before this check,
-     * so a failed purchase still upgraded the player's clothes for free; this method
-     * validates and charges first, fixing that bug.
+     * {@code ClothesStoreGUI.btnCasualActionPerformed}). Validates and charges
+     * <strong>before</strong> updating the clothing level — the original Swing handler set
+     * the level first, so a failed purchase still upgraded it for free; this fixes that bug.
      * @param level the clothing level purchased
      * @param price price of the clothing item
      * @return the typed purchase outcome

@@ -14,9 +14,8 @@ import org.springframework.data.repository.query.Param;
  *
  * <p>Every {@code find*} projection returns {@link Optional#empty()} when no row
  * matches; {@link JpaUserRepository} (the port adapter) applies the same fallback
- * defaults the JDBC adapter always used. Every {@code @Modifying} query is a single
- * UPDATE statement — no read-modify-write — so each stays the atomic, one-statement
- * operation the JDBC version was.
+ * defaults the JDBC adapter always used. Every {@code @Modifying} query is a single,
+ * atomic UPDATE statement, matching the JDBC version's one-statement operations.
  */
 public interface UserJpaRepository extends JpaRepository<UserEntity, String> {
 

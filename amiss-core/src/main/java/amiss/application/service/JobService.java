@@ -61,13 +61,13 @@ public class JobService {
     }
 
     /**
-     * Applies for {@code jobName}: checks it exists, charges the application time, then
-     * checks the player's education. Mirrors {@code EmploymentGUI.btnCookActionPerformed}
-     * exactly: the 4h application time is charged even when education is insufficient (the
-     * game rule — applying always takes 4 hours, win or lose). Unlike {@link #neededEdu},
-     * this calls the port directly so a SQL failure ({@link ApplyOutcome.Status#FAILED}) can
-     * be told apart from a genuinely unknown job ({@link ApplyOutcome.Status#UNKNOWN_JOB}),
-     * which Swing's fixed job buttons can never send but the API might.
+     * Applies for {@code jobName}: checks it exists, charges application time, then checks
+     * education. Mirrors {@code EmploymentGUI.btnCookActionPerformed} — the 4h charge applies
+     * even on insufficient education (applying always costs 4 hours, win or lose). Unlike
+     * {@link #neededEdu}, calls the port directly so a SQL failure
+     * ({@link ApplyOutcome.Status#FAILED}) is distinguishable from a genuinely unknown job
+     * ({@link ApplyOutcome.Status#UNKNOWN_JOB}) — which only the API, not Swing's fixed
+     * buttons, can trigger.
      * @param jobName field name of the job
      * @return the typed apply outcome
      */

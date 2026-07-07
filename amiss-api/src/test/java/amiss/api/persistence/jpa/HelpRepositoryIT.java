@@ -12,11 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Integration test for {@link JpaHelpRepository} (the {@link HelpRepository} port,
- * {@code tblhelp}) against a real, freshly-migrated MySQL container (KAN-35).
- * {@code tblhelp} is reference data owned by {@code V2__seed_reference_data.sql} —
- * read-only, so no {@code @AfterEach} cleanup is needed here.
- *
- * <p>See {@link MySqlITSupport} for the container/transaction wiring.
+ * {@code tblhelp}) against a real, freshly-migrated MySQL container (KAN-35). {@code tblhelp}
+ * is reference data owned by {@code V2__seed_reference_data.sql} — read-only, so no
+ * {@code @AfterEach} cleanup is needed here. See {@link MySqlITSupport} for the
+ * container/transaction wiring.
  */
 class HelpRepositoryIT extends MySqlITSupport {
 
