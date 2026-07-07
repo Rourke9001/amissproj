@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BoardScreen } from './BoardScreen';
 import { ApiError } from '../api/http';
 import { getBoard } from '../api/board';
-import { getPlayerState, move } from '../api/player';
+import { endWeek, getPlayerState, move } from '../api/player';
 import type { BoardDto, PlayerStateDto } from '../api/types';
 
 vi.mock('../api/board', () => ({
@@ -15,11 +15,13 @@ vi.mock('../api/board', () => ({
 vi.mock('../api/player', () => ({
   getPlayerState: vi.fn(),
   move: vi.fn(),
+  endWeek: vi.fn(),
 }));
 
 const getBoardMock = vi.mocked(getBoard);
 const getPlayerStateMock = vi.mocked(getPlayerState);
 const moveMock = vi.mocked(move);
+const endWeekMock = vi.mocked(endWeek);
 
 // Mirrors amiss-core's Board.CELLS clockwise ring layout.
 const BOARD_FIXTURE: BoardDto = {
@@ -109,37 +111,30 @@ describe('BoardScreen', () => {
     expect(token.style.top).toBe('62.5%');
   });
 
-  it('shows the status line with the current round, time and cash', async () => {
+  it('shows the clock overlay with the current time and round', async () => {
     renderBoardScreen();
     await screen.findByRole('button', { name: 'Bank' });
 
-    const status = document.querySelector('.board-status');
-    expect(status?.textContent).toContain('72h');
-    expect(status?.textContent).toContain('R500');
-    expect(status?.textContent).toContain('3');
+    const clock = document.querySelector('.board-clock');
+    expect(clock?.textContent).toContain('72h');
+    expect(clock?.textContent).toContain('Round 3');
   });
 
-  it('clicking another stop shows the confirm panel with steps and cost', async () => {
-    const user = userEvent.setup();
+  it('shows the travel cost tooltip on a non-current hotspot', async () => {
     renderBoardScreen();
 
-    await user.click(await screen.findByRole('button', { name: 'Low-Cost Housing' }));
-
-    expect(
-      await screen.findByText('Travel to Low-Cost Housing: 4 stops, costs 4h 40m'),
-    ).toBeInTheDocument();
+    const lowCostHousing = await screen.findByRole('button', { name: 'Low-Cost Housing' });
+    expect(within(lowCostHousing).getByText('4 stops — 4h 40m')).toBeInTheDocument();
   });
 
-  it('clicking the current stop shows the Enter wording with the enter-only cost', async () => {
-    const user = userEvent.setup();
+  it('shows the Enter tooltip on the current hotspot', async () => {
     renderBoardScreen();
 
-    await user.click(await screen.findByRole('button', { name: 'Bank' }));
-
-    expect(await screen.findByText('Enter Bank: costs 2h')).toBeInTheDocument();
+    const bank = await screen.findByRole('button', { name: 'Bank' });
+    expect(within(bank).getByText('Enter — 2h')).toBeInTheDocument();
   });
 
-  it('confirming calls move() with the target id and updates state from the response', async () => {
+  it('clicking a non-current stop immediately calls move (no confirm step)', async () => {
     moveMock.mockResolvedValue({
       target: 'LOW_COST_HOUSING',
       steps: 4,
@@ -154,15 +149,18 @@ describe('BoardScreen', () => {
     renderBoardScreen();
 
     await user.click(await screen.findByRole('button', { name: 'Low-Cost Housing' }));
-    await user.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(moveMock).toHaveBeenCalledWith('alice', 'LOW_COST_HOUSING');
-    expect(await screen.findByText('Moved to Low-Cost Housing (4h 40m)')).toBeInTheDocument();
-    const status = document.querySelector('.board-status');
-    expect(status?.textContent).toContain('67h 20m');
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
+
+    const feed = screen.getByRole('log', { name: 'Notifications' });
+    expect(await within(feed).findByText('Moved to Low-Cost Housing (4h 40m)')).toBeInTheDocument();
+
+    const clock = document.querySelector('.board-clock');
+    expect(clock?.textContent).toContain('67h 20m');
   });
 
-  it('shows the problem detail as the notice on a 409 insufficient-time from move()', async () => {
+  it('shows the problem detail in the feed on a move error', async () => {
     moveMock.mockRejectedValue(
       new ApiError(409, {
         type: 'urn:amiss:insufficient-time',
@@ -175,8 +173,121 @@ describe('BoardScreen', () => {
     renderBoardScreen();
 
     await user.click(await screen.findByRole('button', { name: 'Low-Cost Housing' }));
-    await user.click(screen.getByRole('button', { name: 'Confirm' }));
 
-    expect(await screen.findByText('Not enough time left this week.')).toBeInTheDocument();
+    const feed = screen.getByRole('log', { name: 'Notifications' });
+    expect(await within(feed).findByText('Not enough time left this week.')).toBeInTheDocument();
+  });
+
+  it('refetches the player state when a move is rejected (an exact-zero landing is charged server-side)', async () => {
+    getPlayerStateMock
+      .mockResolvedValueOnce(playerFixture({ timeMinutes: 120, timeDisplay: '2h' }))
+      .mockResolvedValue(playerFixture({ timeMinutes: 0, timeDisplay: '0h', weekOver: true }));
+    moveMock.mockRejectedValue(
+      new ApiError(409, {
+        type: 'urn:amiss:week-over',
+        title: 'Conflict',
+        status: 409,
+        detail: "Player 'alice' has used up the week; end it via POST .../end-week",
+      }),
+    );
+    const user = userEvent.setup();
+    renderBoardScreen();
+
+    await user.click(await screen.findByRole('button', { name: 'Bank' }));
+
+    // The 409 lands in the feed AND the state is refetched, so the charged clock
+    // and the End Week button appear without a manual reload.
+    expect(await screen.findByRole('button', { name: 'End Week' })).toBeInTheDocument();
+    expect(getPlayerStateMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    const clock = document.querySelector('.board-clock');
+    expect(clock?.textContent).toContain('0h');
+  });
+
+  it('shows a fallback message in the feed on a non-ApiError move failure', async () => {
+    moveMock.mockRejectedValue(new Error('network down'));
+    const user = userEvent.setup();
+    renderBoardScreen();
+
+    await user.click(await screen.findByRole('button', { name: 'Low-Cost Housing' }));
+
+    const feed = screen.getByRole('log', { name: 'Notifications' });
+    expect(await within(feed).findByText('Could not reach the server.')).toBeInTheDocument();
+  });
+
+  it('shows HUD stats sourced from the player state', async () => {
+    getPlayerStateMock.mockResolvedValue(
+      playerFixture({ job: { name: 'Cashier', hourlyWage: 25, location: 'Z_MART' } }),
+    );
+    renderBoardScreen();
+
+    await screen.findByText('Bank', { selector: '.hud-location-name' });
+
+    expect(screen.getByText('R500')).toBeInTheDocument();
+    expect(screen.getByText('R100')).toBeInTheDocument();
+    expect(screen.getByText('Cashier R25/h')).toBeInTheDocument();
+    expect(screen.getByText('2 wk')).toBeInTheDocument();
+    expect(screen.getByText('50')).toBeInTheDocument();
+    expect(screen.getByText('500 / 5000')).toBeInTheDocument();
+  });
+
+  it('does not show the End Week button while the week is still running', async () => {
+    renderBoardScreen();
+    await screen.findByRole('button', { name: 'Bank' });
+
+    expect(screen.queryByRole('button', { name: 'End Week' })).not.toBeInTheDocument();
+  });
+
+  it('runs the End Week flow: button click, modal summary, close, and cache update', async () => {
+    getPlayerStateMock.mockResolvedValue(playerFixture({ weekOver: true, round: 3 }));
+    endWeekMock.mockResolvedValue({
+      round: 4,
+      fed: false,
+      rentDue: true,
+      debtCharged: true,
+      state: playerFixture({ weekOver: false, round: 4, timeDisplay: '72h' }),
+    });
+    const user = userEvent.setup();
+    renderBoardScreen();
+
+    const endWeekButton = await screen.findByRole('button', { name: 'End Week' });
+    await user.click(endWeekButton);
+
+    expect(endWeekMock).toHaveBeenCalledWith('alice');
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Week over — Round 4 begins')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('You went hungry — the coming week is shorter.'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('Unpaid rent was charged to your debt (+R80).'),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText('Rent is due this round.')).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    const clock = document.querySelector('.board-clock');
+    expect(clock?.textContent).toContain('Round 4');
+  });
+
+  it('shows the problem detail in the feed on an end-week error (week not over)', async () => {
+    getPlayerStateMock.mockResolvedValue(playerFixture({ weekOver: true }));
+    endWeekMock.mockRejectedValue(
+      new ApiError(409, {
+        type: 'urn:amiss:week-not-over',
+        title: 'Conflict',
+        status: 409,
+        detail: 'The week is not over yet.',
+      }),
+    );
+    const user = userEvent.setup();
+    renderBoardScreen();
+
+    await user.click(await screen.findByRole('button', { name: 'End Week' }));
+
+    const feed = screen.getByRole('log', { name: 'Notifications' });
+    expect(await within(feed).findByText('The week is not over yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

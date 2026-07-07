@@ -869,3 +869,67 @@ clears it — documented in code where the constraint lives. The acceptance crit
 verified end-to-end in a real browser: dev-server shell page renders live
 `GET /api/highscores` data through the `/api` proxy, and the RequireAuth guard bounces
 `/game` to `/login`. Next: KAN-39 (login/register screen over this plumbing).
+
+---
+
+## Phase 3 / KAN-41 PR C — HUD & week flow  (2026-07-06, session 2)
+PRs #35/#36 merged → branch `feat/kan41-hud-week-flow` off `develop` (not stacked).
+Folds Rourke's KAN-41 design input into the PR C spec. **Approval gate: after this PR
+ships, STOP and wait for Rourke's go-ahead before PR D (KAN-42).** KAN-45 stays on hold.
+
+- [x] chore: `.gitattributes` `frontend/** text eol=lf` — kills the 19-file
+      autocrlf false-positive noise (`git add --renormalize` refreshed the stat cache;
+      trailing `*.png binary` rule still wins for assets)
+- [x] JIRA: KAN-41 → In Progress (+ PR-link comment once open)
+- [x] **Design fold-in (replaces PR B's confirm flow):** remove the click-to-move
+      confirmation entirely — original Jones behaviour: clicking a stop immediately
+      POSTs the move / enters; travel+enter cost becomes a **hover tooltip** on each
+      hotspot; move errors go to the notification feed
+- [x] Centre-panel HUD from `PlayerStateDto` (new `Hud.tsx`): cash, bank, debt
+      (hidden at 0), job (name + wage, or Unemployed), education + study progress,
+      clothing, food weeks, happiness, goal progress bars
+      (`goals.{cash,happiness,workExperience,education}`)
+- [x] Notification feed (newest first, capped at 6) replacing BoardScreen's single
+      `notice` line (`role="log"`)
+- [x] Clock in the timer cell (3,2): DOM overlay with `timeDisplay` + round (no new
+      bitmap; Rourke's board art owns that cell)
+- [x] `api/player.ts` `endWeek()`; End Week button (offered when `weekOver`) →
+      `POST end-week` → modal from `EndWeekResponse` (fed / rentDue / debtCharged,
+      new `EndWeekModal.tsx`) → cache update; rent-due warning banner off
+      `state.rentDue`
+- [x] Round start stays data-driven off `PlayerStateDto.location` (Le Security
+      round-start upgrade = KAN-50, backend, not now)
+- [x] **Found live, fixed + regression-tested:** a move landing exactly on 0 minutes
+      is charged server-side but answered 409 week-over (PR5's documented Swing
+      parity), so the client's cached clock went stale — move `onError` now
+      invalidates `['player', username]` and refetches truth
+- [x] Tests 38 → 55: hover tooltip, immediate move, HUD render (own `Hud.test.tsx`),
+      feed (success/ApiError/fallback), end-week modal matrix + 409, charged-409
+      refetch regression
+- [x] Verify: lint / format:check / typecheck / test (55/55) / build re-run by the
+      orchestrator; live Chrome session against MySQL97 + API (register kan41test,
+      no-confirm move Low-Cost Housing → Bank "4h 40m", tooltip on hover, HUD +
+      clock update from the mutation response, exact-zero enter → refetch, End Week
+      → "Round 2 begins"/went-hungry modal → 60h unfed week, token reset to the
+      apartment, rent banner); kan41test deleted as root (cascade verified)
+- [x] Push; `gh pr create --base develop`; PR-link comment on KAN-41
+
+### Review — PR C (KAN-41)
+The centre panel is now the Jones-style HUD driven entirely by `PlayerStateDto`
+(every mutation response updates it via `setQueryData` — no reload), the week
+lifecycle is playable end-to-end in the browser, and Rourke's design input is in:
+clicking a stop moves immediately (cost on hover), the confirm flow is gone. The
+one real finding came from live verification, not tests: the "exact-zero landing"
+move is *charged but 409'd* by design (Swing parity, PR5), which left the cached
+clock stale — fixed client-side by invalidating the player query on any move
+rejection, pinned with a regression test. Two notes for Rourke, both backend
+behaviour rendered faithfully, changed nothing: (1) new players are seeded
+`rent = 1`, so the rent-due banner shows from round 1 even though rent is only
+payable/chargeable on 4th rounds — if that reads wrong it's a seed/DTO question
+(KAN-5 economy epic territory); (2) `board.png` + the 13 storefront crops are
+already Rourke's new art and rendered perfectly with zero code changes — the
+asset-manifest bet paid off. One unexplained one-off: a single bounce to /login
+mid-session (token cleared) that never recurred across later reloads with the
+network tracked (all /me calls 200) — likely the long-running Vite server serving
+half-swapped modules across the branch switch; watch for it in PR D's session.
+**Next: PR D (KAN-42 bank/rent panels) — awaiting Rourke's go-ahead.**

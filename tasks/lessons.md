@@ -337,6 +337,27 @@ Add to this after any correction or non-obvious gotcha.
   `$_.Exception.Response.GetResponseStream()` — plain `-SkipHttpErrorCheck` is
   PowerShell 7-only.
 
+## Phase 3 / KAN-41 HUD & week flow
+- **A 409 does not mean "nothing happened" on this API.** `POST /move` landing exactly on
+  0 minutes is *charged and persisted* server-side but answered 409 week-over (deliberate
+  Swing parity, documented in PR5's spec) — so a client that only updates state from
+  success responses shows a stale clock. Rule for every SPA mutation against this API:
+  on rejection, `invalidateQueries(['player', username])` and refetch truth instead of
+  trusting the cache. Found live in Chrome (unit tests with mocked api modules can't
+  catch it); pinned with a refetch regression test.
+- **`git status` stays noisy after adding an eol .gitattributes rule until the stat cache
+  is refreshed** — the files were already LF in index *and* working tree, but git's
+  cached stat data still flagged them; `git add --renormalize <dir>` (stages nothing)
+  clears it. Attribute order matters: keep `*.png binary` *after* `frontend/** text
+  eol=lf` so the later line wins for assets.
+- **`PlayerStateDto.stats.educationProgress` is a study count (1-based `prog` out of
+  10), not a percentage** — same trap as `studiesRemaining` in PR9; check the assembler
+  (`education.getProg()`) before formatting any DTO field whose unit isn't obvious.
+- **New players are seeded `rent = 1`** (`insertNewUser`/`resetUser`), so `rentDue` is
+  true from round 1 even though rent is only payable (RentService) and chargeable
+  (TurnService) on 4th rounds. Frontend renders it faithfully; flagged to Rourke as a
+  design question, not silently "fixed".
+
 ## Phase 1 / backend hardening
 - **BCrypt hashes are always 60 chars** — the `password` column must be
   `VARCHAR(60)`+ or hashes silently truncate. `setup.sql` widens it with an
