@@ -146,7 +146,7 @@ class FoodControllerTest {
                 .andExpect(jsonPath("$.price").value(32))
                 .andExpect(jsonPath("$.ate").value(false))
                 .andExpect(jsonPath("$.reason").value("INSUFFICIENT_CASH"))
-                .andExpect(jsonPath("$.minutesCharged").value(60));
+                .andExpect(jsonPath("$.minutesCharged").value(0)); // eating costs no time
     }
 
     @Test
@@ -161,7 +161,7 @@ class FoodControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ate").value(true))
                 .andExpect(jsonPath("$.reason").doesNotExist())
-                .andExpect(jsonPath("$.minutesCharged").value(60))
+                .andExpect(jsonPath("$.minutesCharged").value(0)) // eating costs no time
                 .andExpect(jsonPath("$.state.username").value("bob"));
     }
 

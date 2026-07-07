@@ -1109,3 +1109,40 @@ you already have 0–1 weeks stored tops the counter to 1 rather than stacking
 server's number faithfully, so the UI never lies about it. **The KAN-39→44
 chain is done: #35/#36 merged, #37 → #38 → #39 → #40 stacked and CI-green.
 KAN-45 (highscores/win) stays on hold for Rourke's design input.**
+
+---
+
+## Fix: eating costs no time — reference-accuracy from the Jones wiki  (2026-07-07)
+Rourke shared https://jonesinthefastlane.fandom.com/wiki/Hour ("eating shouldn't
+cost you"). The wiki's Hour-cost table confirms it: eating is absent, "some
+actions (like purchasing Items) cost none", and a player at 0 hours inside a
+building may still perform no-cost actions. Our `eat 60` was an invention.
+Branch `fix/eat-costs-no-time` stacked on `feat/kan44-food-shops` (PR G).
+
+- [x] `ActionCosts.defaults()`: eat 60 → **0** (one change, shared by Swing +
+      API + SPA; still config-overridable via `AMISS_COSTS_EAT_MINUTES`);
+      javadoc cites the purchases-cost-none reference rule
+- [x] Bonus parity for free: `spendMinutes(0)` at 0 remaining is not rejected,
+      so eating while out of hours now works — matching the wiki's
+      "may still perform any action that does not cost Hours"
+- [x] Core tests: `ActionCostsTest` re-pinned; orchestration eat tests updated
+      (success charges nothing; insufficient-cash charges nothing — renamed
+      from "StillChargesTheHour"; the INSUFFICIENT_TIME branch stays covered
+      via an explicitly-configured cost table since it is config-only now)
+- [x] API tests: `FoodControllerTest` minutesCharged 60 → 0
+- [x] SPA: eat messages drop the time suffix when `minutesCharged` is 0
+      ("Ate a Burger (R32)"); the suffix still renders for deployments that
+      configure an eat cost (tested both ways); tests 131 → 132
+- [x] Verify: core+api 157 tests green; frontend 132/132 + lint/format/
+      typecheck/build; API restarted (gotcha: the Boot child process's command
+      line is an argfile — kill by port owner, not 'amiss-api' match); live
+      Chrome as `eattest`: moved 4h → 68h, ate a Burger → feed "Ate a Burger
+      (R32)", clock still 68h, DB time 4080/cash 68/eat 1; row deleted as root
+- [x] **Other wiki findings recorded for Rourke (not changed):** work pays
+      Wage × 8 pro-rated (`(Wage*8*HoursRemaining/6)` on short shifts) vs our
+      salary-once-per-shift; the reference has no fed-72h week — it docks 20h
+      for Starvation at turn start; reference actions that exceed the clock
+      clamp to end-of-turn and still succeed (except work), ours reject with
+      insufficient-time; movement fractional ~4h cross-board (ours: 6×40min+2h
+      ≈ matches). All KAN-5 economy-epic material.
+- [x] Push; PR G `gh pr create --base feat/kan44-food-shops`; comment on KAN-44

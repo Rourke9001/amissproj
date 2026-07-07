@@ -97,13 +97,13 @@ describe('MonolithBurgersPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('eats successfully, calls the api with the item id, notifies with price and time, and updates the cache', async () => {
+  it('eats successfully, calls the api with the item id, notifies without a time cost, and updates the cache', async () => {
     eatMock.mockResolvedValue({
       item: 'BURGER',
       price: 32,
       ate: true,
       reason: null,
-      minutesCharged: 60,
+      minutesCharged: 0, // eating costs no time (reference rule)
       state: playerFixture({ cash: 468, foodWeeks: 1 }),
     });
     const user = userEvent.setup();
@@ -113,18 +113,36 @@ describe('MonolithBurgersPanel', () => {
     await user.click(within(burgerRow).getByRole('button', { name: 'Eat' }));
 
     expect(eatMock).toHaveBeenCalledWith('alice', 'BURGER');
-    await waitFor(() => expect(onNotify).toHaveBeenCalledWith('Ate a Burger (R32, 1h)'));
+    await waitFor(() => expect(onNotify).toHaveBeenCalledWith('Ate a Burger (R32)'));
     expect(queryClient.getQueryData(['player', 'alice'])).toMatchObject({ cash: 468 });
   });
 
-  it('reports a charged-but-not-fed rejection (ate:false) as an outcome, not an error, and still updates the cache', async () => {
+  it('mentions the time only when a deployment configures an eat cost', async () => {
+    eatMock.mockResolvedValue({
+      item: 'BURGER',
+      price: 32,
+      ate: true,
+      reason: null,
+      minutesCharged: 60, // AMISS_COSTS_EAT_MINUTES override in play
+      state: playerFixture({ cash: 468, foodWeeks: 1 }),
+    });
+    const user = userEvent.setup();
+    const { onNotify } = renderPanel(playerFixture());
+
+    const burgerRow = (await screen.findByText('Burger')).closest('li') as HTMLElement;
+    await user.click(within(burgerRow).getByRole('button', { name: 'Eat' }));
+
+    await waitFor(() => expect(onNotify).toHaveBeenCalledWith('Ate a Burger (R32, 1h)'));
+  });
+
+  it('reports an unaffordable eat (ate:false) as an outcome, not an error, and still updates the cache', async () => {
     eatMock.mockResolvedValue({
       item: 'BURGER',
       price: 32,
       ate: false,
       reason: 'INSUFFICIENT_CASH',
-      minutesCharged: 60,
-      state: playerFixture({ timeMinutes: 4260, timeDisplay: '71h' }),
+      minutesCharged: 0,
+      state: playerFixture({ cash: 10 }),
     });
     const user = userEvent.setup();
     const { onNotify, queryClient } = renderPanel(playerFixture());
@@ -132,10 +150,8 @@ describe('MonolithBurgersPanel', () => {
     const burgerRow = (await screen.findByText('Burger')).closest('li') as HTMLElement;
     await user.click(within(burgerRow).getByRole('button', { name: 'Eat' }));
 
-    await waitFor(() =>
-      expect(onNotify).toHaveBeenCalledWith("Couldn't afford the Burger (1h spent)"),
-    );
-    expect(queryClient.getQueryData(['player', 'alice'])).toMatchObject({ timeDisplay: '71h' });
+    await waitFor(() => expect(onNotify).toHaveBeenCalledWith("Couldn't afford the Burger"));
+    expect(queryClient.getQueryData(['player', 'alice'])).toMatchObject({ cash: 10 });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
