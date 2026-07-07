@@ -1188,3 +1188,31 @@ GUI constructors document `@param d db object` but the parameter is now
 constructor; (3) StatsService.setCash's doc says "returns how much money the
 user has" but it returns a status message. All legacy-generation docs, kept
 per the keep-verbatim rule.
+
+---
+
+## Goal: Jones-parity jobs & degrees, save slots, wiki win rules (2026-07-07)
+
+Spec: `docs/superpowers/specs/2026-07-07-jobs-degrees-saves-design.md`
+Plan: `docs/superpowers/plans/2026-07-07-jobs-degrees-saves.md`
+Locked in design review with Rourke: retire Swing; fixed base wages (no economy);
+full experience/dependability mechanics; requirements invisible pre-apply (absent
+from DTOs, not just hidden); multiple saves per account; highscores retired.
+
+### Plan (1 PR = 1 checkbox; merge order top-down; PR5+PR6 back-to-back)
+- [ ] PR 1 `docs/jobs-degrees-spec` — spec + plan + lessons (WebFetch-402/Chrome) +
+      cv-highlights refresh (Phase 2 tail + Phase 3)
+- [ ] PR 2 `chore/retire-swing` — drop amiss-swing module + Swing-only plumbing
+- [ ] PR 3 `feat/saves-jobs-degrees-schema` — additive V5 (tbldegrees/tbljob/
+      tbljob_degrees/tblsave/…) + JPA entities/repos + Testcontainers ITs
+- [ ] PR 4 `feat/hiring-mechanics` — save-scoped core services: hiring (luck =
+      30 + (10+dep+exp+8×degrees)/3), shifts (wage×8 pro-rated, fire/warning bands),
+      courses/degree tree, goals & win; full unit suite
+- [ ] PR 5 `feat/saves-employment-api` — saves CRUD + route cutover
+      /api/saves/{id}/… + hidden job listings + V6 drops legacy shapes + delete
+      highscores; MockMvc pins the no-requirements/no-exp/dep wire contract
+- [ ] PR 6 `feat/frontend-saves-employment` — saves screen, goal setup, two-step
+      employment office, course tree, win banner; highscores page removed
+
+### Review
+*(fill in as PRs merge)*
