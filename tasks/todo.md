@@ -1200,9 +1200,11 @@ full experience/dependability mechanics; requirements invisible pre-apply (absen
 from DTOs, not just hidden); multiple saves per account; highscores retired.
 
 ### Plan (1 PR = 1 checkbox; merge order top-down; PR5+PR6 back-to-back)
-- [ ] PR 1 `docs/jobs-degrees-spec` — spec + plan + lessons (WebFetch-402/Chrome) +
-      cv-highlights refresh (Phase 2 tail + Phase 3)
-- [ ] PR 2 `chore/retire-swing` — drop amiss-swing module + Swing-only plumbing
+- [x] PR 1 `docs/jobs-degrees-spec` — spec + plan + lessons (WebFetch-402/Chrome) +
+      cv-highlights refresh (Phase 2 tail + Phase 3) *(#43, merged 2026-07-07)*
+- [x] PR 2 `chore/retire-swing` — drop amiss-swing module + Swing-only plumbing
+      *(#44, merged 2026-07-07; −4,721 lines; FlywayMigrator went too — the API runs
+      Boot's own Flyway)*
 - [ ] PR 3 `feat/saves-jobs-degrees-schema` — additive V5 (tbldegrees/tbljob/
       tbljob_degrees/tblsave/…) + JPA entities/repos + Testcontainers ITs
 - [ ] PR 4 `feat/hiring-mechanics` — save-scoped core services: hiring (luck =
