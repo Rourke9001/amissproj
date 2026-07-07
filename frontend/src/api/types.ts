@@ -133,3 +133,54 @@ export interface RentPaymentResponse {
   minutesCharged: number;
   state: PlayerStateDto;
 }
+
+export interface JobListingDto {
+  name: string;
+  requiredEducation: number;
+  hourlyWage: number;
+  location: string;
+  requiredClothing: number;
+}
+
+export interface ApplyResponse {
+  hired: boolean;
+  reason: string | null;
+  minutesCharged: number;
+  job: string;
+  hourlyWage: number | null;
+  state: PlayerStateDto;
+}
+
+export interface WorkResponse {
+  job: string;
+  hourlyWage: number;
+  minutesCharged: number;
+  debtDocked: boolean;
+  state: PlayerStateDto;
+}
+
+export interface DegreeDto {
+  level: number;
+  name: string;
+}
+
+export interface CoursesDto {
+  degrees: DegreeDto[];
+  enrollFee: number;
+  studiesPerDegree: number;
+  studyMinutes: number;
+}
+
+export interface EnrollResponse {
+  feePaid: number;
+  state: PlayerStateDto;
+}
+
+export interface StudyResponse {
+  progress: number;
+  studiesRemaining: number;
+  degreeCompleted: string | null;
+  educationLevel: number;
+  minutesCharged: number;
+  state: PlayerStateDto;
+}

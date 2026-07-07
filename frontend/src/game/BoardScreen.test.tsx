@@ -6,6 +6,8 @@ import { BoardScreen } from './BoardScreen';
 import { ApiError } from '../api/http';
 import { getBoard } from '../api/board';
 import { endWeek, getPlayerState, move } from '../api/player';
+import { getJobs } from '../api/jobs';
+import { getCourses } from '../api/university';
 import type { BoardDto, PlayerStateDto } from '../api/types';
 
 vi.mock('../api/board', () => ({
@@ -30,10 +32,24 @@ vi.mock('../api/rent', () => ({
   payRent: vi.fn(),
 }));
 
+vi.mock('../api/jobs', () => ({
+  getJobs: vi.fn(),
+  applyForJob: vi.fn(),
+  work: vi.fn(),
+}));
+
+vi.mock('../api/university', () => ({
+  getCourses: vi.fn(),
+  enroll: vi.fn(),
+  study: vi.fn(),
+}));
+
 const getBoardMock = vi.mocked(getBoard);
 const getPlayerStateMock = vi.mocked(getPlayerState);
 const moveMock = vi.mocked(move);
 const endWeekMock = vi.mocked(endWeek);
+const getJobsMock = vi.mocked(getJobs);
+const getCoursesMock = vi.mocked(getCourses);
 
 // Mirrors amiss-core's Board.CELLS clockwise ring layout.
 const BOARD_FIXTURE: BoardDto = {
@@ -97,6 +113,21 @@ describe('BoardScreen', () => {
     vi.resetAllMocks();
     getBoardMock.mockResolvedValue(BOARD_FIXTURE);
     getPlayerStateMock.mockResolvedValue(playerFixture());
+    getJobsMock.mockResolvedValue([
+      {
+        name: 'Bank Janitor',
+        requiredEducation: 0,
+        hourlyWage: 6,
+        location: 'Bank',
+        requiredClothing: 1,
+      },
+    ]);
+    getCoursesMock.mockResolvedValue({
+      degrees: [{ level: 1, name: 'Certificate' }],
+      enrollFee: 100,
+      studiesPerDegree: 10,
+      studyMinutes: 240,
+    });
   });
 
   it('renders all 13 hotspots positioned from the board data', async () => {
@@ -249,6 +280,39 @@ describe('BoardScreen', () => {
     const centre = document.querySelector('.board-centre') as HTMLElement;
     expect(within(centre).getByRole('heading', { name: 'Bank' })).toBeInTheDocument();
     expect(within(centre).getByLabelText('Amount')).toBeInTheDocument();
+  });
+
+  it('renders the Employment Office panel when standing at that stop', async () => {
+    getPlayerStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[7] })); // EMPLOYMENT_OFFICE
+    renderBoardScreen();
+    await screen.findByRole('button', { name: 'Employment Office' });
+
+    const centre = document.querySelector('.board-centre') as HTMLElement;
+    expect(
+      await within(centre).findByRole('heading', { name: 'Employment Office' }),
+    ).toBeInTheDocument();
+    expect(within(centre).getByText('Bank Janitor')).toBeInTheDocument();
+  });
+
+  it('renders the Hi-Tech U panel when standing at that stop', async () => {
+    getPlayerStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[6] })); // HI_TECH_U
+    renderBoardScreen();
+    await screen.findByRole('button', { name: 'Hi-Tech U' });
+
+    const centre = document.querySelector('.board-centre') as HTMLElement;
+    expect(await within(centre).findByRole('heading', { name: 'Hi-Tech U' })).toBeInTheDocument();
+    expect(within(centre).getByRole('button', { name: 'Enroll (R100)' })).toBeInTheDocument();
+  });
+
+  it('shows the WorkAction button when the player has a job located at the current stop', async () => {
+    getPlayerStateMock.mockResolvedValue(
+      playerFixture({ job: { name: 'Bank Janitor', hourlyWage: 6, location: 'Bank' } }),
+    );
+    renderBoardScreen();
+    await screen.findByRole('button', { name: 'Bank' });
+
+    const centre = document.querySelector('.board-centre') as HTMLElement;
+    expect(within(centre).getByRole('button', { name: 'Work a shift (6h)' })).toBeInTheDocument();
   });
 
   it('renders the DefaultPanel for a stop with no registered panel', async () => {
