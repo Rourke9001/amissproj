@@ -16,15 +16,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * The API's composition root — the Spring counterpart of the Swing client's
- * {@code GameContext}. Each repository port is now backed by a thin adapter over the
+ * The API's composition root. Each repository port is backed by a thin adapter over the
  * generated Spring Data interfaces (KAN-34) — {@code UserJpaRepository}, {@code
  * UserStatsJpaRepository}, {@code JobJpaRepository}, {@code HelpJpaRepository} — querying
- * entities validated against the Flyway schema (KAN-33). The pooled {@code Jdbc} bean that
- * previously lived here is gone; the API no longer touches the core's JDBC adapters. The
- * Swing client is untouched, still wiring the core's {@code Jdbc*Repository} adapters from
- * its own {@code GameContext} over its own single-connection {@code Jdbc}; services stay
- * port-typed, so the swap is invisible above this class.
+ * entities validated against the Flyway schema (KAN-33). Services stay port-typed, so a
+ * persistence swap is invisible above this class. (The Swing client and the core's JDBC
+ * adapters this class once mirrored were retired with KAN-51.)
  */
 @Configuration
 public class PersistenceConfig {

@@ -11,21 +11,18 @@
 
     <name>AmissProj</name>
     <description>Remake of "Jones in the Fast Lane", persisted in MySQL: game rules
-        (amiss-core), the Swing desktop client (amiss-swing) and a Spring Boot REST
-        API (amiss-api).</description>
+        (amiss-core) and a Spring Boot REST API (amiss-api) serving the React SPA
+        in frontend/. (The original Swing client was retired 2026-07, KAN-51.)</description>
 
     <!--
-      Reactor layout (ROADMAP Phase 3 / KAN-27):
+      Reactor layout (ROADMAP Phase 3 / KAN-27; amiss-swing retired KAN-51):
         amiss-core      game rules: domain + application + infrastructure, Flyway
                         migrations, the whole unit-test suite. No UI dependencies.
-        amiss-swing     the original Swing desktop client; builds the shaded
-                        runnable AmissProj.jar.
         amiss-api       Spring Boot REST API over the same core (KAN-16).
         amiss-coverage  aggregates the per-module JaCoCo reports for CI.
     -->
     <modules>
         <module>amiss-core</module>
-        <module>amiss-swing</module>
         <module>amiss-api</module>
         <module>amiss-coverage</module>
     </modules>
@@ -108,11 +105,6 @@
                 <version>${jbcrypt.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.netbeans.lib</groupId>
-                <artifactId>absolutelayout</artifactId>
-                <version>1.0.0</version>
-            </dependency>
-            <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>${mockito.version}</version>
@@ -138,11 +130,6 @@
                              would set this, but this build imports only the BOM). -->
                         <parameters>true</parameters>
                     </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-shade-plugin</artifactId>
-                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.flywaydb</groupId>

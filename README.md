@@ -4,13 +4,15 @@
 ![Coverage](https://raw.githubusercontent.com/Rourke9001/amissproj/badges/jacoco.svg)
 ![Branches](https://raw.githubusercontent.com/Rourke9001/amissproj/badges/branches.svg)
 
-A Java **Swing** desktop game — a remake of the classic *Jones in the Fast Lane*.
-You move around a small city, get a job, earn and spend money, study at university,
-pay rent and chase your goals across rounds. All game state is persisted in **MySQL**.
+A full-stack Java remake of the classic *Jones in the Fast Lane*: a **Spring Boot
+REST API** over a plain-Java rules core, consumed by a **React SPA**. You move
+around a small city, get a job, earn and spend money, study at university, pay rent
+and chase your goals across rounds. All game state is persisted in **MySQL**.
 
-> Originally built as a high-school project in NetBeans. This repo revives it on a
-> modern toolchain (JDK 21 + MySQL 9 + Connector/J 9) and is being incrementally
-> cleaned up as a Java refresher / portfolio piece.
+> Originally built as a high-school Swing project in NetBeans. This repo revives it
+> on a modern toolchain (JDK 21 + Spring Boot 3 + React 19 + MySQL 9) and is being
+> incrementally rebuilt as a Java refresher / portfolio piece. The original Swing
+> desktop client was retired in July 2026 (KAN-51) once the web stack covered it.
 
 ---
 
@@ -18,18 +20,17 @@ pay rent and chase your goals across rounds. All game state is persisted in **My
 
 | | |
 |---|---|
-| Language / UI | Java 21, Swing (`amiss.presentation` in `amiss-swing`) |
-| Modules | Maven reactor: `amiss-core` (rules + persistence + migrations), `amiss-swing` (desktop client), `amiss-api` (REST API), `amiss-coverage` (JaCoCo aggregate) |
+| Language | Java 21 (backend), TypeScript (frontend) |
+| Modules | Maven reactor: `amiss-core` (rules + migrations), `amiss-api` (REST API), `amiss-coverage` (JaCoCo aggregate); React SPA in `frontend/` |
 | Web frontend | React + TypeScript SPA (Vite) in `frontend/` (Phase 3, in progress — KAN-38 scaffold). Consumes the REST API only (no game rules in JS): typed fetch client, JWT auth plumbing + route guard, TanStack React Query, React Router. Dev server `npm run dev` on `:5173` proxies `/api` → `:8080` |
 | REST API | Spring Boot 3.5 (`amiss-api`) over the same core services — `.\mvnw -f amiss-api spring-boot:run`, health at `/actuator/health`, RFC 7807 error responses. `POST /api/auth/register`, `POST /api/auth/login` and `GET /api/highscores` are public; every other `/api/**` route requires a `Bearer` JWT (`GET /api/auth/me`), and a player-scoped route (`/api/players/{username}/...`) 403s if the token's subject doesn't match `{username}` |
 | Database | MySQL 8.4+ / 9.x (`amissdb`); app runs as least-privilege `amiss` user |
-| Migrations | Flyway 11 — versioned SQL in `amiss-core/src/main/resources/db/migration`, applied automatically at app start (by a dedicated `amiss_migrator` account) |
-| JDBC driver | MySQL Connector/J 9.7 (Maven-managed) |
-| Security | BCrypt password hashing (jbcrypt) + parameterised JDBC throughout; the API additionally issues/verifies stateless HS256 JWTs (`amiss-api`) |
-| Logging | SLF4J + Logback (`amiss-swing/src/main/resources/logback.xml`) |
-| Config | `amiss-swing/src/main/resources/application.properties`, overridable via `AMISS_DB_*` env vars; `amiss-api` additionally reads `AMISS_JWT_SECRET` (JWT signing key, 32+ bytes — a dev-only default is built in) and `AMISS_CORS_ALLOWED_ORIGINS` (comma-separated origins allowed to call the API cross-origin) |
-| Build | Maven via the committed `mvnw` wrapper (no global Maven needed); the Swing client ships as one shaded runnable jar |
-| Entry point | `amiss.presentation.ui.LoginGUI` |
+| Migrations | Flyway 11 — versioned SQL in `amiss-core/src/main/resources/db/migration`, applied automatically at API start (by a dedicated `amiss_migrator` account) |
+| Persistence | Spring Data JPA (validate-only against the Flyway schema), MySQL Connector/J 9.7 |
+| Security | BCrypt password hashing (jbcrypt); the API issues/verifies stateless HS256 JWTs and player-scopes every route |
+| Config | `amiss-api/src/main/resources/application.yml`, overridable via `AMISS_DB_*` env vars, `AMISS_JWT_SECRET` (JWT signing key, 32+ bytes — a dev-only default is built in) and `AMISS_CORS_ALLOWED_ORIGINS` (comma-separated origins allowed to call the API cross-origin) |
+| Build | Maven via the committed `mvnw` wrapper (no global Maven needed); frontend via npm/Vite |
+| Entry point | `amiss.api.AmissApiApplication` (API) + `npm run dev` in `frontend/` (SPA) |
 
 ## Prerequisites
 
@@ -49,21 +50,21 @@ mysql -u root -p < db\bootstrap.sql
 #    $env:AMISS_DB_USER / $env:AMISS_DB_PASSWORD / $env:AMISS_DB_URL.
 #    Defaults (amiss / amisspw / localhost:3306) live in src\application.properties.
 
-# 3. Build and run. The mvnw wrapper downloads a pinned Maven on first run -
-#    no global Maven install required.
-.\mvnw clean package
-java -jar amiss-swing\target\AmissProj.jar
+# 3. Start the API. The mvnw wrapper downloads a pinned Maven on first run -
+#    no global Maven install required. Flyway migrates the schema at startup.
+.\mvnw -B install -DskipTests
+.\mvnw -f amiss-api spring-boot:run
+
+# 4. In a second shell, start the SPA dev server (proxies /api to :8080).
+cd frontend
+npm install
+npm run dev      # open http://localhost:5173
 ```
 
-> The PowerShell helpers `scripts\build.ps1` / `scripts\run.ps1` still work and
-> simply delegate to `mvnw` / the packaged jar.
-
-On launch the game first brings the schema up to date (Flyway logs
-`Database schema up to date`), then the console prints `Connection Successful`.
-In the login window, type a
-username + password and click **Logging In** — it offers to create the user. Once
-created, the city screen opens. (Tip: take a *Janitor* job first — it needs no
-education or special clothes.)
+On API startup Flyway brings the schema up to date (`Database schema up to date`
+in the logs); health is at `http://localhost:8080/actuator/health`. In the SPA,
+register a username + password and log in. (Tip: take a *Janitor* job first — it
+needs no education or special clothes.)
 
 Full first-time setup, including installing MySQL and troubleshooting, is in
 **[SETUP.md](SETUP.md)**.
@@ -99,10 +100,11 @@ Get-Service MySQL97
 (You can also use the **Services** app — run `services.msc`, find *MySQL97*, Start/Stop.)
 
 ### The game
-- **Start:** double-click `amiss-swing\target\AmissProj.jar`, or run `powershell -File scripts\run.ps1`.
-- **Stop:** close the game window. If a window is left over, end it with:
+- **Start:** `.\mvnw -f amiss-api spring-boot:run` (API) + `npm run dev` in `frontend/` (SPA).
+- **Stop:** Ctrl-C both. If an orphaned API keeps answering on :8080, stop the
+  process that owns the port (never kill `java` by name — IDE tooling runs as java too):
   ```powershell
-  Stop-Process -Name javaw     # closes the running game (Java GUI process)
+  Get-NetTCPConnection -LocalPort 8080 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess }
   ```
 
 ---
@@ -110,12 +112,12 @@ Get-Service MySQL97
 ## Build from source
 
 ```powershell
-.\mvnw clean package                          # compiles + tests + builds amiss-swing\target\AmissProj.jar (shaded)
-java -jar amiss-swing\target\AmissProj.jar    # runs the packaged jar
+.\mvnw clean package     # compiles + runs the unit suites for every module
+.\mvnw clean verify      # additionally runs the Testcontainers ITs (needs Docker)
+cd frontend; npm test    # frontend suite
 ```
 The wrapper (`mvnw`) downloads a pinned Maven on first run, so no global Maven,
-NetBeans or Ant is required. `maven-shade-plugin` bundles all dependencies into
-one runnable jar.
+NetBeans or Ant is required.
 
 ## Project structure
 
@@ -124,9 +126,6 @@ pom.xml                       Reactor parent (module list, managed versions, sha
 amiss-core/                   Game rules: domain / application / infrastructure layers,
                               Flyway migrations (src/main/resources/db/migration/),
                               and the whole JUnit 5 test suite (see docs/ARCHITECTURE.md)
-amiss-swing/                  The Swing desktop client (amiss.presentation), bundled UI
-                              images, application.properties + logback.xml; shades the
-                              runnable amiss-swing/target/AmissProj.jar
 amiss-api/                    Spring Boot REST API over amiss-core (Phase 3, in progress):
                               actuator health, RFC 7807 error envelope, application.yml,
                               JPA entities/adapters over the Flyway schema, and JWT auth with
@@ -140,10 +139,8 @@ mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install nee
                               frontend lint/typecheck/tests/build, on push/PR)
 db/bootstrap.sql              One-time bootstrap: database + the two MySQL accounts
                               (schema itself lives in the Flyway migrations)
-scripts/                      build.ps1 (mvnw wrapper), run.ps1 (launch),
-                              gen-placeholders.ps1 (regenerate placeholder art)
-vendor/AbsoluteLayout.jar     the one dependency not on Maven Central (NetBeans layout helper)
-vendor-repo/                  project-local Maven repo holding the vendored AbsoluteLayout
+scripts/                      find-java21.ps1 (JDK resolver),
+                              gen-frontend-placeholders.ps1 (regenerate placeholder art)
 SETUP.md                      detailed setup & troubleshooting guide
 tasks/                        roadmap progress, lessons, CV highlights
 ```

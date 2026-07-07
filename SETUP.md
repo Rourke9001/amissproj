@@ -1,7 +1,8 @@
 # AmissProj — Local Setup & Run Guide
 
-A Java Swing remake of *Jones in the Fast Lane*, originally built in NetBeans.
-This guide gets it running again on a modern machine **without NetBeans**.
+A full-stack Java remake of *Jones in the Fast Lane*, originally a NetBeans Swing
+project. This guide gets the **Spring Boot API + React SPA** running on a clean
+machine. (The Swing desktop client was retired in July 2026, KAN-51.)
 
 ---
 
@@ -9,14 +10,14 @@ This guide gets it running again on a modern machine **without NetBeans**.
 
 | | |
 |---|---|
-| **Language / UI** | Java 21, Swing desktop GUI (`amiss.presentation` package in `amiss-swing`) |
-| **Entry point** | `amiss.presentation.ui.LoginGUI` |
-| **Persistence** | MySQL, accessed through the thin `Jdbc` helper behind repository ports (`amiss-core`) |
-| **External libs** | Maven-managed (MySQL Connector/J, SLF4J + Logback, jBCrypt); the one non-Central jar, NetBeans `AbsoluteLayout`, is vendored under `vendor/` |
-| **Build** | Maven multi-module reactor (`amiss-core` rules + `amiss-swing` client) via the committed `mvnw` wrapper — no global Maven/NetBeans/Ant needed |
+| **Backend** | Java 21: `amiss-core` (game rules behind repository ports) + `amiss-api` (Spring Boot 3 REST API, Spring Data JPA validate-only over the Flyway schema, JWT auth) |
+| **Frontend** | React 19 + TypeScript SPA (Vite) in `frontend/` |
+| **Entry points** | `amiss.api.AmissApiApplication` (API, `:8080`) and `npm run dev` (SPA, `:5173`) |
+| **Persistence** | MySQL (database `amissdb`); schema owned by Flyway migrations in `amiss-core` |
+| **Build** | Maven multi-module reactor via the committed `mvnw` wrapper — no global Maven/NetBeans/Ant needed; npm for the frontend |
 
-The game stores **all** state in MySQL (database `amissdb`). Without a running
-database the login window still opens, but you cannot create or load a player.
+The game stores **all** state in MySQL. Without a running database the API
+fails at startup (Flyway can't connect).
 
 ---
 
@@ -27,14 +28,8 @@ database the login window still opens, but you cannot create or load a player.
    The whole reactor compiles with `--release 21` (Phase 3), so older JDKs no
    longer build it.
 2. **MySQL Community Server 8.x or 9.x** — see step 3.
-3. **Node.js 20+ with npm** *(web frontend only)* — needed only to build/run the
-   React SPA in `frontend/` (Phase 3, in progress); the Swing game and the REST
-   API build without it. Developed on Node 24 (https://nodejs.org).
-
-> **Driver note:** the project originally shipped MySQL Connector/J **5.1.22 (2012)**,
-> which cannot authenticate to MySQL 8/9. It has been replaced with
-> **Connector/J 9.7.0** (now a Maven dependency) and `DB.java` updated to the
-> modern `com.mysql.cj.jdbc.Driver`. Nothing further to do here.
+3. **Node.js 20+ with npm** — to build/run the React SPA in `frontend/`; the
+   REST API builds without it. Developed on Node 24 (https://nodejs.org).
 
 ---
 
@@ -54,7 +49,7 @@ database the login window still opens, but you cannot create or load a player.
      as a least-privilege **`amiss`** user that the script creates (plus a
      DDL-capable **`amiss_migrator`** account used only while Flyway applies the
      schema migrations at startup). App connection settings live in
-     `amiss-swing/src/main/resources/application.properties` and can be overridden at runtime
+     `amiss-api/src/main/resources/application.yml` and can be overridden at runtime
      with the `AMISS_DB_URL` / `AMISS_DB_USER` / `AMISS_DB_PASSWORD` /
      `AMISS_DB_MIGRATOR_USER` / `AMISS_DB_MIGRATOR_PASSWORD` environment
      variables — no need to edit Java or rebuild.
@@ -110,27 +105,13 @@ the startup migrations run. It is safe to re-run — everything is
 
 ## 5. Build and run
 
-```powershell
-# from the project root (mvnw downloads a pinned Maven on first run)
-.\mvnw clean package                          # compiles + tests + builds amiss-swing\target\AmissProj.jar
-java -jar amiss-swing\target\AmissProj.jar    # launches the game
-```
-
-> The PowerShell helpers `scripts\build.ps1` / `scripts\run.ps1` still work and
-> just delegate to `mvnw` / the packaged jar.
-
-On launch the console should print **`Connection Successful`**. In the login
-window, type a username + password and click **Logging In** — it will say the
-user doesn't exist and reveal a **Create New User** button. Create the player and
-the main city screen opens.
-
-### Web frontend (React SPA, in progress)
-
 The SPA in `frontend/` consumes the REST API, so start `amiss-api` first, then
 the Vite dev server (which proxies every `/api` request to `:8080` — no CORS
 setup needed in dev):
 
 ```powershell
+# from the project root (mvnw downloads a pinned Maven on first run)
+.\mvnw -B install -DskipTests         # build the reactor once (core into ~/.m2)
 .\mvnw -f amiss-api spring-boot:run   # REST API on http://localhost:8080
 
 # in a second shell:
@@ -139,9 +120,12 @@ npm install                           # first time only
 npm run dev                           # http://localhost:5173
 ```
 
-The home page lists the live high scores straight from `GET /api/highscores` —
-if it shows a connection error, the API isn't running. `npm run build` produces
-the static production bundle in `frontend/dist/`.
+On API startup Flyway logs `Database schema up to date` and health is at
+`http://localhost:8080/actuator/health`. Open the SPA, register a username +
+password, log in and play. `npm run build` produces the static production
+bundle in `frontend/dist/`. Run the test suites with `.\mvnw clean package`
+(unit), `.\mvnw clean verify` (adds the Testcontainers ITs; needs Docker
+Desktop) and `npm test`.
 
 ---
 
@@ -153,10 +137,11 @@ the static production bundle in `frontend/dist/`.
 | `Cannot connect to database: Access denied for user 'amiss'` | The `amiss` user/password don't match. Re-run `db\bootstrap.sql` as root to (re)create the user, or set `AMISS_DB_USER` / `AMISS_DB_PASSWORD` to the right values. |
 | `Cannot connect to database: Unknown database 'amissdb'` | You haven't bootstrapped the database — do step 4. |
 | `Schema migration failed` in the console | Flyway couldn't connect as `amiss_migrator` — typically a pre-Flyway install. Re-run `db\bootstrap.sql` as root (it adds the account), or set `AMISS_DB_MIGRATOR_USER` / `AMISS_DB_MIGRATOR_PASSWORD`. |
-| `Public Key Retrieval is not allowed` | Shouldn't happen (the JDBC URL sets `allowPublicKeyRetrieval=true`). If it does, confirm `DB.java` URL wasn't reverted. |
-| `Cannot load driver` | The MySQL driver didn't resolve — rebuild with `.\mvnw clean package` so the connector is on the classpath. |
-| The window never opens on double-click, or `java -jar` dies instantly with `UnsupportedClassVersionError` | The default `java` on PATH is older than 21 (e.g. the old JDK 20 shim). Launch via `powershell -File scripts\run.ps1` (it finds the Temurin 21 install itself), or point `JAVA_HOME`/PATH at a JDK 21+. |
-| A screen has no background image | Backgrounds load from bundled resources in `amiss-swing/src/main/resources/amiss/resources/`. If one is blank the console prints `Asset missing on classpath: ...` — regenerate them with `powershell -File scripts\gen-placeholders.ps1`, then rebuild. |
+| `Public Key Retrieval is not allowed` | Shouldn't happen (the JDBC URL sets `allowPublicKeyRetrieval=true`). If it does, check the datasource URL in `application.yml`. |
+| `mvnw` dies with `UnsupportedClassVersionError` or "JAVA_HOME not found" | The default `java`/`JAVA_HOME` points at a pre-21 JDK. Point `JAVA_HOME` at a JDK 21+ (`scripts\find-java21.ps1` locates one). |
+| `spring-boot:run` serves stale code after core changes | The single-module run resolves `amiss-core` from `~/.m2` — run `.\mvnw -B install -DskipTests` first. |
+| SPA shows a connection error on login | The API isn't running (or died at startup — check its console for the Flyway/MySQL errors above). |
+| A board tile has no image | Frontend art lives in `frontend/public/assets/` behind a manifest — regenerate placeholders with `powershell -File scripts\gen-frontend-placeholders.ps1`. |
 
 ---
 
@@ -198,17 +183,24 @@ the static production bundle in `frontend/dist/`.
   *baselined* on first launch (saves kept).
 - **Phase 3 — multi-module reactor** — the single Maven module split into
   `amiss-core` (domain/application/infrastructure + migrations + the test suite)
-  and `amiss-swing` (the desktop client, still shading `AmissProj.jar`), with an
-  `amiss-coverage` module aggregating JaCoCo for CI — making room for the Spring
-  Boot `amiss-api` module. The whole build now targets **Java 21**.
+  and `amiss-swing` (the desktop client), with an `amiss-coverage` module
+  aggregating JaCoCo for CI — making room for the Spring Boot `amiss-api`
+  module. The whole build now targets **Java 21**.
+- **Phase 3 — Swing client retired (July 2026, KAN-51)** — once the REST API +
+  React SPA covered the game, the `amiss-swing` module, its shaded
+  `AmissProj.jar`, the vendored NetBeans `AbsoluteLayout` jar and the core's
+  Swing-only JDBC adapters/`GameContext` were removed. The API's Spring Data JPA
+  adapters are now the only persistence path, and Boot's auto-configured Flyway
+  the only migration runner.
 
 ---
 
 ## 8. What's next
 
-**Phases 0–2 are done**: revival, backend hardening (parameterised SQL,
-least-privilege users, BCrypt, logging, validation), the Maven build, the
-layered architecture with headless game rules, the 89-test JUnit 5 suite,
-GitHub Actions CI and Flyway schema migrations. See **[ROADMAP.md](ROADMAP.md)**
-for the full phased plan; next is **Phase 3** — extracting the game logic into a
-Spring Boot REST API with JPA persistence, Spring Security and a web frontend.
+**Phases 0–2 are done** (revival, backend hardening, Maven, tests, CI, Flyway),
+and **Phase 3 is nearly there**: the Spring Boot REST API with JPA persistence
+and JWT security is live, and the React SPA covers every building on the board.
+See **[ROADMAP.md](ROADMAP.md)** for the full phased plan; in flight is the
+Jones-parity jobs/degrees/saves milestone
+(`docs/superpowers/specs/2026-07-07-jobs-degrees-saves-design.md`), then
+OpenAPI docs, Docker and deployment.
