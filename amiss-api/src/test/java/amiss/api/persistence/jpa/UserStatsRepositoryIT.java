@@ -19,13 +19,11 @@ import org.springframework.dao.DataIntegrityViolationException;
  * Integration test for {@link JpaUserStatsRepository} (the {@link UserStatsRepository}
  * port, {@code tbluserstats}) against a real, freshly-migrated MySQL container (KAN-35).
  *
- * <p>{@code tbluserstats.name} is both the primary key and an {@code ON DELETE CASCADE}
- * foreign key to {@code tbluser.name} ({@code V1__baseline_schema.sql}), so every stats
- * row here needs a parent {@code tbluser} row first — created via the real
- * {@link UserRepository} port, not a shortcut insert.
- *
- * <p>See {@link MySqlITSupport} for the container/transaction wiring. Every test cleans
- * up the user (and cascaded stats) row(s) it created in {@link #cleanUp()}.
+ * <p>{@code tbluserstats.name} is both the primary key and an {@code ON DELETE CASCADE} FK
+ * to {@code tbluser.name} ({@code V1__baseline_schema.sql}), so every stats row needs a
+ * parent {@code tbluser} row first — created via the real {@link UserRepository} port, not
+ * a shortcut insert. See {@link MySqlITSupport} for the container/transaction wiring;
+ * {@link #cleanUp()} removes every user (and cascaded stats) row a test created.
  */
 class UserStatsRepositoryIT extends MySqlITSupport {
 
@@ -119,11 +117,10 @@ class UserStatsRepositoryIT extends MySqlITSupport {
     /**
      * Pins the port contract on a real constraint violation: {@code insertNewStats} for a
      * user with no {@code tbluser} parent row hits the FK and must surface as
-     * {@link PersistenceFailureException}. This originally escaped as a raw
-     * {@link DataIntegrityViolationException} because the {@code @MapsId} id is assigned
-     * (not IDENTITY-generated), so {@code save()} deferred the INSERT to the proxy's
-     * commit — outside the adapter's translation block. The adapter now uses
-     * {@code saveAndFlush()} precisely so this test can hold.
+     * {@link PersistenceFailureException}, not a raw {@link DataIntegrityViolationException}.
+     * It originally leaked raw because the assigned (non-IDENTITY) {@code @MapsId} id let
+     * {@code save()} defer the INSERT past the adapter's translation block;
+     * {@code saveAndFlush()} fixes that.
      */
     @Test
     void insertNewStats_forAUserWithNoParentRow_translatesTheForeignKeyViolation() {

@@ -13,11 +13,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * <p>{@code @DataJpaTest} and a full {@code @SpringBootTest(webEnvironment = RANDOM_PORT)} can
  * never share one cached Spring {@code ApplicationContext} (their bootstrappers configure the
- * web layer differently), so this is deliberately a second, independent context. But the
- * <em>container</em> underneath both is one and the same: referencing {@link
- * MySqlITSupport#MYSQL} below only causes the JVM to load that class — its static initializer
- * (which calls {@code MYSQL.start()}) runs at most once no matter how many classes reference
- * it, so whichever suite runs first in this JVM is the one that actually starts Docker.
+ * web layer differently), so this is deliberately a second, independent context — but the
+ * <em>container</em> underneath both is the same one: referencing {@link
+ * MySqlITSupport#MYSQL} below only loads that class, and its static initializer (which calls
+ * {@code MYSQL.start()}) runs at most once per JVM, so whichever suite runs first is the one
+ * that actually starts Docker.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers(disabledWithoutDocker = true)

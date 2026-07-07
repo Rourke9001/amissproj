@@ -1146,3 +1146,45 @@ Branch `fix/eat-costs-no-time` stacked on `feat/kan44-food-shops` (PR G).
       insufficient-time; movement fractional ~4h cross-board (ours: 6×40min+2h
       ≈ matches). All KAN-5 economy-epic material.
 - [x] Push; PR G `gh pr create --base feat/kan44-food-shops`; comment on KAN-44
+
+---
+
+## Chore: comment cleanup — signal-to-noise pass  (2026-07-07)
+Branch `chore/comment-cleanup` off `develop`. Calibration agreed with Rourke
+after two sample rounds:
+- **Legacy files** (Swing GUIs, domain model, HS-era service methods): remove
+  the NetBeans template headers ONLY. Keep ALL Javadoc — including
+  getter/setter docs — verbatim. Never touch generated `initComponents()`
+  blocks (GEN-BEGIN/GEN-END).
+- **Modern files** (amiss-api + newer amiss-core services/infra/tests):
+  tighten verbose why-Javadoc — keep every distinct fact (gotchas, KAN refs,
+  rationale), cut repetition and asides. `SecurityConfig.java` (approved) is
+  the reference example.
+- **Stale comments**: flag to Rourke, don't silently rewrite.
+- Frontend already clean — out of scope.
+
+- [x] Survey bloat; calibrate on User.java (reverted) + SecurityConfig (kept)
+- [x] Strip NetBeans template headers across legacy files (script, 17 files)
+- [x] Tighten modern amiss-api sources + tests (subagents + orchestrator review)
+- [x] Tighten modern amiss-core files (main + tests)
+- [x] Review full diff; collect staleness flags for Rourke
+- [x] docs/COMMENT_STYLE.md conventions doc
+- [x] Verify: mvnw clean test green (323/323); every changed Java line is
+      inside comment syntax (grep-verified); frontend untouched
+- [x] Commit, push, PR → develop
+
+### Review
+37 files, -320/+193 lines, comments only (grep over the diff shows no changed
+line outside comment syntax; 323/323 unit tests green). The 17 NetBeans
+template headers are gone; ~20 verbose modern Javadoc blocks were compressed
+to ~55-60% keeping every gotcha/KAN ref (SecurityConfig 45→28,
+MySqlITSupport 64→39 were done by the orchestrator; the rest by three
+Sonnet subagents whose diffs were re-verified here). Legacy HS-era Javadoc
+kept verbatim per Rourke's calibration. docs/COMMENT_STYLE.md records the
+conventions. **Stale-comment flags for Rourke (not changed):** (1) ten Swing
+GUI constructors document `@param d db object` but the parameter is now
+`GameServices services` (rename from the PR-B service-layer refactor);
+(2) several GUIs' "Creates new form X" Javadoc sits above the fields, not the
+constructor; (3) StatsService.setCash's doc says "returns how much money the
+user has" but it returns a status message. All legacy-generation docs, kept
+per the keep-verbatim rule.

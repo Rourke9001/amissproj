@@ -35,49 +35,32 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Stateless HS256 JWT auth for the REST API, fully locked down (KAN-36 minted/verified the
- * token; KAN-37 below is what actually gates every route with it).
+ * Stateless HS256 JWT security for the REST API (KAN-36 issues/verifies the token; KAN-37
+ * gates every route with it).
  *
- * <p><b>Authorization rules:</b> {@code POST /api/auth/register}, {@code POST /api/auth/login},
- * {@code GET /api/highscores}, {@code /actuator/health(/**)} and {@code /error} stay
- * {@code permitAll()} — the public trio a game client needs before it has ever logged in, plus
- * the ops health probe. CORS preflight ({@code OPTIONS}) is also {@code permitAll()}: a
- * preflight carries no {@code Authorization} header, so without this rule a legitimate
- * cross-origin request from an allowed origin would 401 before the browser ever sends the
- * real request (the documented Spring Security CORS gotcha). Every other {@code /api/**} route
- * — including the catalog GETs ({@code board}/{@code jobs}/{@code courses}/{@code food}) and
- * {@code GET /api/auth/me} — requires a valid bearer token; {@code anyRequest().authenticated()}
- * closes off anything outside {@code /api/**} too.
+ * <p><b>Routes:</b> register, login, {@code GET /api/highscores}, actuator health and
+ * {@code /error} are public; everything else requires a bearer token. {@code OPTIONS} is also
+ * {@code permitAll()} — a CORS preflight carries no {@code Authorization} header, so it would
+ * otherwise 401 before the browser sends the real request (the documented Spring Security
+ * CORS gotcha).
  *
- * <p><b>Player scoping (IDOR prevention):</b> authentication alone isn't enough — a valid token
- * for "alice" must not be able to read or mutate "bob"'s state. {@link PlayerScopeFilter} is the
- * one central place that enforces path-username == principal for every
- * {@code /api/players/{username}...} route; see its javadoc for why a filter beats per-method
- * annotations. Its {@link AccessDeniedException} is rendered by {@link
- * #problemDetailAccessDeniedHandler}, the same RFC 7807 shape {@code
- * problemDetailAuthenticationEntryPoint} uses for 401s.
+ * <p><b>Player scoping (IDOR prevention):</b> {@link PlayerScopeFilter} enforces
+ * path-username == principal on every {@code /api/players/{username}...} route; see its
+ * javadoc for why a filter beats per-method annotations. Its {@link AccessDeniedException}
+ * and auth failures both leave as RFC 7807 problem JSON, matching
+ * {@code GlobalExceptionHandler}.
  *
- * <p><b>CORS:</b> {@link #corsConfigurationSource} is driven entirely by {@code
- * amiss.cors.allowed-origins} (see {@code application.yml}) so the future SPA's origin is a
- * config change, not a code change. Credentials are off — the JWT travels in the
- * {@code Authorization} header, never a cookie, so there is nothing for the browser to send
- * "with credentials".
+ * <p><b>CORS:</b> allowed origins come from {@code amiss.cors.allowed-origins}
+ * (config change, not code change). Credentials are off — the JWT travels in the
+ * {@code Authorization} header, never a cookie. Security headers stay at Spring's
+ * defaults (nosniff, frame DENY, no-cache) deliberately.
  *
- * <p><b>Security headers:</b> deliberately no custom {@code headers(...)} block — Spring
- * Security's defaults ({@code X-Content-Type-Options: nosniff}, {@code X-Frame-Options: DENY},
- * cache-control on every response) are applied automatically by {@link HttpSecurity} and are
- * the accepted baseline for this API.
- *
- * <p><b>Deliberately no {@code UserDetailsService} or {@code BCryptPasswordEncoder} bean:</b>
- * {@link AuthService} verifies credentials by calling {@code amiss.infrastructure.security
- * .PasswordHasher} directly against the {@code UserRepository} port — the exact rule {@code
- * LoginGUI} (the Swing client) uses, including its transparent legacy-plaintext-to-BCrypt
- * upgrade on first successful login. A {@code DaoAuthenticationProvider} +
- * {@code BCryptPasswordEncoder} pairing can't reproduce that upgrade path (a plaintext stored
- * value simply fails {@code BCryptPasswordEncoder#matches}), and standing up a parallel
- * {@code UserDetailsService} would give the Swing client and the API two different, divergent
- * credential rules. So Spring Security here supplies only the JWT issuing/verification
- * machinery; who's allowed to log in is decided once, by the core, for both front ends.
+ * <p><b>Deliberately no {@code UserDetailsService}/{@code BCryptPasswordEncoder}:</b>
+ * {@link AuthService} calls the core's {@code PasswordHasher} directly so the API and the
+ * Swing {@code LoginGUI} share one credential rule — including the transparent
+ * legacy-plaintext-to-BCrypt upgrade on first login, which a {@code DaoAuthenticationProvider}
+ * cannot reproduce (a plaintext stored value simply fails {@code matches}). Spring Security
+ * here supplies only the JWT machinery.
  */
 @Configuration
 @EnableWebSecurity
@@ -119,10 +102,9 @@ public class SecurityConfig {
     }
 
     /**
-     * RFC 7807 401 for a missing/expired/invalid bearer token — the same {@code
-     * application/problem+json} envelope shape {@code GlobalExceptionHandler} uses for every
-     * other error, just emitted from the security filter chain instead of a controller advice
-     * (authentication failures never reach the {@code DispatcherServlet}).
+     * RFC 7807 401 for a missing/expired/invalid bearer token. Emitted from the filter chain
+     * rather than controller advice — authentication failures never reach the
+     * {@code DispatcherServlet} — but uses the same envelope as {@code GlobalExceptionHandler}.
      */
     @Bean
     AuthenticationEntryPoint problemDetailAuthenticationEntryPoint(ObjectMapper objectMapper) {
@@ -138,11 +120,10 @@ public class SecurityConfig {
     }
 
     /**
-     * RFC 7807 403 for an authenticated-but-not-allowed request — today that's only {@link
-     * PlayerScopeFilter}'s IDOR check, but any future {@code AccessDeniedException} (a
-     * method-security annotation, say) leaves through this exact same envelope. The
-     * {@code detail} comes from the thrown exception's message, so callers stay in control of
-     * the wording while the {@code type}/{@code title} stay fixed.
+     * RFC 7807 403 for an authenticated-but-not-allowed request — today only {@link
+     * PlayerScopeFilter}'s IDOR check, but any future {@code AccessDeniedException} takes the
+     * same path. The {@code detail} comes from the exception's message; {@code type}/{@code
+     * title} stay fixed.
      */
     @Bean
     AccessDeniedHandler problemDetailAccessDeniedHandler(ObjectMapper objectMapper) {
@@ -158,10 +139,9 @@ public class SecurityConfig {
     }
 
     /**
-     * CORS policy for the future SPA: only {@code amiss.cors.allowed-origins} (comma-separated;
-     * defaults to the Vite dev server) may call the API, only with {@code GET}/{@code POST}/
-     * {@code OPTIONS}, and only sending {@code Authorization}/{@code Content-Type}. No
-     * credentials — the JWT lives in the {@code Authorization} header, not a cookie.
+     * CORS for the SPA: only {@code amiss.cors.allowed-origins} (comma-separated; defaults to
+     * the Vite dev server) may call the API, with {@code GET}/{@code POST}/{@code OPTIONS} and
+     * the {@code Authorization}/{@code Content-Type} headers only.
      */
     @Bean
     CorsConfigurationSource corsConfigurationSource(@Value("${amiss.cors.allowed-origins}") String[] allowedOrigins) {

@@ -12,8 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link UserStatsJpaRepository} (KAN-34). Reproduces the core's {@code
  * JdbcUserStatsRepository}'s exact missing-row fallbacks; each mutating method is
  * its own transaction, mirroring the JDBC adapter's autocommit-per-call behaviour.
- *
- * <p>Not a Spring stereotype bean: wired explicitly by {@code
+ * Not a Spring stereotype bean: wired explicitly by {@code
  * amiss.api.config.PersistenceConfig}, matching the JDBC adapter's wiring style.
  */
 public class JpaUserStatsRepository implements UserStatsRepository {

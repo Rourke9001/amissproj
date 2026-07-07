@@ -29,12 +29,11 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * The KAN-37 acceptance contract, in one slice: anonymous callers get 401, an authenticated
  * player reading/writing someone else's state gets 403 without ever touching the game
- * services, an authenticated player reaches their own state fine, the public trio
- * ({@code /api/highscores}) stays open, and CORS preflight is only honoured for an allowed
- * origin. {@link BoardController}, {@link PlayerController} and {@link HighscoresController}
- * are loaded together purely so every scenario in the acceptance criteria fits in one test
- * class; none of their behaviour beyond routing/security is under test here (see each
- * controller's own {@code *ControllerTest} for that).
+ * services, an authenticated player reaches their own state fine, {@code /api/highscores}
+ * stays public, and CORS preflight is only honoured for an allowed origin. {@link
+ * BoardController}, {@link PlayerController} and {@link HighscoresController} are loaded
+ * together purely so every scenario fits in one test class; none of their behaviour beyond
+ * routing/security is under test here (see each controller's own {@code *ControllerTest}).
  */
 @WebMvcTest(controllers = {BoardController.class, PlayerController.class, HighscoresController.class})
 @Import({CostsConfig.class, GlobalExceptionHandler.class, SecurityConfig.class})

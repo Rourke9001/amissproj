@@ -13,22 +13,17 @@ import org.slf4j.LoggerFactory;
 /**
  * Thin JDBC helper for the game's MySQL database.
  *
- * <p>Exposes a small, JdbcTemplate-style API: callers pass a parameterised SQL
- * string with {@code ?} placeholders plus the bind values, and never touch a
- * {@link Statement} or {@link ResultSet} themselves. Every method opens and
- * closes its own {@link PreparedStatement}/{@link ResultSet} with
- * try-with-resources, so there is no leaked cursor and no shared mutable
- * statement state. Binding the values through {@code setObject} (rather than
- * concatenating them into the SQL) is what makes the queries injection-safe.
+ * <p>Exposes a small, JdbcTemplate-style API: callers pass parameterised SQL with
+ * {@code ?} placeholders plus bind values, never touching a {@link Statement} or
+ * {@link ResultSet} directly. Every method opens/closes its own
+ * {@link PreparedStatement}/{@link ResultSet} via try-with-resources (no leaked cursors,
+ * no shared mutable state), and binds values through {@code setObject} rather than
+ * concatenating them, which is what keeps the queries injection-safe.
  *
- * <p>Two connection modes:
- * <ul>
- *   <li>{@link #Jdbc()} — the Swing client's mode: one connection opened from
- *       {@link Config} and held for the life of the app (a single-threaded UI).</li>
- *   <li>{@link #Jdbc(DataSource)} — the REST API's mode: a connection is
- *       borrowed from the pool per call and returned immediately, so concurrent
- *       requests never share connection state.</li>
- * </ul>
+ * <p>Two connection modes: {@link #Jdbc()} is the Swing client's — one connection opened
+ * from {@link Config} and held for the app's life (single-threaded UI) — while
+ * {@link #Jdbc(DataSource)} is the REST API's — a connection borrowed from the pool per
+ * call and returned immediately, so concurrent requests never share connection state.
  *
  * @author The Rourke
  */

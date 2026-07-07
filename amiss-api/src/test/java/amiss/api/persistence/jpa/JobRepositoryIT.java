@@ -11,11 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Integration test for {@link JpaJobRepository} (the {@link JobRepository} port,
- * {@code tbljobs}) against a real, freshly-migrated MySQL container (KAN-35).
- * {@code tbljobs} is reference data owned by {@code V2__seed_reference_data.sql} —
- * read-only, so no {@code @AfterEach} cleanup is needed here.
- *
- * <p>See {@link MySqlITSupport} for the container/transaction wiring.
+ * {@code tbljobs}) against a real, freshly-migrated MySQL container (KAN-35). {@code tbljobs}
+ * is reference data owned by {@code V2__seed_reference_data.sql} — read-only, so no
+ * {@code @AfterEach} cleanup is needed here. See {@link MySqlITSupport} for the
+ * container/transaction wiring.
  */
 class JobRepositoryIT extends MySqlITSupport {
 

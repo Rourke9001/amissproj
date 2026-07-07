@@ -10,13 +10,11 @@ import java.util.Optional;
 /**
  * Data-access layer for the {@code tbluser} table (the player's saved state).
  *
- * <p>Wraps the project's {@link Jdbc} JdbcTemplate-style helper so callers work with
- * named methods instead of inline SQL. Each read returns the same fallback the game
- * has always used when no row matches; the genuine "row may be absent" lookups
- * ({@link #findByName} / {@link #findPasswordHash}) return an {@link Optional} so the
- * caller can branch on existence. Every method throws the unchecked
- * {@link PersistenceFailureException} for the caller to handle, exactly as the inline
- * calls did.
+ * <p>Wraps the project's {@link Jdbc} JdbcTemplate-style helper so callers work with named
+ * methods instead of inline SQL. Each read keeps the game's original no-match fallback;
+ * the genuine "row may be absent" lookups ({@link #findByName} / {@link #findPasswordHash})
+ * return {@link Optional} so callers can branch on existence. Every method throws the
+ * unchecked {@link PersistenceFailureException}, exactly as the inline calls did.
  */
 public class JdbcUserRepository implements UserRepository {
 
