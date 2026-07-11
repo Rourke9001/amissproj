@@ -4,7 +4,6 @@ import amiss.api.error.InvalidCredentialsException;
 import amiss.api.error.InvalidRegistrationException;
 import amiss.api.error.UsernameTakenException;
 import amiss.application.port.UserRepository;
-import amiss.application.port.UserStatsRepository;
 import amiss.domain.validation.Validation;
 import amiss.infrastructure.security.PasswordHasher;
 import java.time.Duration;
@@ -31,22 +30,21 @@ public class AuthService {
     static final String ISSUER = "amiss-api";
 
     private final UserRepository users;
-    private final UserStatsRepository userStats;
     private final JwtEncoder jwtEncoder;
     private final Duration ttl;
 
-    public AuthService(UserRepository users, UserStatsRepository userStats, JwtEncoder jwtEncoder,
+    public AuthService(UserRepository users, JwtEncoder jwtEncoder,
             @Value("${amiss.security.jwt.ttl:PT60M}") Duration ttl) {
         this.users = users;
-        this.userStats = userStats;
         this.jwtEncoder = jwtEncoder;
         this.ttl = ttl;
     }
 
     /**
      * Creates a brand-new player: validate, reject an already-taken username, then insert the
-     * hashed password followed by the starting stats row — the exact order {@code LoginGUI}'s
-     * create-user flow uses ({@code insertNewUser} then {@code insertNewStats}).
+     * hashed password. Credentials only (KAN-54) — {@code tbluser} no longer seeds any
+     * game-state row; a player's first {@code tblsave} row is created later, when they call
+     * {@code POST /api/saves}.
      *
      * @throws InvalidRegistrationException if the username/password fails {@link Validation} (400)
      * @throws UsernameTakenException       if a password hash is already stored for this username (409)
@@ -64,7 +62,6 @@ public class AuthService {
             throw new UsernameTakenException(username);
         }
         users.insertNewUser(username, PasswordHasher.hash(password));
-        userStats.insertNewStats(username);
     }
 
     /**

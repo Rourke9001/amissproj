@@ -8,12 +8,10 @@ import amiss.api.persistence.jpa.JpaSaveDegrees;
 import amiss.api.persistence.jpa.JpaSaveRepository;
 import amiss.api.persistence.jpa.JpaTurndowns;
 import amiss.api.persistence.jpa.JpaUserRepository;
-import amiss.api.persistence.jpa.JpaUserStatsRepository;
 import amiss.api.persistence.jpa.SaveDegreeJpaRepository;
 import amiss.api.persistence.jpa.SaveJpaRepository;
 import amiss.api.persistence.jpa.SaveTurndownJpaRepository;
 import amiss.api.persistence.jpa.UserJpaRepository;
-import amiss.api.persistence.jpa.UserStatsJpaRepository;
 import amiss.application.config.ActionCosts;
 import amiss.application.port.DegreeCatalog;
 import amiss.application.port.JobCatalog;
@@ -21,7 +19,6 @@ import amiss.application.port.SaveDegrees;
 import amiss.application.port.SaveRepository;
 import amiss.application.port.Turndowns;
 import amiss.application.port.UserRepository;
-import amiss.application.port.UserStatsRepository;
 import amiss.application.service.save.SaveGameServices;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,13 +26,14 @@ import org.springframework.context.annotation.Configuration;
 /**
  * The API's composition root. Each repository port is backed by a thin adapter over the
  * generated Spring Data interfaces (KAN-34/KAN-54) — {@code UserJpaRepository}, {@code
- * UserStatsJpaRepository}, {@code SaveJpaRepository}, {@code JobCatalogJpaRepository}, {@code
- * DegreeJpaRepository}, {@code SaveDegreeJpaRepository}, {@code SaveTurndownJpaRepository} —
- * querying entities validated against the Flyway schema (KAN-33). Services stay port-typed, so
- * a persistence swap is invisible above this class. (The Swing client and the core's JDBC
- * adapters this class once mirrored were retired with KAN-51; the legacy {@code JobRepository}/
- * {@code HelpRepository} beans were retired with KAN-54 — {@code tblhelp} the table stays, its
- * code doesn't.)
+ * SaveJpaRepository}, {@code JobCatalogJpaRepository}, {@code DegreeJpaRepository}, {@code
+ * SaveDegreeJpaRepository}, {@code SaveTurndownJpaRepository} — querying entities validated
+ * against the Flyway schema (KAN-33). Services stay port-typed, so a persistence swap is
+ * invisible above this class. (The Swing client and the core's JDBC adapters this class once
+ * mirrored were retired with KAN-51; the legacy {@code JobRepository}/{@code HelpRepository}
+ * beans were retired with KAN-54, and {@code tbluser} shrank to credentials only — {@code
+ * UserStatsRepository}/{@code tbluserstats} are gone entirely — {@code tblhelp} the table
+ * stays, its code doesn't.)
  */
 @Configuration
 public class PersistenceConfig {
@@ -43,11 +41,6 @@ public class PersistenceConfig {
     @Bean
     UserRepository userRepository(UserJpaRepository users) {
         return new JpaUserRepository(users);
-    }
-
-    @Bean
-    UserStatsRepository userStatsRepository(UserStatsJpaRepository stats, UserJpaRepository users) {
-        return new JpaUserStatsRepository(stats, users);
     }
 
     @Bean

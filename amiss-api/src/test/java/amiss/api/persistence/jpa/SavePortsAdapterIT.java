@@ -220,13 +220,9 @@ class SavePortsAdapterIT extends MySqlITSupport {
         return all.stream().filter(d -> d.name().equals(name)).findFirst().orElseThrow();
     }
 
-    /** Inserts an owning user (FK) plus one save, returning the save's id. */
+    /** Inserts an owning user (FK; tbluser is credentials-only post-V6, KAN-54) plus one save. */
     private long insertSave(String owner, int goalWealth, int goalHappiness, int goalEducation, int goalCareer) {
-        jdbc.update("""
-                INSERT INTO tbluser (name, password, xpos, ypos, `time`, cash, round, job,
-                                     clothing, rent, eat, debt, bank)
-                VALUES (?, 'x', 0, 0, 4320, 100, 1, 'Unemployed', 1, 1, 0, 0, 0)
-                """, owner);
+        jdbc.update("INSERT INTO tbluser (name, password) VALUES (?, 'x')", owner);
         SaveEntity entity = saves.saveAndFlush(
                 new SaveEntity(owner, "Save 1", goalWealth, goalHappiness, goalEducation, goalCareer));
         return entity.getId();

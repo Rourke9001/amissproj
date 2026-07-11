@@ -14,6 +14,8 @@ import amiss.application.port.UserRepository;
 import amiss.infrastructure.security.PasswordHasher;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * The KAN-36 acceptance test: register, log in, then call the bearer-protected {@code
@@ -41,6 +44,9 @@ class AuthRoundTripIT extends AuthRoundTripSupport {
 
     @Autowired
     private UserJpaRepository userJpa;
+
+    @Autowired
+    private JdbcTemplate jdbc;
 
     private final List<String> createdUsers = new ArrayList<>();
 
@@ -65,6 +71,10 @@ class AuthRoundTripIT extends AuthRoundTripSupport {
                 "/api/auth/register", new RegisterRequest(username, "secret1"), RegisterResponse.class);
         assertEquals(HttpStatus.CREATED, registerResponse.getStatusCode());
         assertEquals(username, registerResponse.getBody().username());
+
+        // KAN-54: tbluser is credentials-only post-V6 - registration writes no game state.
+        Map<String, Object> row = jdbc.queryForMap("SELECT * FROM tbluser WHERE name = ?", username);
+        assertEquals(Set.of("name", "password"), row.keySet());
 
         ResponseEntity<LoginResponse> loginResponse = rest.postForEntity(
                 "/api/auth/login", new LoginRequest(username, "secret1"), LoginResponse.class);

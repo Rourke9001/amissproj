@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,7 +14,6 @@ import amiss.api.error.InvalidCredentialsException;
 import amiss.api.error.InvalidRegistrationException;
 import amiss.api.error.UsernameTakenException;
 import amiss.application.port.UserRepository;
-import amiss.application.port.UserStatsRepository;
 import amiss.infrastructure.security.PasswordHasher;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +24,6 @@ import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -37,10 +34,9 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 /**
- * Unit tests for {@link AuthService}: mocked {@link UserRepository}/{@link
- * UserStatsRepository}, but the real {@link PasswordHasher} and a real HS256 {@link
- * JwtEncoder}/{@link JwtDecoder} pair (built from the same in-test secret) so the minted
- * token is decoded and asserted on, not just stubbed.
+ * Unit tests for {@link AuthService}: a mocked {@link UserRepository}, but the real {@link
+ * PasswordHasher} and a real HS256 {@link JwtEncoder}/{@link JwtDecoder} pair (built from the
+ * same in-test secret) so the minted token is decoded and asserted on, not just stubbed.
  */
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -51,9 +47,6 @@ class AuthServiceTest {
     @Mock
     private UserRepository users;
 
-    @Mock
-    private UserStatsRepository userStats;
-
     private JwtDecoder decoder;
     private AuthService authService;
 
@@ -62,21 +55,19 @@ class AuthServiceTest {
         SecretKeySpec key = new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
         JwtEncoder encoder = new NimbusJwtEncoder(new ImmutableSecret<>(key));
         decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
-        authService = new AuthService(users, userStats, encoder, TTL);
+        authService = new AuthService(users, encoder, TTL);
     }
 
     // ---- register ------------------------------------------------------------------
 
     @Test
-    void register_happyPath_insertsAHashedPasswordThenTheStatsRow_inOrder() {
+    void register_happyPath_insertsOnlyTheHashedPassword() {
         when(users.findPasswordHash("alice")).thenReturn(Optional.empty());
 
         authService.register("alice", "secret1");
 
-        InOrder order = inOrder(users, userStats);
-        order.verify(users).insertNewUser(eq("alice"), argThat(
+        verify(users).insertNewUser(eq("alice"), argThat(
                 hash -> PasswordHasher.isHashed(hash) && PasswordHasher.matches("secret1", hash)));
-        order.verify(userStats).insertNewStats("alice");
     }
 
     @Test
@@ -84,7 +75,6 @@ class AuthServiceTest {
         assertThrows(InvalidRegistrationException.class, () -> authService.register("bad name!", "secret1"));
 
         verify(users, never()).insertNewUser(any(), any());
-        verify(userStats, never()).insertNewStats(any());
     }
 
     @Test
@@ -92,7 +82,6 @@ class AuthServiceTest {
         assertThrows(InvalidRegistrationException.class, () -> authService.register("alice", "abc"));
 
         verify(users, never()).insertNewUser(any(), any());
-        verify(userStats, never()).insertNewStats(any());
     }
 
     @Test
@@ -102,7 +91,6 @@ class AuthServiceTest {
         assertThrows(UsernameTakenException.class, () -> authService.register("alice", "secret1"));
 
         verify(users, never()).insertNewUser(any(), any());
-        verify(userStats, never()).insertNewStats(any());
     }
 
     // ---- login ---------------------------------------------------------------------
