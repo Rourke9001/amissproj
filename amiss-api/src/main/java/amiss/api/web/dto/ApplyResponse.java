@@ -1,10 +1,13 @@
 package amiss.api.web.dto;
 
+import java.util.List;
+
 /**
- * The outcome of a job application. {@code hired=false} with {@code reason=
- * "INSUFFICIENT_EDUCATION"} still reports {@code minutesCharged} — Swing parity: applying
- * always takes the full application time, win or lose.
+ * The outcome of a job application (KAN-54). A charged rejection (never hired, but
+ * {@code minutesCharged} still reflects the interview time) is a normal 200, not an error —
+ * {@code reasons} is the only channel through which a player ever learns why (education,
+ * experience, work-history, or no openings; possibly several at once).
  */
-public record ApplyResponse(boolean hired, String reason, int minutesCharged, String job,
-        Integer hourlyWage, PlayerStateDto state) {
+public record ApplyResponse(boolean hired, List<String> reasons, int minutesCharged, String job,
+        Integer wage, SaveStateDto state) {
 }
