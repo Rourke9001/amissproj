@@ -1,5 +1,9 @@
 package amiss.api.web.dto;
 
-/** One goal's current progress against its target (the {@code MainGameGUI} goal bars). */
-public record GoalDto(int current, int target) {
+/** One win-goal's current progress against its per-save target. */
+public record GoalDto(int current, int target, boolean met) {
+
+    public GoalDto(int current, int target) {
+        this(current, target, current >= target);
+    }
 }

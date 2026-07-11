@@ -1,8 +1,9 @@
 package amiss.api.web.dto;
 
 /**
- * The four win-condition goals shown on {@code MainGameGUI}: cash /1000, happiness /200,
- * work experience /200, education /8.
+ * The four per-save win-condition goals (KAN-53/KAN-54): {@code wealthStat = (cash+bank)/100},
+ * {@code happinessStat = happiness}, {@code educationStat = 1 + 9*degrees}, {@code careerStat =
+ * floor(1.25*dependability)} (0 while unemployed). Winning is all four {@code met} at once.
  */
-public record GoalsDto(GoalDto cash, GoalDto happiness, GoalDto workExperience, GoalDto education) {
+public record GoalsDto(GoalDto wealth, GoalDto happiness, GoalDto education, GoalDto career) {
 }
