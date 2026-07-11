@@ -1,17 +1,22 @@
 package amiss.api.web;
 
 import amiss.api.error.AlreadyEnrolledException;
+import amiss.api.error.DegreeAlreadyEarnedException;
+import amiss.api.error.DegreeLockedException;
 import amiss.api.error.EducationCompleteException;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InsufficientTimeException;
 import amiss.api.error.InvalidAmountException;
 import amiss.api.error.InvalidCredentialsException;
+import amiss.api.error.InvalidGoalException;
 import amiss.api.error.InvalidRegistrationException;
 import amiss.api.error.NoJobException;
 import amiss.api.error.NotEnrolledException;
 import amiss.api.error.PlayerNotFoundException;
 import amiss.api.error.RentNotDueException;
+import amiss.api.error.SaveNotFoundException;
 import amiss.api.error.UnderdressedException;
+import amiss.api.error.UnknownDegreeException;
 import amiss.api.error.UnknownItemException;
 import amiss.api.error.UnknownJobException;
 import amiss.api.error.UnknownLocationException;
@@ -46,6 +51,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Player not found");
         problem.setType(URI.create("urn:amiss:player-not-found"));
+        return problem;
+    }
+
+    @ExceptionHandler(SaveNotFoundException.class)
+    ProblemDetail saveNotFound(SaveNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Save not found");
+        problem.setType(URI.create("urn:amiss:save-not-found"));
         return problem;
     }
 
@@ -166,6 +179,38 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Education complete");
         problem.setType(URI.create("urn:amiss:education-complete"));
+        return problem;
+    }
+
+    @ExceptionHandler(UnknownDegreeException.class)
+    ProblemDetail unknownDegree(UnknownDegreeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Unknown degree");
+        problem.setType(URI.create("urn:amiss:unknown-degree"));
+        return problem;
+    }
+
+    @ExceptionHandler(DegreeLockedException.class)
+    ProblemDetail degreeLocked(DegreeLockedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Degree locked");
+        problem.setType(URI.create("urn:amiss:degree-locked"));
+        return problem;
+    }
+
+    @ExceptionHandler(DegreeAlreadyEarnedException.class)
+    ProblemDetail degreeAlreadyEarned(DegreeAlreadyEarnedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Degree already earned");
+        problem.setType(URI.create("urn:amiss:degree-already-earned"));
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidGoalException.class)
+    ProblemDetail invalidGoal(InvalidGoalException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid goal");
+        problem.setType(URI.create("urn:amiss:invalid-goal"));
         return problem;
     }
 
