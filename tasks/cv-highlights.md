@@ -285,3 +285,46 @@ security config actually loaded."*
 every response, invalidate on every error — came out of a live bug where a 409'd move
 had actually moved the player. It's a small discipline that eliminates a whole class of
 stale-UI bugs."*
+
+### Retiring the legacy desktop client
+- Sunset the original Swing client once the web stack reached feature parity: one
+  deletion PR removed the whole module (−4,700 lines) plus its Swing-only plumbing,
+  leaving the REST API + SPA as the single product surface.
+
+**Talking point:** *"Knowing when to delete is a skill: the desktop client had been the
+safety net through every refactor, and the moment the SPA covered its last screen it
+became pure maintenance drag. Because the rules lived behind ports, deleting an entire
+client was a low-risk PR, not a rewrite."*
+
+### Save slots & Jones-parity catalog schema (expand phase, Flyway V5)
+- Designed an **expand/contract schema migration**: an additive V5 introduces multiple
+  save slots per account (`tblsave` with per-save goal targets) and a normalized
+  job/degree catalog (`tbljob`, `tbldegrees`, a `tbljob_degrees` prerequisite mapping,
+  per-save application history) — while the legacy tables kept serving the live API
+  untouched; the destructive V6 lands only after the code cutover.
+- Mapped the new schema with validate-only JPA entities and Spring Data repositories,
+  proven against real MySQL 9 with Testcontainers integration tests before any consumer
+  code existed.
+
+**Talking point:** *"This is the zero-downtime schema-change discipline banks expect:
+expand first (additive, old code still runs), migrate the code, contract last. The
+migration history shows exactly that sequence — V5 additive, cutover PR, V6 drops the
+legacy shapes."*
+
+### Jones-parity hiring & progression mechanics (save-scoped core rules)
+- Implemented the reference game's employment model as pure, framework-free core
+  services behind ports: probabilistic hiring (odds reconstructed from the community
+  wiki as a function of experience, dependability and degrees), multi-reason rejection
+  outcomes with per-save turn-down history, pro-rated shift pay (wage × 8) with
+  warning/fired dependability bands, a prerequisite-driven degree tree, and per-save
+  goals with a sticky win condition — all TDD'd with a comprehensive unit suite.
+- Kept the game's hidden-information rule enforceable at the API boundary by design:
+  job requirements, experience and dependability live only in core outcome types, so
+  the web layer can expose player-visible results without ever leaking the hidden stats.
+
+**Talking point:** *"The fun part was reverse-engineering the 1990 game's hiring odds
+from wiki notes; the engineering part was where the rules live: save-scoped services
+behind ports with typed outcomes, so the API cutover that followed was a pure web-layer
+change — and 'the UI shouldn't show job requirements' became 'the wire contract has no
+requirement fields, pinned by tests', which is the difference between hiding data and
+not sending it."*

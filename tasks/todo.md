@@ -1205,16 +1205,44 @@ from DTOs, not just hidden); multiple saves per account; highscores retired.
 - [x] PR 2 `chore/retire-swing` — drop amiss-swing module + Swing-only plumbing
       *(#44, merged 2026-07-07; −4,721 lines; FlywayMigrator went too — the API runs
       Boot's own Flyway)*
-- [ ] PR 3 `feat/saves-jobs-degrees-schema` — additive V5 (tbldegrees/tbljob/
+- [x] PR 3 `feat/saves-jobs-degrees-schema` — additive V5 (tbldegrees/tbljob/
       tbljob_degrees/tblsave/…) + JPA entities/repos + Testcontainers ITs
-- [ ] PR 4 `feat/hiring-mechanics` — save-scoped core services: hiring (luck =
+      *(#45, merged 2026-07-07; KAN-52)*
+- [x] PR 4 `feat/hiring-mechanics` — save-scoped core services: hiring (luck =
       30 + (10+dep+exp+8×degrees)/3), shifts (wage×8 pro-rated, fire/warning bands),
       courses/degree tree, goals & win; full unit suite
+      *(#46, merged 2026-07-07; KAN-53)*
 - [ ] PR 5 `feat/saves-employment-api` — saves CRUD + route cutover
       /api/saves/{id}/… + hidden job listings + V6 drops legacy shapes + delete
       highscores; MockMvc pins the no-requirements/no-exp/dep wire contract
 - [ ] PR 6 `feat/frontend-saves-employment` — saves screen, goal setup, two-step
       employment office, course tree, win banner; highscores page removed
+
+### Session 2026-07-11 — PR 5 execution (KAN-54) + docs side-track
+SDD ledger: `.superpowers/sdd/progress.md`. Steps per the session handoff:
+- [x] Commit the vetted pre-work (core save services `35f3517`, JPA adapters
+      `8838afd`)
+- [x] Step A — web-layer cutover: SaveController + SaveScope (retires
+      PlayerScopeFilter), /api/players → /api/saves routes on SaveGameServices,
+      hidden-requirements DTOs + MockMvc pins (subagent; brief in scratchpad).
+      Scope note: the highscores permitAll row + endpoint now BOTH go in Step B
+      (deleting one without the other breaks the interim green build).
+      *Done 2026-07-11: commits 839cfa3..002541a, reviewed (one Important fix:
+      bank week-over gate restored, 12386a7; study-takes-no-degree-id accepted
+      as a documented deviation). Reactor green 240 core + 177 api. Details in
+      `.superpowers/sdd/progress.md`.*
+- [ ] Step B — legacy deletion (compiler as checklist), register rewrite to
+      name+password only, V6__drop_legacy_state.sql; re-verify
+      AuthRoundTripIT/SecurityLockdownIT
+- [ ] Step C — migration IT: clean V1→V6 + seeded pre-V5 user survives into a
+      tblsave row; reconcile SaveSchemaIT.COPY_SQL
+- [ ] Step D — `.\mvnw -B clean verify` green; MySQL97 smoke (register → create
+      save → apply Cook → work → enroll → rollover); push; PR → develop;
+      KAN-54 PR comment; **cv-highlights section for PR 5**; tick PR 5 above
+- [x] Side-track: `tasks/lessons.md` distilled (93 → 48 prescriptive entries;
+      format/reorg/stale-removal approved at checkpoint)
+- [x] Side-track: cv-highlights backfill — retire-Swing, KAN-52, KAN-53
+      sections (PRs #44/#45/#46 had shipped without CV bullets)
 
 ### Review
 *(fill in as PRs merge)*
