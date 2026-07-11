@@ -145,6 +145,34 @@ class BankControllerTest {
     }
 
     @Test
+    void deposit_weekOverIsA409Problem() throws Exception {
+        SaveState save = save();
+        mockTravelAt(save, Location.BANK);
+        BankService bank = mock(BankService.class);
+        when(services.bank()).thenReturn(bank);
+        when(bank.deposit(save, 50)).thenReturn(new BankTransaction(BankTransaction.Status.WEEK_OVER, 70, 50));
+
+        mvc.perform(postAmount("/api/saves/7/bank/deposit", 50))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:amiss:week-over"));
+    }
+
+    @Test
+    void withdraw_weekOverIsA409Problem() throws Exception {
+        SaveState save = save();
+        mockTravelAt(save, Location.BANK);
+        BankService bank = mock(BankService.class);
+        when(services.bank()).thenReturn(bank);
+        when(bank.withdraw(save, 20)).thenReturn(new BankTransaction(BankTransaction.Status.WEEK_OVER, 70, 50));
+
+        mvc.perform(postAmount("/api/saves/7/bank/withdraw", 20))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:amiss:week-over"));
+    }
+
+    @Test
     void deposit_anotherPlayersSaveIsForbiddenAndNeverReachesTheServices() throws Exception {
         when(scope.require(eq(7L), any())).thenThrow(new AccessDeniedException("nope"));
 

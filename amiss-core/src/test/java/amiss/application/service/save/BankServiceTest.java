@@ -129,4 +129,35 @@ class BankServiceTest {
         assertEquals(-1, result.bank());
         verifyNoInteractions(saves);
     }
+
+    @Test
+    void depositRefusesOnceTheWeekIsOver() {
+        SaveState save = TestSaves.newSave(); // cash 100, bank 0
+        save.setTimeMinutes(0);
+
+        BankTransaction result = service().deposit(save, 40);
+
+        assertEquals(BankTransaction.Status.WEEK_OVER, result.status());
+        assertEquals(100, result.cash());
+        assertEquals(0, result.bank());
+        assertEquals(100, save.cash());
+        assertEquals(0, save.bank());
+        verifyNoInteractions(saves);
+    }
+
+    @Test
+    void withdrawRefusesOnceTheWeekIsOver() {
+        SaveState save = TestSaves.newSave();
+        save.setBank(50);
+        save.setTimeMinutes(0);
+
+        BankTransaction result = service().withdraw(save, 20);
+
+        assertEquals(BankTransaction.Status.WEEK_OVER, result.status());
+        assertEquals(100, result.cash());
+        assertEquals(50, result.bank());
+        assertEquals(100, save.cash());
+        assertEquals(50, save.bank());
+        verifyNoInteractions(saves);
+    }
 }

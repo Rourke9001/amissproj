@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InvalidAmountException;
+import amiss.api.error.WeekOverException;
 import amiss.api.web.dto.BankRequest;
 import amiss.api.web.dto.BankTransactionResponse;
 import amiss.application.service.save.BankTransaction;
@@ -58,6 +59,8 @@ public class BankController {
                 throw new InvalidAmountException(amount);
             case INSUFFICIENT_FUNDS:
                 throw new InsufficientFundsException(saveId);
+            case WEEK_OVER:
+                throw new WeekOverException(saveId);
             default:
                 return new BankTransactionResponse(operation, amount, assembler.assemble(services, save));
         }

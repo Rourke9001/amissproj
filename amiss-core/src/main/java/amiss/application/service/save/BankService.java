@@ -6,7 +6,8 @@ import amiss.domain.model.SaveState;
 /**
  * The player's bank savings (KAN-53), the save-scoped port of the legacy {@code BankService}.
  * Deposits and withdrawals cost no time (the building-entry cost is already charged by
- * {@link TravelService}); there is no interest (KAN-5 economy epic).
+ * {@link TravelService}); there is no interest (KAN-5 economy epic); transactions are refused
+ * once the save's week is over.
  */
 public class BankService {
 
@@ -27,6 +28,9 @@ public class BankService {
     }
 
     private BankTransaction transfer(SaveState save, int amount, boolean deposit) {
+        if (save.weekOver()) {
+            return new BankTransaction(BankTransaction.Status.WEEK_OVER, save.cash(), save.bank());
+        }
         if (amount <= 0) {
             return new BankTransaction(BankTransaction.Status.INVALID_AMOUNT, -1, -1);
         }

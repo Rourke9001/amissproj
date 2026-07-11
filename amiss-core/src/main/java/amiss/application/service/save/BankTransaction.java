@@ -17,6 +17,8 @@ public record BankTransaction(Status status, int cash, int bank) {
         /** {@code amount} was not positive; nothing was checked or changed. */
         INVALID_AMOUNT,
         /** The source balance (cash for a deposit, bank for a withdrawal) was too low. */
-        INSUFFICIENT_FUNDS
+        INSUFFICIENT_FUNDS,
+        /** The week is over; nothing was checked or changed. */
+        WEEK_OVER
     }
 }
