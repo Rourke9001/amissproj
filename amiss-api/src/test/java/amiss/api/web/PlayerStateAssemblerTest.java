@@ -65,6 +65,11 @@ class PlayerStateAssemblerTest {
                 jobId, 60, 30, 40, currentCourseId, eduprog, 200, 100, 30, 50, false);
     }
 
+    private static SaveState save(int timeMinutes) {
+        return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, timeMinutes, 3, 120, 50, 0, 0, 1, 1,
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false);
+    }
+
     @Test
     void assemble_unemployedSaveHasUnemployedJobWageAndLocation() {
         when(degreeCatalog.all()).thenReturn(List.of());
@@ -141,5 +146,49 @@ class PlayerStateAssemblerTest {
         assertEquals(0, dto.location().row());
         assertEquals(2, dto.location().col());
         assertEquals(0, dto.location().ringIndex());
+    }
+
+    // ---- timeDisplay: wire contract, mirrored by frontend/src/game/formatMinutes.ts --------
+    // Carried over from the retired TimeServiceTest's format_* pins (KAN-54) now that
+    // PlayerStateAssembler owns the formatting.
+
+    @Test
+    void assemble_timeDisplayRendersHoursAndMinutes() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+
+        SaveStateDto dto = assembler.assemble(services(), save(2310));
+
+        assertEquals("38h 30m", dto.timeDisplay());
+    }
+
+    @Test
+    void assemble_timeDisplayOmitsTheMinutesPartWhenZero() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+
+        SaveStateDto dto = assembler.assemble(services(), save(4320));
+
+        assertEquals("72h", dto.timeDisplay());
+    }
+
+    @Test
+    void assemble_timeDisplayRendersUnderAnHourAsMinutesOnly() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+
+        SaveStateDto dto = assembler.assemble(services(), save(45));
+
+        assertEquals("45m", dto.timeDisplay());
+    }
+
+    @Test
+    void assemble_timeDisplayRendersAnEmptyClockAsZeroHours() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+
+        SaveStateDto dto = assembler.assemble(services(), save(0));
+
+        assertEquals("0h", dto.timeDisplay());
     }
 }

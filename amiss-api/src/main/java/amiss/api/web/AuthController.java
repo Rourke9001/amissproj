@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Register/login/me (KAN-36): mints and verifies the stateless HS256 JWT {@link
  * amiss.api.security.SecurityConfig} wires up. Register/login are the only {@code /api/**}
- * routes that stay {@code permitAll()} (alongside {@code GET /api/highscores}) — every other
- * route, including {@code GET /api/auth/me}, requires the token minted here (KAN-37).
+ * routes that stay {@code permitAll()} — every other route, including {@code GET
+ * /api/auth/me}, requires the token minted here (KAN-37).
  */
 @RestController
 @RequestMapping("/api/auth")

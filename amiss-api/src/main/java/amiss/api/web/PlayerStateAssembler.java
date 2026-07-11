@@ -7,7 +7,6 @@ import amiss.api.web.dto.JobDto;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.SaveStateDto;
 import amiss.application.port.JobCatalog;
-import amiss.application.service.TimeService;
 import amiss.application.service.save.CourseService;
 import amiss.application.service.save.GoalService;
 import amiss.application.service.save.SaveGameServices;
@@ -63,7 +62,7 @@ public class PlayerStateAssembler {
                 save.label(),
                 save.round(),
                 save.timeMinutes(),
-                TimeService.format(save.timeMinutes()),
+                format(save.timeMinutes()),
                 save.weekOver(),
                 save.cash(),
                 save.bank(),
@@ -95,5 +94,23 @@ public class PlayerStateAssembler {
                 new GoalDto(progress.happiness().current(), progress.happiness().target()),
                 new GoalDto(progress.education().current(), progress.education().target()),
                 new GoalDto(progress.career().current(), progress.career().target()));
+    }
+
+    /**
+     * Renders a minutes budget as {@code "38h 30m"} / {@code "72h"} / {@code "45m"} /
+     * {@code "0h"} — moved here byte-identical from the retired {@code TimeService.format}
+     * (KAN-54), whose only caller this was. Wire contract: mirrored by {@code
+     * frontend/src/game/formatMinutes.ts}.
+     */
+    private static String format(int minutes) {
+        int h = minutes / 60;
+        int m = minutes % 60;
+        if (m == 0) {
+            return h + "h";
+        }
+        if (h == 0) {
+            return m + "m";
+        }
+        return h + "h " + m + "m";
     }
 }

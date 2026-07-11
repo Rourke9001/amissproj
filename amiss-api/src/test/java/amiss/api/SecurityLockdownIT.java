@@ -160,13 +160,6 @@ class SecurityLockdownIT extends AuthRoundTripSupport {
     }
 
     @Test
-    void anonymousHighscores_staysPublic() {
-        ResponseEntity<String> response = rest.getForEntity("/api/highscores", String.class);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-
-    @Test
     void anonymousHealth_isStatusOnly() {
         ResponseEntity<String> response = rest.getForEntity("/actuator/health", String.class);
 

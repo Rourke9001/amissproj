@@ -37,11 +37,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * Stateless HS256 JWT security for the REST API (KAN-36 issues/verifies the token; KAN-37
  * gates every route with it).
  *
- * <p><b>Routes:</b> register, login, {@code GET /api/highscores}, actuator health and
- * {@code /error} are public; everything else requires a bearer token. {@code OPTIONS} is also
- * {@code permitAll()} — a CORS preflight carries no {@code Authorization} header, so it would
- * otherwise 401 before the browser sends the real request (the documented Spring Security
- * CORS gotcha).
+ * <p><b>Routes:</b> register, login, actuator health and {@code /error} are public; everything
+ * else requires a bearer token. {@code OPTIONS} is also {@code permitAll()} — a CORS preflight
+ * carries no {@code Authorization} header, so it would otherwise 401 before the browser sends
+ * the real request (the documented Spring Security CORS gotcha).
  *
  * <p><b>Save scoping (IDOR prevention):</b> unlike the retired {@code PlayerScopeFilter} (a
  * single filter regex over the flat {@code /api/players/{username}} segment), ownership of a
@@ -79,7 +78,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/highscores").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/**").authenticated()
