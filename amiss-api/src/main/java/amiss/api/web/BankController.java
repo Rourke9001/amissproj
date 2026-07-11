@@ -1,15 +1,14 @@
 package amiss.api.web;
 
-import amiss.api.config.GameServicesFactory;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InvalidAmountException;
-import amiss.api.error.WeekOverException;
 import amiss.api.web.dto.BankRequest;
 import amiss.api.web.dto.BankTransactionResponse;
-import amiss.application.port.PersistenceFailureException;
-import amiss.application.service.BankTransaction;
-import amiss.application.service.GameServices;
+import amiss.application.service.save.BankTransaction;
+import amiss.application.service.save.SaveGameServices;
 import amiss.domain.board.Location;
+import amiss.domain.model.SaveState;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,50 +16,50 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Bank deposits and withdrawals (KAN-31, greenfield). Transactions cost no time (the 2h
- * building-entry cost is already charged by {@code move}) and are only reachable while
- * standing at the {@link Location#BANK} stop.
+ * Bank deposits and withdrawals (KAN-54: cut over to {@code /api/saves/{saveId}/bank}).
+ * Transactions cost no time (the building-entry cost is already charged by {@code move}) and
+ * are only reachable while standing at the {@link Location#BANK} stop.
  */
 @RestController
-@RequestMapping("/api/players/{username}/bank")
+@RequestMapping("/api/saves/{saveId}/bank")
 public class BankController {
 
-    private final GameServicesFactory factory;
+    private final SaveScope scope;
+    private final SaveGameServices services;
     private final PlayerStateAssembler assembler;
 
-    public BankController(GameServicesFactory factory, PlayerStateAssembler assembler) {
-        this.factory = factory;
+    public BankController(SaveScope scope, SaveGameServices services, PlayerStateAssembler assembler) {
+        this.scope = scope;
+        this.services = services;
         this.assembler = assembler;
     }
 
     @PostMapping("/deposit")
-    public BankTransactionResponse deposit(@PathVariable String username, @RequestBody BankRequest request) {
-        return transact(username, request, true, "deposit");
+    public BankTransactionResponse deposit(@PathVariable long saveId, Authentication authentication,
+            @RequestBody BankRequest request) {
+        return transact(saveId, authentication, request, true, "deposit");
     }
 
     @PostMapping("/withdraw")
-    public BankTransactionResponse withdraw(@PathVariable String username, @RequestBody BankRequest request) {
-        return transact(username, request, false, "withdraw");
+    public BankTransactionResponse withdraw(@PathVariable long saveId, Authentication authentication,
+            @RequestBody BankRequest request) {
+        return transact(saveId, authentication, request, false, "withdraw");
     }
 
-    private BankTransactionResponse transact(String username, BankRequest request, boolean deposit, String operation) {
-        GameServices services = factory.forPlayer(username);
-        if (services.time().spendMinutes(0).weekOver()) {
-            throw new WeekOverException(username);
-        }
-        LocationGuard.requireAt(services, Location.BANK);
+    private BankTransactionResponse transact(long saveId, Authentication authentication, BankRequest request,
+            boolean deposit, String operation) {
+        SaveState save = scope.require(saveId, authentication);
+        LocationGuard.requireAt(services.travel(), save, Location.BANK);
 
         int amount = request.amount() == null ? 0 : request.amount();
-        BankTransaction result = deposit ? services.bank().deposit(amount) : services.bank().withdraw(amount);
+        BankTransaction result = deposit ? services.bank().deposit(save, amount) : services.bank().withdraw(save, amount);
         switch (result.status()) {
             case INVALID_AMOUNT:
                 throw new InvalidAmountException(amount);
             case INSUFFICIENT_FUNDS:
-                throw new InsufficientFundsException(username);
-            case FAILED:
-                throw new PersistenceFailureException("Bank transfer failed for '" + username + "'");
+                throw new InsufficientFundsException(saveId);
             default:
-                return new BankTransactionResponse(operation, amount, assembler.assemble(username, services));
+                return new BankTransactionResponse(operation, amount, assembler.assemble(services, save));
         }
     }
 }
