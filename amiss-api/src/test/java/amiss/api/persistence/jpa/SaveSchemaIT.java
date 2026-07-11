@@ -2,35 +2,33 @@ package amiss.api.persistence.jpa;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import amiss.api.config.CostsConfig;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * KAN-52: proves the V5 expand migration on a real, freshly-migrated MySQL 9 —
- * the wiki catalog seed (11 degrees / 39 jobs / degree requirements), the new
- * save tables' entity round-trips, and the user→save copy rule.
+ * the wiki catalog seed (11 degrees / 39 jobs / degree requirements) and the
+ * new save tables' entity round-trips.
  *
- * <p>The copy rule ran at container migration time against zero users, so it is
- * exercised here by seeding a legacy user/stats pair and re-running the same
- * {@code INSERT…SELECT} (scoped to that user) — keep {@link #COPY_SQL} textually
- * in sync with V5.
+ * <p>The user→save copy rule itself (run once, at migration time, against
+ * whatever accounts already exist) is exercised end-to-end by {@link
+ * LegacyToSaveMigrationIT} (KAN-54), which seeds a genuine pre-V5 account and
+ * runs the real V5/V6 migrations against it. This class only needs an owner
+ * row to satisfy {@code tblsave}'s FK, so {@link #insertUser} writes the
+ * post-V6 credentials-only shape rather than the legacy one.
+ *
+ * <p>{@link CostsConfig} is imported for the same reason as in {@link
+ * SavePortsAdapterIT}: {@code PersistenceConfig}'s {@code SaveGameServices}
+ * bean needs an {@code ActionCosts} bean to satisfy its dependencies at
+ * context startup, exactly as in production.
  */
+@Import(CostsConfig.class)
 class SaveSchemaIT extends MySqlITSupport {
-
-    private static final String COPY_SQL = """
-            INSERT INTO tblsave (owner, label, xpos, ypos, `time`, round, cash, bank, debt,
-                                 rent, eat, clothing, happiness, experience, dependability,
-                                 goal_wealth, goal_happiness, goal_education, goal_career, won)
-            SELECT u.name, 'Save 1', u.xpos, u.ypos, u.`time`, u.round, u.cash, u.bank, u.debt,
-                   u.rent, u.eat, u.clothing, s.happiness, 10, 20,
-                   50, 50, 50, 50, 0
-            FROM tbluser u
-            JOIN tbluserstats s ON s.name = u.name
-            WHERE u.name = ?
-            """;
 
     @Autowired
     private JdbcTemplate jdbc;
@@ -56,7 +54,6 @@ class SaveSchemaIT extends MySqlITSupport {
         jdbc.update("DELETE FROM tblsave_turndowns");
         jdbc.update("DELETE FROM tblsave_degrees");
         jdbc.update("DELETE FROM tblsave");
-        jdbc.update("DELETE FROM tbluserstats WHERE name LIKE 'it_save_%'");
         jdbc.update("DELETE FROM tbluser WHERE name LIKE 'it_save_%'");
     }
 
@@ -115,7 +112,7 @@ class SaveSchemaIT extends MySqlITSupport {
 
     @Test
     void persistsASaveWithNewGameDefaults() {
-        insertLegacyUser("it_save_alice", 250, 7);
+        insertUser("it_save_alice");
 
         SaveEntity created = saves.saveAndFlush(new SaveEntity("it_save_alice", "First try", 40, 50, 60, 70));
         SaveEntity reloaded = saves.findById(created.getId()).orElseThrow();
@@ -136,8 +133,8 @@ class SaveSchemaIT extends MySqlITSupport {
 
     @Test
     void scopesSavesByOwner() {
-        insertLegacyUser("it_save_alice", 0, 0);
-        insertLegacyUser("it_save_bob", 0, 0);
+        insertUser("it_save_alice");
+        insertUser("it_save_bob");
         SaveEntity alices = saves.saveAndFlush(new SaveEntity("it_save_alice", "Save 1", 10, 10, 10, 10));
         saves.saveAndFlush(new SaveEntity("it_save_bob", "Save 1", 10, 10, 10, 10));
 
@@ -149,7 +146,7 @@ class SaveSchemaIT extends MySqlITSupport {
 
     @Test
     void persistsEarnedDegreesAndTurndownsAndCascadesOnSaveDelete() {
-        insertLegacyUser("it_save_alice", 0, 0);
+        insertUser("it_save_alice");
         SaveEntity save = saves.saveAndFlush(new SaveEntity("it_save_alice", "Save 1", 10, 10, 10, 10));
 
         saveDegrees.saveAndFlush(new SaveDegreeEntity(save.getId(), 1));
@@ -174,45 +171,14 @@ class SaveSchemaIT extends MySqlITSupport {
         assertThat(turndownRows).isZero();
     }
 
-    // ===== the V5 user→save copy rule =====
-
-    @Test
-    void copiesALegacyAccountIntoOneStarterSave() {
-        insertLegacyUser("it_save_legacy", 421, 4);
-
-        jdbc.update(COPY_SQL, "it_save_legacy");
-
-        List<SaveEntity> copied = saves.findByOwnerOrderByUpdatedAtDesc("it_save_legacy");
-        assertThat(copied).hasSize(1);
-        SaveEntity save = copied.get(0);
-        assertThat(save.getLabel()).isEqualTo("Save 1");
-        assertThat(save.getCash()).isEqualTo(421);   // money carried over
-        assertThat(save.getRound()).isEqualTo(4);
-        assertThat(save.getHappiness()).isEqualTo(33);
-        assertThat(save.getJobId()).isNull();        // career reset
-        assertThat(save.getExperience()).isEqualTo(10);
-        assertThat(save.getDependability()).isEqualTo(20);
-        assertThat(save.getGoalWealth()).isEqualTo(50);
-        assertThat(save.getGoalHappiness()).isEqualTo(50);
-        assertThat(save.getGoalEducation()).isEqualTo(50);
-        assertThat(save.getGoalCareer()).isEqualTo(50);
-        assertThat(saveDegrees.findBySaveId(save.getId())).isEmpty();   // education reset
-    }
-
     // ===== helpers =====
 
     private static DegreeEntity byName(List<DegreeEntity> all, String name) {
         return all.stream().filter(d -> d.getName().equals(name)).findFirst().orElseThrow();
     }
 
-    /** Seeds a legacy tbluser + tbluserstats pair the way pre-V5 registration did. */
-    private void insertLegacyUser(String name, int cash, int round) {
-        jdbc.update("""
-                INSERT INTO tbluser (name, password, xpos, ypos, `time`, cash, round, job,
-                                     clothing, rent, eat, debt, bank)
-                VALUES (?, 'x', 0, 0, 4320, ?, ?, 'Unemployed', 1, 1, 0, 0, 0)
-                """, name, cash, round == 0 ? 1 : round);
-        jdbc.update("INSERT INTO tbluserstats (name, happiness, education, work, eduprog) "
-                + "VALUES (?, 33, 2, 5, 0)", name);
+    /** Inserts an owning user (FK; tbluser is credentials-only post-V6, KAN-54). */
+    private void insertUser(String name) {
+        jdbc.update("INSERT INTO tbluser (name, password) VALUES (?, 'x')", name);
     }
 }

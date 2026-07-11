@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import amiss.api.config.CostsConfig;
 import amiss.application.port.UserRepository;
 import amiss.infrastructure.security.PasswordHasher;
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 
 /**
  * Integration test for {@link JpaUserRepository} (the {@link UserRepository} port,
@@ -19,7 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
  * against that shrunk schema, not just that the adapter *called* the repository. See
  * {@link MySqlITSupport} for the container/transaction wiring; every test cleans up the
  * rows it inserted in {@link #cleanUp()} — there is no free rollback.
+ *
+ * <p>{@link CostsConfig} is imported for the same reason as in {@link SavePortsAdapterIT}:
+ * {@code PersistenceConfig}'s {@code SaveGameServices} bean needs an {@code ActionCosts}
+ * bean to satisfy its dependencies at context startup, exactly as in production.
  */
+@Import(CostsConfig.class)
 class UserRepositoryIT extends MySqlITSupport {
 
     @Autowired
