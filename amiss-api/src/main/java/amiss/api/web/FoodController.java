@@ -1,6 +1,5 @@
 package amiss.api.web;
 
-import amiss.api.config.GameServicesFactory;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InsufficientTimeException;
 import amiss.api.error.UnknownItemException;
@@ -15,17 +14,19 @@ import amiss.api.web.dto.FoodPackDto;
 import amiss.api.web.dto.GroceriesRequest;
 import amiss.api.web.dto.GroceriesResponse;
 import amiss.api.web.dto.MenuItemDto;
-import amiss.application.port.PersistenceFailureException;
-import amiss.application.service.EatOutcome;
-import amiss.application.service.GameServices;
-import amiss.application.service.PurchaseOutcome;
+import amiss.application.config.ActionCosts;
+import amiss.application.service.save.EatOutcome;
+import amiss.application.service.save.PurchaseOutcome;
+import amiss.application.service.save.SaveGameServices;
 import amiss.domain.board.Location;
 import amiss.domain.model.ClothingItem;
 import amiss.domain.model.FastFoodItem;
 import amiss.domain.model.FoodPack;
+import amiss.domain.model.SaveState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,19 +34,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The food/clothing catalogs, eating, buying groceries and buying clothes (KAN-32; the clothes
- * endpoint is the scope addition noted on KAN-32). Each mutating action requires standing at
- * the item's building.
+ * The food/clothing catalogs, eating, buying groceries and buying clothes (KAN-54: cut over
+ * to {@code /api/saves/{saveId}}). Each mutating action requires standing at the item's
+ * building; the catalogs themselves stay unscoped.
  */
 @RestController
 public class FoodController {
 
-    private final GameServicesFactory factory;
+    private final SaveScope scope;
+    private final SaveGameServices services;
     private final PlayerStateAssembler assembler;
+    private final ActionCosts costs;
 
-    public FoodController(GameServicesFactory factory, PlayerStateAssembler assembler) {
-        this.factory = factory;
+    public FoodController(SaveScope scope, SaveGameServices services, PlayerStateAssembler assembler,
+            ActionCosts costs) {
+        this.scope = scope;
+        this.services = services;
         this.assembler = assembler;
+        this.costs = costs;
     }
 
     @GetMapping("/api/food")
@@ -70,67 +76,63 @@ public class FoodController {
         return items;
     }
 
-    @PostMapping("/api/players/{username}/eat")
-    public EatResponse eat(@PathVariable String username, @RequestBody EatRequest request) {
+    @PostMapping("/api/saves/{saveId}/eat")
+    public EatResponse eat(@PathVariable long saveId, Authentication authentication, @RequestBody EatRequest request) {
         FastFoodItem item = parseFastFoodItem(request.item());
-        GameServices services = factory.forPlayer(username);
-        LocationGuard.requireAt(services, Location.MONOLITH_BURGERS);
+        SaveState save = scope.require(saveId, authentication);
+        LocationGuard.requireAt(services.travel(), save, Location.MONOLITH_BURGERS);
 
-        EatOutcome outcome = services.stats().eat(item.price());
+        EatOutcome outcome = services.shop().eat(save, item);
         switch (outcome.status()) {
             case INSUFFICIENT_TIME:
-                throw new InsufficientTimeException(username);
-            case FAILED:
-                throw new PersistenceFailureException("Eating failed for '" + username + "'");
+                throw new InsufficientTimeException(saveId);
             case INSUFFICIENT_CASH:
                 return new EatResponse(item.name(), item.price(), false, "INSUFFICIENT_CASH",
-                        services.costs().eatMinutes(), assembler.assemble(username, services));
+                        costs.eatMinutes(), assembler.assemble(services, save));
             default:
                 return new EatResponse(item.name(), item.price(), true, null,
-                        services.costs().eatMinutes(), assembler.assemble(username, services));
+                        costs.eatMinutes(), assembler.assemble(services, save));
         }
     }
 
-    @PostMapping("/api/players/{username}/groceries")
-    public GroceriesResponse groceries(@PathVariable String username, @RequestBody GroceriesRequest request) {
+    @PostMapping("/api/saves/{saveId}/groceries")
+    public GroceriesResponse groceries(@PathVariable long saveId, Authentication authentication,
+            @RequestBody GroceriesRequest request) {
         FoodPack pack = parseFoodPack(request.pack());
-        GameServices services = factory.forPlayer(username);
-        LocationGuard.requireAt(services, Location.BLACKS_MARKET);
+        SaveState save = scope.require(saveId, authentication);
+        LocationGuard.requireAt(services.travel(), save, Location.BLACKS_MARKET);
 
-        PurchaseOutcome outcome = services.stats().buyGroceries(pack.price(), pack.weeks());
+        PurchaseOutcome outcome = services.shop().buyGroceries(save, pack);
         switch (outcome.status()) {
             case WEEK_OVER:
-                throw new WeekOverException(username);
+                throw new WeekOverException(saveId);
             case INSUFFICIENT_CASH:
-                throw new InsufficientFundsException(username);
+                throw new InsufficientFundsException(saveId);
             case INSUFFICIENT_TIME:
-                throw new InsufficientTimeException(username);
-            case FAILED:
-                throw new PersistenceFailureException("Grocery purchase failed for '" + username + "'");
+                throw new InsufficientTimeException(saveId);
             default:
-                return new GroceriesResponse(pack.name(), pack.price(), pack.weeks(),
-                        services.food().getFood(), assembler.assemble(username, services));
+                return new GroceriesResponse(pack.name(), pack.price(), pack.weeks(), save.eat(),
+                        assembler.assemble(services, save));
         }
     }
 
-    @PostMapping("/api/players/{username}/clothes")
-    public ClothesResponse clothes(@PathVariable String username, @RequestBody ClothesRequest request) {
+    @PostMapping("/api/saves/{saveId}/clothes")
+    public ClothesResponse clothes(@PathVariable long saveId, Authentication authentication,
+            @RequestBody ClothesRequest request) {
         ClothingItem item = parseClothingItem(request.item());
-        GameServices services = factory.forPlayer(username);
-        LocationGuard.requireAt(services, Location.QT_CLOTHING);
+        SaveState save = scope.require(saveId, authentication);
+        LocationGuard.requireAt(services.travel(), save, Location.QT_CLOTHING);
 
-        PurchaseOutcome outcome = services.stats().buyClothes(item.level(), item.price());
+        PurchaseOutcome outcome = services.shop().buyClothes(save, item);
         switch (outcome.status()) {
             case WEEK_OVER:
-                throw new WeekOverException(username);
+                throw new WeekOverException(saveId);
             case INSUFFICIENT_CASH:
-                throw new InsufficientFundsException(username);
+                throw new InsufficientFundsException(saveId);
             case INSUFFICIENT_TIME:
-                throw new InsufficientTimeException(username);
-            case FAILED:
-                throw new PersistenceFailureException("Clothing purchase failed for '" + username + "'");
+                throw new InsufficientTimeException(saveId);
             default:
-                return new ClothesResponse(item.name(), item.price(), item.level(), assembler.assemble(username, services));
+                return new ClothesResponse(item.name(), item.price(), item.level(), assembler.assemble(services, save));
         }
     }
 
