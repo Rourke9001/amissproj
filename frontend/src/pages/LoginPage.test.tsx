@@ -33,7 +33,7 @@ function renderLoginPage(initialEntry: InitialEntry = '/login') {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/game" element={<p>Game probe</p>} />
+          <Route path="/saves" element={<p>Saves probe</p>} />
           <Route path="/secret" element={<p>Secret probe</p>} />
         </Routes>
       </AuthProvider>
@@ -91,14 +91,14 @@ describe('LoginPage', () => {
     expect(screen.queryByText(USERNAME_RULE)).not.toBeInTheDocument();
   });
 
-  it('on login success stores the session and navigates to /game', async () => {
+  it('on login success stores the session and navigates to /saves', async () => {
     loginMock.mockResolvedValue(tokenResponse());
     const user = userEvent.setup();
     renderLoginPage();
 
     await fillAndSubmit(user, 'alice', 'password1');
 
-    expect(await screen.findByText('Game probe')).toBeInTheDocument();
+    expect(await screen.findByText('Saves probe')).toBeInTheDocument();
     expect(loginMock).toHaveBeenCalledWith({ username: 'alice', password: 'password1' });
     expect(tokenStore.load()?.username).toBe('alice');
     expect(tokenStore.load()?.accessToken).toBe('jwt-token');
@@ -112,7 +112,7 @@ describe('LoginPage', () => {
     await fillAndSubmit(user, 'alice', 'password1');
 
     expect(await screen.findByText('Secret probe')).toBeInTheDocument();
-    expect(screen.queryByText('Game probe')).not.toBeInTheDocument();
+    expect(screen.queryByText('Saves probe')).not.toBeInTheDocument();
   });
 
   it('shows a form-level error on 401 invalid-credentials and does not navigate', async () => {
@@ -129,7 +129,7 @@ describe('LoginPage', () => {
     await fillAndSubmit(user, 'alice', 'password1');
 
     expect(await screen.findByText('Wrong username or password.')).toBeInTheDocument();
-    expect(screen.queryByText('Game probe')).not.toBeInTheDocument();
+    expect(screen.queryByText('Saves probe')).not.toBeInTheDocument();
     expect(tokenStore.load()).toBeNull();
   });
 
@@ -141,7 +141,7 @@ describe('LoginPage', () => {
     await fillAndSubmit(user, 'alice', 'password1');
 
     expect(await screen.findByText('Could not reach the server.')).toBeInTheDocument();
-    expect(screen.queryByText('Game probe')).not.toBeInTheDocument();
+    expect(screen.queryByText('Saves probe')).not.toBeInTheDocument();
   });
 
   it('register mode: 409 username-taken shows a username field error', async () => {
@@ -163,7 +163,7 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('That username is taken.')).toBeInTheDocument();
     expect(loginMock).not.toHaveBeenCalled();
-    expect(screen.queryByText('Game probe')).not.toBeInTheDocument();
+    expect(screen.queryByText('Saves probe')).not.toBeInTheDocument();
   });
 
   it('register mode: 400 invalid-registration shows the server detail as a form error', async () => {
@@ -187,7 +187,7 @@ describe('LoginPage', () => {
     expect(loginMock).not.toHaveBeenCalled();
   });
 
-  it('register success registers, then logs in, then redirects to /game', async () => {
+  it('register success registers, then logs in, then redirects to /saves', async () => {
     registerMock.mockResolvedValue({ username: 'alice' });
     loginMock.mockResolvedValue(tokenResponse());
     const user = userEvent.setup();
@@ -198,7 +198,7 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText('Password'), 'password1');
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
-    expect(await screen.findByText('Game probe')).toBeInTheDocument();
+    expect(await screen.findByText('Saves probe')).toBeInTheDocument();
     expect(registerMock).toHaveBeenCalledWith({ username: 'alice', password: 'password1' });
     expect(loginMock).toHaveBeenCalledWith({ username: 'alice', password: 'password1' });
     expect(registerMock.mock.invocationCallOrder[0]).toBeLessThan(
@@ -207,7 +207,7 @@ describe('LoginPage', () => {
     expect(tokenStore.load()?.username).toBe('alice');
   });
 
-  it('redirects an already-authenticated user straight to /game', async () => {
+  it('redirects an already-authenticated user straight to /saves', async () => {
     tokenStore.save({
       accessToken: 'jwt-token',
       username: 'alice',
@@ -216,7 +216,7 @@ describe('LoginPage', () => {
     meMock.mockResolvedValue({ username: 'alice' });
     renderLoginPage();
 
-    expect(await screen.findByText('Game probe')).toBeInTheDocument();
+    expect(await screen.findByText('Saves probe')).toBeInTheDocument();
     expect(screen.queryByLabelText('Username')).not.toBeInTheDocument();
   });
 });

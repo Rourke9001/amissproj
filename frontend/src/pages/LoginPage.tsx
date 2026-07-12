@@ -34,7 +34,7 @@ export function LoginPage() {
 
   // Where to go once authenticated: back to the page RequireAuth bounced the
   // user from, or the game by default.
-  const from = (location.state as { from?: Location })?.from?.pathname ?? '/game';
+  const from = (location.state as { from?: Location })?.from?.pathname ?? '/saves';
 
   // Also covers the moment right after a successful login: the auth state
   // update can re-render this page before the navigate() transition commits,
