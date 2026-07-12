@@ -210,7 +210,18 @@ in MySQL 9) — the container won't boot; override with
 `withConfigurationOverride()` pointing at a near-empty conf dir. Use the
 singleton-container pattern (static start, never stop; Ryuk reaps it) —
 per-class `@Container` restarts leave the cached Spring context's pool
-pointing at a dead container.
+pointing at a dead container. A static analyzer flags the never-closed
+container field as a "resource leak" — expected for this idiom (Ryuk reaps
+it at JVM exit), not a defect; don't add a close/stop call.
+
+### A test needing two migration targets in one run gets its own container
+`LegacyToSaveMigrationIT` (KAN-54) needed to stop Flyway at an old version,
+seed data, then migrate the rest of the way — the shared `MySqlITSupport`
+singleton is unusable for this because every Spring-based `*IT` in the same
+JVM run drives it straight to the latest schema at context startup, so
+"target an old version" silently no-ops once another test has already gone
+first. Give a test like this its own dedicated container (same singleton-start
+idiom, just not shared) rather than fighting execution order.
 
 ## Testing
 
@@ -256,6 +267,18 @@ Characterization tests pin current behaviour, quirks included. A genuine
 defect found while characterizing gets documented + pinned, not silently
 fixed; a deliberate fix is its own approved commit with a regression test
 (precedent: the clothes-purchase validate-before-charge fix).
+
+### Mutation RED for a brand-new integration test
+- **Context:** TDD-ing a new IT/file with no prior broken behaviour to fail
+  against (e.g. `LegacyToSaveMigrationIT`, KAN-54 — the migrations it proves
+  were already committed and reviewed, so the first honest run just passes).
+- **Solution:** write the test, confirm it's green, then deliberately mutate
+  one assertion per method to a wrong expected value and re-run. The failure
+  output's "but was" side must show the *genuinely correct* post-migration
+  value — proof the assertion reads real state, not a tautology — then revert
+  the mutation for the real GREEN run.
+- **Why:** a passing test on the first try is not evidence it asserts
+  anything; this is the RED step for tests that can't fail the normal way.
 
 ## Database & Flyway
 
@@ -340,6 +363,14 @@ empty.
 package from its directory (`dirname | sed 's|src/main/java/||; s|/|.|g'`) and
 sed the first `package …;` line. ~40 files fixed deterministically; only class
 renames/imports need real thought.
+
+### A dropped/renamed table can still be live in a workflow file
+`.github/workflows/migrations.yml` hardcoded `SELECT COUNT(*) FROM tbljobs`
+as a seed-data check; V6 (KAN-54) dropped that table and nothing local caught
+it — `mvnw verify` never runs this workflow's raw SQL, only `gh pr checks`
+after push did. When a migration drops or renames a table/column, grep
+`.github/workflows/*.yml` (and any other non-Java script) for the old name —
+these references aren't part of the Maven build and won't show up before CI.
 
 ## API & SPA contract rules
 
