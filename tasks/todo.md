@@ -1212,11 +1212,12 @@ from DTOs, not just hidden); multiple saves per account; highscores retired.
       30 + (10+dep+exp+8×degrees)/3), shifts (wage×8 pro-rated, fire/warning bands),
       courses/degree tree, goals & win; full unit suite
       *(#46, merged 2026-07-07; KAN-53)*
-- [ ] PR 5 `feat/saves-employment-api` — saves CRUD + route cutover
+- [x] PR 5 `feat/saves-employment-api` — saves CRUD + route cutover
       /api/saves/{id}/… + hidden job listings + V6 drops legacy shapes + delete
       highscores; MockMvc pins the no-requirements/no-exp/dep wire contract
-      *(KAN-54; implementation complete, PR opened 2026-07-12 — awaiting
-      Rourke's review/merge, see the session block below; box ticks on merge)*
+      *(#47, merged 2026-07-12; KAN-54 → Done. V6 is one-way — develop's
+      schema is now credentials-only tbluser + save-scoped state. Breaks the
+      SPA by design until PR 6 lands.)*
 - [ ] PR 6 `feat/frontend-saves-employment` — saves screen, goal setup, two-step
       employment office, course tree, win banner; highscores page removed
 
