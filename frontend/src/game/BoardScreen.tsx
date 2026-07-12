@@ -9,6 +9,7 @@ import { formatMinutes } from './formatMinutes';
 import { ringSteps } from './ring';
 import { Hud } from './Hud';
 import { EndWeekModal } from './EndWeekModal';
+import { WinBanner } from './WinBanner';
 import { WorkAction } from './WorkAction';
 import { resolvePanel } from './panels/registry';
 import './board.css';
@@ -37,6 +38,7 @@ export function BoardScreen({ saveId }: BoardScreenProps) {
   const queryClient = useQueryClient();
   const [notifications, setNotifications] = useState<string[]>([]);
   const [endWeekResult, setEndWeekResult] = useState<EndWeekResponse | null>(null);
+  const [winBannerDismissed, setWinBannerDismissed] = useState(false);
 
   const pushNotification = (message: string) => {
     setNotifications((prev) => [message, ...prev].slice(0, MAX_NOTIFICATIONS));
@@ -163,6 +165,9 @@ export function BoardScreen({ saveId }: BoardScreenProps) {
       </ul>
       {endWeekResult !== null && (
         <EndWeekModal result={endWeekResult} onClose={() => setEndWeekResult(null)} />
+      )}
+      {player.won && !winBannerDismissed && (
+        <WinBanner onDismiss={() => setWinBannerDismissed(true)} />
       )}
     </section>
   );

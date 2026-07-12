@@ -409,4 +409,15 @@ describe('BoardScreen', () => {
     expect(await within(feed).findByText('The week is not over yet.')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('shows the win banner once the save has won, and dismisses it without leaving the screen', async () => {
+    getSaveStateMock.mockResolvedValue(playerFixture({ won: true }));
+    renderBoardScreen();
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole('dialog', { name: 'You won' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Keep Playing' }));
+
+    expect(screen.queryByRole('dialog', { name: 'You won' })).not.toBeInTheDocument();
+  });
 });
