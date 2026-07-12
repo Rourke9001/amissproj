@@ -60,7 +60,7 @@ class EmploymentControllerTest {
 
     private static SaveState save(Integer jobId) {
         return new SaveState(7L, "bob", "My Save", 3, 3, 3960, 3, 70, 0, 0, 0, 1, 1,
-                jobId, 60, 30, 40, null, 0, 200, 100, 30, 50, false);
+                jobId, 60, 30, 40, null, 0, 200, 100, 30, 50, false, 0, 0);
     }
 
     private static SaveStateDto dto() {

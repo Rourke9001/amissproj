@@ -62,12 +62,12 @@ class PlayerStateAssemblerTest {
 
     private static SaveState save(Integer jobId, Integer currentCourseId, int eduprog) {
         return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, 3960, 3, 120, 50, 0, 0, 1, 1,
-                jobId, 60, 30, 40, currentCourseId, eduprog, 200, 100, 30, 50, false);
+                jobId, 60, 30, 40, currentCourseId, eduprog, 200, 100, 30, 50, false, 0, 0);
     }
 
     private static SaveState save(int timeMinutes) {
         return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, timeMinutes, 3, 120, 50, 0, 0, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, 0, 0);
     }
 
     @Test
@@ -138,7 +138,7 @@ class PlayerStateAssemblerTest {
         when(degreeCatalog.all()).thenReturn(List.of());
         when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
         SaveState stale = new SaveState(SAVE_ID, "bob", "My Save", 9, 9, 3960, 3, 120, 50, 0, 0, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, 0, 0);
 
         SaveStateDto dto = assembler.assemble(services(), stale);
 
