@@ -1273,5 +1273,36 @@ SDD ledger: `.superpowers/sdd/progress.md`. Steps per the session handoff:
 - [x] Side-track: cv-highlights backfill — retire-Swing, KAN-52, KAN-53
       sections (PRs #44/#45/#46 had shipped without CV bullets)
 
+### Session 2026-07-12 — PR 6 execution (KAN-45)
+SDD ledger: `.superpowers/sdd/progress.md` (worktree `.claude/worktrees/frontend-saves-employment`,
+branch `feat/frontend-saves-employment` off `develop` post-PR-5). Executed via
+`superpowers:subagent-driven-development` per the plan
+`docs/superpowers/plans/2026-07-12-kan45-frontend-cutover.md`.
+- [x] Task 1 (`ba89206`) — save-scoped api client layer + saves CRUD; review clean
+- [x] Task 2 (`dab894b`) — game screen cutover; Employment two-step + University
+      course tree full rewrites; review clean
+- [x] Task 3 (`9a8740f`) — saves screen, new-game setup, `/saves` + `/play/:saveId`
+      routing; review clean
+- [x] Task 4 (`06ee394`) — win banner; review clean, zero findings
+- [x] Task 5 (`9b3a70b`) — highscores removal + HomePage; full frontend CI green
+      end-to-end for the first time
+- [x] Task 6 — live verification: full manual browser walkthrough against real
+      backend+frontend dev servers (disposable `kan45smoke` account) covering the
+      complete JIRA acceptance criterion, including a direct network-tab inspection
+      of `GET /api/jobs` (confirmed `id`/`name`/`location`/`wage` only) and a real
+      `end-week` win-flow round trip. **Found + fixed live-only bug** no unit test
+      could catch: `WinBanner` text was invisible (white-on-white — explicit
+      `background` with no paired `color`), commit `8954072`. Final whole-branch
+      review (Fable, `7ee712e..8954072`) independently re-verified all 5 cross-task
+      invariants (hidden-info contract, charged-rejection convention, highscores
+      deletion, `saveId` type consistency, no-backend-changes) clean; found one more
+      instance of the same contrast-bug class (`saves.css`) + a stale root README
+      doc line, both fixed, commit `f3d10a5`. Test data cleaned up, both dev servers
+      stopped by exact listening PID.
+- [x] Push; **PR #50** `gh pr create --base develop` — awaiting Rourke's review/merge
+- [ ] PR-link comment on KAN-45 (JIRA); transition KAN-45 → Done and tick "PR 6"
+      above only once Rourke merges (matching the established convention)
+
 ### Review
-*(fill in as PRs merge)*
+*(fill in once PR #50 merges — will close out the whole "Jones-parity jobs &
+degrees, save slots, wiki win rules" goal spanning PRs 1-6)*

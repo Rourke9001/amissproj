@@ -386,6 +386,23 @@ these references aren't part of the Maven build and won't show up before CI.
 - **Why:** a client that only updates on success shows a stale clock; found
   live in Chrome — unit tests with mocked api modules can't catch it.
 
+### Pair `background` with `color` in new CSS (KAN-45)
+- **Context:** `index.css` sets `color-scheme: light dark` and nothing else on
+  `body`/`:root` — every page renders on the browser's dark-mode UA default
+  (white-ish text, near-black canvas) unless a rule overrides it.
+- **Solution:** any new rule that sets one of `background`/`color` explicitly
+  must set the other too (or use `opacity` for de-emphasis instead of a literal
+  color, matching `.hud-stat dt`/`.store-row-detail` in `board.css`). Before
+  shipping new CSS, grep it for an explicit `background:`/`color:` with no
+  paired rule in the same block.
+- **Why:** `.win-banner` set `background: #fff` with no `color` → inherited
+  white text on a white card, invisible — caught only by a live browser
+  screenshot, not Testing Library (which doesn't render actual CSS). The same
+  PR's `.save-meta` had the mirror-image bug (`color: #555`, no `background`),
+  low-contrast on the implied dark canvas. Testing Library asserts the DOM
+  tree, never pixel contrast — this class of bug needs an actual rendered
+  screenshot to catch.
+
 ### Verify a DTO field's unit against the core rule *(merges 3 entries)*
 - **Context:** writing UI copy or a derived field for any money/time/progress
   value.
