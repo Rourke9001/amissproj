@@ -1,0 +1,47 @@
+.saves-page,
+.new-game-setup {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.saves-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.save-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.save-label {
+  font-weight: 600;
+  flex: 1;
+}
+
+.save-meta {
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.goal-slider {
+  display: block;
+  margin: 1rem 0;
+}
+
+.goal-slider input[type='range'] {
+  width: 100%;
+}
+
+.new-game-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}

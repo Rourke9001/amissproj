@@ -1,7 +1,8 @@
 import { Link, Route, Routes } from 'react-router';
 import { useAuth } from './auth/AuthContext';
 import { RequireAuth } from './routes/RequireAuth';
-import { GamePage } from './pages/GamePage';
+import { SavesPage } from './pages/SavesPage';
+import { PlayPage } from './pages/PlayPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 
@@ -14,7 +15,7 @@ function App() {
         <strong>AmissProj</strong>
         <nav>
           <Link to="/">Home</Link>
-          <Link to="/game">Game</Link>
+          <Link to="/saves">Saves</Link>
         </nav>
         <div className="session">
           {username !== null ? (
@@ -34,10 +35,18 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route
-            path="/game"
+            path="/saves"
             element={
               <RequireAuth>
-                <GamePage />
+                <SavesPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/play/:saveId"
+            element={
+              <RequireAuth>
+                <PlayPage />
               </RequireAuth>
             }
           />

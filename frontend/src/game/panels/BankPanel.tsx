@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deposit, withdraw } from '../../api/bank';
-import { ApiError } from '../../api/http';
+import { errorMessage } from '../../api/http';
 import type { PanelProps } from './types';
 
 type Operation = 'deposit' | 'withdraw';
@@ -15,23 +15,16 @@ function parseAmount(raw: string): number | null {
   return amount > 0 ? amount : null;
 }
 
-function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    return err.problem.detail ?? err.problem.title ?? err.message;
-  }
-  return 'Could not reach the server.';
-}
-
-export function BankPanel({ username, player, onNotify }: PanelProps) {
+export function BankPanel({ saveId, player, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
   const [amountInput, setAmountInput] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
     mutationFn: ({ operation, amount }: { operation: Operation; amount: number }) =>
-      operation === 'deposit' ? deposit(username, amount) : withdraw(username, amount),
+      operation === 'deposit' ? deposit(saveId, amount) : withdraw(saveId, amount),
     onSuccess: (res, variables) => {
-      queryClient.setQueryData(['player', username], res.state);
+      queryClient.setQueryData(['save', saveId], res.state);
       setAmountInput('');
       setError(null);
       onNotify(
@@ -44,7 +37,7 @@ export function BankPanel({ username, player, onNotify }: PanelProps) {
       setError(errorMessage(err));
       // A rejected bank action can still be charged/settled server-side, so never
       // leave a stale cached balance around.
-      void queryClient.invalidateQueries({ queryKey: ['player', username] });
+      void queryClient.invalidateQueries({ queryKey: ['save', saveId] });
     },
   });
 

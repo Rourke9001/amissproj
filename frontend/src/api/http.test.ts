@@ -90,7 +90,7 @@ describe('apiFetch', () => {
     const fetchMock = vi.fn().mockResolvedValue(fakeResponse(200, []));
     vi.stubGlobal('fetch', fetchMock);
 
-    await apiFetch('/highscores');
+    await apiFetch('/board');
 
     const headers = requestInitOfCall(fetchMock).headers as Record<string, string>;
     expect(headers['Authorization']).toBeUndefined();

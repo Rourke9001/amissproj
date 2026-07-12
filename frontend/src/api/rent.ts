@@ -1,8 +1,6 @@
 import { apiFetch } from './http';
 import type { RentPaymentResponse } from './types';
 
-export function payRent(username: string): Promise<RentPaymentResponse> {
-  return apiFetch<RentPaymentResponse>(`/players/${encodeURIComponent(username)}/rent/pay`, {
-    method: 'POST',
-  });
+export function payRent(saveId: number): Promise<RentPaymentResponse> {
+  return apiFetch<RentPaymentResponse>(`/saves/${saveId}/rent/pay`, { method: 'POST' });
 }

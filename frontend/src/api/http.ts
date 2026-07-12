@@ -13,6 +13,12 @@ export class ApiError extends Error {
   }
 }
 
+export function errorMessage(err: unknown): string {
+  return err instanceof ApiError
+    ? (err.problem.detail ?? err.problem.title ?? err.message)
+    : 'Could not reach the server.';
+}
+
 let unauthorizedHandler: (() => void) | null = null;
 
 /**

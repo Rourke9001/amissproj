@@ -1,19 +1,18 @@
 import { apiFetch } from './http';
 import type { ApplyResponse, JobListingDto, WorkResponse } from './types';
 
-export function getJobs(): Promise<JobListingDto[]> {
-  return apiFetch<JobListingDto[]>('/jobs');
+export function getJobs(location?: string): Promise<JobListingDto[]> {
+  const query = location ? `?location=${encodeURIComponent(location)}` : '';
+  return apiFetch<JobListingDto[]>(`/jobs${query}`);
 }
 
-export function applyForJob(username: string, job: string): Promise<ApplyResponse> {
-  return apiFetch<ApplyResponse>(`/players/${encodeURIComponent(username)}/jobs/apply`, {
+export function applyForJob(saveId: number, jobId: number): Promise<ApplyResponse> {
+  return apiFetch<ApplyResponse>(`/saves/${saveId}/jobs/apply`, {
     method: 'POST',
-    body: { job },
+    body: { jobId },
   });
 }
 
-export function work(username: string): Promise<WorkResponse> {
-  return apiFetch<WorkResponse>(`/players/${encodeURIComponent(username)}/work`, {
-    method: 'POST',
-  });
+export function work(saveId: number): Promise<WorkResponse> {
+  return apiFetch<WorkResponse>(`/saves/${saveId}/work`, { method: 'POST' });
 }

@@ -1,30 +1,24 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getBoard } from '../api/board';
-import { endWeek, getPlayerState, move } from '../api/player';
-import { ApiError } from '../api/http';
+import { endWeek, getSaveState, move } from '../api/player';
+import { errorMessage } from '../api/http';
 import type { EndWeekResponse, LocationDto, MoveResponse, TravelDto } from '../api/types';
 import { BOARD_IMAGE } from '../assets/manifest';
 import { formatMinutes } from './formatMinutes';
 import { ringSteps } from './ring';
 import { Hud } from './Hud';
 import { EndWeekModal } from './EndWeekModal';
+import { WinBanner } from './WinBanner';
 import { WorkAction } from './WorkAction';
 import { resolvePanel } from './panels/registry';
 import './board.css';
 
 interface BoardScreenProps {
-  username: string;
+  saveId: number;
 }
 
 const MAX_NOTIFICATIONS = 6;
-
-function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    return err.problem.detail ?? err.problem.title ?? err.message;
-  }
-  return 'Could not reach the server.';
-}
 
 function hotspotTooltip(
   stop: LocationDto,
@@ -40,10 +34,11 @@ function hotspotTooltip(
   return `${steps} stop${steps === 1 ? '' : 's'} — ${cost}`;
 }
 
-export function BoardScreen({ username }: BoardScreenProps) {
+export function BoardScreen({ saveId }: BoardScreenProps) {
   const queryClient = useQueryClient();
   const [notifications, setNotifications] = useState<string[]>([]);
   const [endWeekResult, setEndWeekResult] = useState<EndWeekResponse | null>(null);
+  const [winBannerDismissed, setWinBannerDismissed] = useState(false);
 
   const pushNotification = (message: string) => {
     setNotifications((prev) => [message, ...prev].slice(0, MAX_NOTIFICATIONS));
@@ -51,14 +46,14 @@ export function BoardScreen({ username }: BoardScreenProps) {
 
   const boardQuery = useQuery({ queryKey: ['board'], queryFn: getBoard, staleTime: Infinity });
   const playerQuery = useQuery({
-    queryKey: ['player', username],
-    queryFn: () => getPlayerState(username),
+    queryKey: ['save', saveId],
+    queryFn: () => getSaveState(saveId),
   });
 
   const moveMutation = useMutation({
-    mutationFn: (target: string) => move(username, target),
+    mutationFn: (target: string) => move(saveId, target),
     onSuccess: (res: MoveResponse) => {
-      queryClient.setQueryData(['player', username], res.state);
+      queryClient.setQueryData(['save', saveId], res.state);
       const label = boardQuery.data?.stops.find((s) => s.id === res.target)?.name ?? res.target;
       pushNotification(
         res.steps === 0
@@ -71,14 +66,14 @@ export function BoardScreen({ username }: BoardScreenProps) {
       // A rejected move can still have charged the clock: a move landing exactly on
       // 0 minutes is persisted server-side but answered with 409 week-over (Swing
       // parity), so refetch rather than trust the cached state.
-      void queryClient.invalidateQueries({ queryKey: ['player', username] });
+      void queryClient.invalidateQueries({ queryKey: ['save', saveId] });
     },
   });
 
   const endWeekMutation = useMutation({
-    mutationFn: () => endWeek(username),
+    mutationFn: () => endWeek(saveId),
     onSuccess: (res: EndWeekResponse) => {
-      queryClient.setQueryData(['player', username], res.state);
+      queryClient.setQueryData(['save', saveId], res.state);
       setEndWeekResult(res);
     },
     onError: (err: unknown) => {
@@ -155,8 +150,8 @@ export function BoardScreen({ username }: BoardScreenProps) {
             onEndWeek={() => endWeekMutation.mutate()}
             endWeekPending={endWeekMutation.isPending}
           />
-          <WorkAction username={username} player={player} onNotify={pushNotification} />
-          <StopPanel username={username} player={player} onNotify={pushNotification} />
+          <WorkAction saveId={saveId} player={player} onNotify={pushNotification} />
+          <StopPanel saveId={saveId} player={player} onNotify={pushNotification} />
         </div>
         <div className="board-clock" style={{ left: '40%', top: '75%' }}>
           <p className="board-clock-time">{player.timeDisplay}</p>
@@ -170,6 +165,9 @@ export function BoardScreen({ username }: BoardScreenProps) {
       </ul>
       {endWeekResult !== null && (
         <EndWeekModal result={endWeekResult} onClose={() => setEndWeekResult(null)} />
+      )}
+      {player.won && !winBannerDismissed && (
+        <WinBanner onDismiss={() => setWinBannerDismissed(true)} />
       )}
     </section>
   );

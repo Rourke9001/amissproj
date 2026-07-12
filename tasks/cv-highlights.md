@@ -358,3 +358,39 @@ exactly one question: does this drop anything something else still reads? The
 migration integration test is the proof: it doesn't just check the schema shape, it
 seeds a real pre-migration account and watches it survive the full V1-to-latest path,
 which is the actual guarantee an existing user cares about."*
+
+### Frontend cutover to the save-scoped API — closes out the goal
+Six-task frontend rewrite that completes the goal started by the schema expand/contract
+and save-scoped core rules above: cut the whole React SPA over from a single implicit
+per-user game to `/api/saves/{saveId}/...`, and shipped the player-facing UI for the
+hidden-information hiring model and the multi-save/goals system.
+- Rebuilt the Employment Office as a two-step workplace-then-job drill-down where every
+  listing is enabled — there is no requirement data to grey a button against, because the
+  wire contract never carries it. The hidden-information rule that started as a backend
+  DTO shape became a UI that structurally cannot leak it, closed by a test that asserts
+  the *absence* of requirement/experience/dependability text rather than trusting the
+  component not to render it.
+- Built an 11-degree course tree (earned/available/locked, prerequisite chains) and a
+  saves screen (list/continue/delete, four-goal creation sliders) replacing what used to
+  be one implicit save per account.
+- Live-verified the entire acceptance path against the real running backend rather than
+  trusting mocked component tests alone: registered a disposable account, played through
+  employment and university, inspected the raw `GET /api/jobs` network response byte-for-
+  byte to confirm the hidden-information contract holds on the wire (not just in the
+  component tree), and drove a real `end-week` win-flow round trip end-to-end.
+- That live pass caught a real bug no unit test could: a win-banner styled with an
+  explicit white background and no explicit text color rendered invisible white-on-white
+  text under the app's dark color scheme — a defect class (`background`/`color` set
+  without its pair, under a `color-scheme: light dark` default) that a follow-up
+  whole-branch review then found a second instance of elsewhere in the same PR, fixed
+  before merge.
+
+**Talking point:** *"Component tests proved the DOM was correct; they couldn't prove the
+pixels were legible. A live browser pass against the real backend caught a win banner
+rendering white text on a white card — invisible,100% test-covered, and completely
+unusable. The fix was one line, but the lesson generalizes: in a codebase whose CSS
+resets to the browser's dark-mode defaults, any rule that sets `background` or `color`
+explicitly has to set the other too, or it's a coin flip per visitor's OS theme. I wrote
+that rule into the project's lessons file as a review checkpoint, not just a one-off
+patch — the same review that caught it also went looking for, and found, a second
+instance of the identical mistake before it shipped."*

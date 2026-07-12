@@ -5,15 +5,15 @@ export function getFoodCatalog(): Promise<FoodCatalogDto> {
   return apiFetch<FoodCatalogDto>('/food');
 }
 
-export function eat(username: string, item: string): Promise<EatResponse> {
-  return apiFetch<EatResponse>(`/players/${encodeURIComponent(username)}/eat`, {
+export function eat(saveId: number, item: string): Promise<EatResponse> {
+  return apiFetch<EatResponse>(`/saves/${saveId}/eat`, {
     method: 'POST',
     body: { item },
   });
 }
 
-export function buyGroceries(username: string, pack: string): Promise<GroceriesResponse> {
-  return apiFetch<GroceriesResponse>(`/players/${encodeURIComponent(username)}/groceries`, {
+export function buyGroceries(saveId: number, pack: string): Promise<GroceriesResponse> {
+  return apiFetch<GroceriesResponse>(`/saves/${saveId}/groceries`, {
     method: 'POST',
     body: { pack },
   });

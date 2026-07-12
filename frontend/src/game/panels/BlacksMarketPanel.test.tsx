@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BlacksMarketPanel } from './BlacksMarketPanel';
 import { buyGroceries, getFoodCatalog } from '../../api/food';
 import { ApiError } from '../../api/http';
-import type { FoodCatalogDto, PlayerStateDto } from '../../api/types';
+import type { FoodCatalogDto, SaveStateDto } from '../../api/types';
 
 vi.mock('../../api/food', () => ({
   getFoodCatalog: vi.fn(),
@@ -24,9 +24,10 @@ const CATALOG_FIXTURE: FoodCatalogDto = {
   ],
 };
 
-function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto {
+function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
   return {
-    username: 'alice',
+    id: 42,
+    label: 'Save 42',
     round: 3,
     timeMinutes: 4320,
     timeDisplay: '72h',
@@ -37,27 +38,29 @@ function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto 
     rentDue: false,
     foodWeeks: 0,
     clothing: 1,
-    job: null,
-    stats: { education: 0, educationProgress: 0, happiness: 50, workExperience: 0 },
+    job: { name: 'Unemployed', hourlyWage: null, location: null },
+    degreesEarned: [],
+    currentCourse: null,
     goals: {
-      cash: { current: 500, target: 5000 },
-      happiness: { current: 50, target: 100 },
-      workExperience: { current: 0, target: 10 },
-      education: { current: 0, target: 100 },
+      wealth: { current: 500, target: 5000, met: false },
+      happiness: { current: 50, target: 100, met: false },
+      education: { current: 0, target: 100, met: false },
+      career: { current: 0, target: 10, met: false },
     },
+    won: false,
     location: { id: 'BLACKS_MARKET', name: "Black's Market", ringIndex: 10, row: 1, col: 0 },
     ...overrides,
   };
 }
 
-function renderPanel(player: PlayerStateDto, onNotify = vi.fn()) {
+function renderPanel(player: SaveStateDto, onNotify = vi.fn()) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
   const utils = render(
     <QueryClientProvider client={queryClient}>
-      <BlacksMarketPanel username="alice" player={player} onNotify={onNotify} />
+      <BlacksMarketPanel saveId={42} player={player} onNotify={onNotify} />
     </QueryClientProvider>,
   );
   return { ...utils, queryClient, invalidateSpy, onNotify };
@@ -95,11 +98,11 @@ describe('BlacksMarketPanel', () => {
     const row = (await screen.findByText('2 Weeks of Food')).closest('li') as HTMLElement;
     await user.click(within(row).getByRole('button', { name: 'Buy' }));
 
-    expect(buyGroceriesMock).toHaveBeenCalledWith('alice', 'TWO_WEEK');
+    expect(buyGroceriesMock).toHaveBeenCalledWith(42, 'TWO_WEEK');
     await waitFor(() =>
       expect(onNotify).toHaveBeenCalledWith('Bought 2 Weeks of Food (R45) — 2 wk stored'),
     );
-    expect(queryClient.getQueryData(['player', 'alice'])).toMatchObject({ cash: 455 });
+    expect(queryClient.getQueryData(['save', 42])).toMatchObject({ cash: 455 });
   });
 
   it('renders the problem detail inline on a 409 insufficient-funds error and invalidates the player query', async () => {
@@ -119,6 +122,6 @@ describe('BlacksMarketPanel', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Not enough cash for that pack.');
     expect(onNotify).not.toHaveBeenCalled();
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['player', 'alice'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['save', 42] });
   });
 });

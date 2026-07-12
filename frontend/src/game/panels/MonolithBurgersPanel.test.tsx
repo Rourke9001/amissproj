@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MonolithBurgersPanel } from './MonolithBurgersPanel';
 import { eat, getFoodCatalog } from '../../api/food';
 import { ApiError } from '../../api/http';
-import type { FoodCatalogDto, PlayerStateDto } from '../../api/types';
+import type { FoodCatalogDto, SaveStateDto } from '../../api/types';
 
 vi.mock('../../api/food', () => ({
   getFoodCatalog: vi.fn(),
@@ -27,9 +27,10 @@ const CATALOG_FIXTURE: FoodCatalogDto = {
   ],
 };
 
-function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto {
+function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
   return {
-    username: 'alice',
+    id: 42,
+    label: 'Save 42',
     round: 3,
     timeMinutes: 4320,
     timeDisplay: '72h',
@@ -40,27 +41,29 @@ function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto 
     rentDue: false,
     foodWeeks: 2,
     clothing: 1,
-    job: null,
-    stats: { education: 0, educationProgress: 0, happiness: 50, workExperience: 0 },
+    job: { name: 'Unemployed', hourlyWage: null, location: null },
+    degreesEarned: [],
+    currentCourse: null,
     goals: {
-      cash: { current: 500, target: 5000 },
-      happiness: { current: 50, target: 100 },
-      workExperience: { current: 0, target: 10 },
-      education: { current: 0, target: 100 },
+      wealth: { current: 500, target: 5000, met: false },
+      happiness: { current: 50, target: 100, met: false },
+      education: { current: 0, target: 100, met: false },
+      career: { current: 0, target: 10, met: false },
     },
+    won: false,
     location: { id: 'MONOLITH_BURGERS', name: 'Monolith Burgers', ringIndex: 3, row: 1, col: 4 },
     ...overrides,
   };
 }
 
-function renderPanel(player: PlayerStateDto, onNotify = vi.fn()) {
+function renderPanel(player: SaveStateDto, onNotify = vi.fn()) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
   const utils = render(
     <QueryClientProvider client={queryClient}>
-      <MonolithBurgersPanel username="alice" player={player} onNotify={onNotify} />
+      <MonolithBurgersPanel saveId={42} player={player} onNotify={onNotify} />
     </QueryClientProvider>,
   );
   return { ...utils, queryClient, invalidateSpy, onNotify };
@@ -112,9 +115,9 @@ describe('MonolithBurgersPanel', () => {
     const burgerRow = (await screen.findByText('Burger')).closest('li') as HTMLElement;
     await user.click(within(burgerRow).getByRole('button', { name: 'Eat' }));
 
-    expect(eatMock).toHaveBeenCalledWith('alice', 'BURGER');
+    expect(eatMock).toHaveBeenCalledWith(42, 'BURGER');
     await waitFor(() => expect(onNotify).toHaveBeenCalledWith('Ate a Burger (R32)'));
-    expect(queryClient.getQueryData(['player', 'alice'])).toMatchObject({ cash: 468 });
+    expect(queryClient.getQueryData(['save', 42])).toMatchObject({ cash: 468 });
   });
 
   it('mentions the time only when a deployment configures an eat cost', async () => {
@@ -151,7 +154,7 @@ describe('MonolithBurgersPanel', () => {
     await user.click(within(burgerRow).getByRole('button', { name: 'Eat' }));
 
     await waitFor(() => expect(onNotify).toHaveBeenCalledWith("Couldn't afford the Burger"));
-    expect(queryClient.getQueryData(['player', 'alice'])).toMatchObject({ cash: 10 });
+    expect(queryClient.getQueryData(['save', 42])).toMatchObject({ cash: 10 });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -172,6 +175,6 @@ describe('MonolithBurgersPanel', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Must be at Monolith Burgers.');
     expect(onNotify).not.toHaveBeenCalled();
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['player', 'alice'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['save', 42] });
   });
 });

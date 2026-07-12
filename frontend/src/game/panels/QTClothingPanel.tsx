@@ -1,19 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { buyClothes, getClothesCatalog } from '../../api/clothes';
-import { ApiError } from '../../api/http';
+import { errorMessage } from '../../api/http';
 import { StorePanel } from './StorePanel';
 import type { StoreRow } from './StorePanel';
 import type { ClothesResponse } from '../../api/types';
 import type { PanelProps } from './types';
 
-function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    return err.problem.detail ?? err.problem.title ?? err.message;
-  }
-  return 'Could not reach the server.';
-}
-
-export function QTClothingPanel({ username, player, onNotify }: PanelProps) {
+export function QTClothingPanel({ saveId, player, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
   const clothesQuery = useQuery({
     queryKey: ['clothes'],
@@ -22,14 +15,14 @@ export function QTClothingPanel({ username, player, onNotify }: PanelProps) {
   });
 
   const mutation = useMutation({
-    mutationFn: (item: string) => buyClothes(username, item),
+    mutationFn: (item: string) => buyClothes(saveId, item),
     onSuccess: (res: ClothesResponse) => {
-      queryClient.setQueryData(['player', username], res.state);
+      queryClient.setQueryData(['save', saveId], res.state);
       const name = clothesQuery.data?.find((item) => item.id === res.item)?.name ?? res.item;
       onNotify(`Bought ${name} (R${res.price}) — clothing level ${res.clothingLevel}`);
     },
     onError: () => {
-      void queryClient.invalidateQueries({ queryKey: ['player', username] });
+      void queryClient.invalidateQueries({ queryKey: ['save', saveId] });
     },
   });
 

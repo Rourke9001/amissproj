@@ -1,37 +1,23 @@
-// TypeScript mirrors of the Spring API's Java record DTOs.
-
 export interface RegisterRequest {
   username: string;
   password: string;
 }
-
 export interface RegisterResponse {
   username: string;
 }
-
 export interface LoginRequest {
   username: string;
   password: string;
 }
-
 export interface LoginResponse {
   accessToken: string;
   tokenType: string;
   expiresInSeconds: number;
 }
-
 export interface MeResponse {
   username: string;
 }
 
-export interface HighscoreEntry {
-  rank: number;
-  username: string;
-  round: number;
-}
-
-// RFC 7807 problem details (Spring ProblemDetail); `type` is a URN like
-// "urn:amiss:invalid-credentials".
 export interface ProblemDetail {
   type?: string;
   title?: string;
@@ -40,8 +26,6 @@ export interface ProblemDetail {
   instance?: string;
 }
 
-// One stop of the 13-stop board ring; `id` is the domain.board.Location enum
-// name (e.g. "LOW_COST_HOUSING").
 export interface LocationDto {
   id: string;
   name: string;
@@ -49,12 +33,10 @@ export interface LocationDto {
   row: number;
   col: number;
 }
-
 export interface TravelDto {
   minutesPerStep: number;
   enterBuildingMinutes: number;
 }
-
 export interface BoardDto {
   stops: LocationDto[];
   travel: TravelDto;
@@ -63,30 +45,30 @@ export interface BoardDto {
 export interface JobDto {
   name: string;
   hourlyWage: number | null;
-  location: string;
-}
-
-export interface StatsDto {
-  education: number;
-  educationProgress: number;
-  happiness: number;
-  workExperience: number;
+  location: string | null;
 }
 
 export interface GoalDto {
   current: number;
   target: number;
+  met: boolean;
 }
-
 export interface GoalsDto {
-  cash: GoalDto;
+  wealth: GoalDto;
   happiness: GoalDto;
-  workExperience: GoalDto;
   education: GoalDto;
+  career: GoalDto;
 }
 
-export interface PlayerStateDto {
-  username: string;
+export interface CurrentCourseDto {
+  id: number;
+  name: string;
+  studiesDone: number;
+}
+
+export interface SaveStateDto {
+  id: number;
+  label: string;
   round: number;
   timeMinutes: number;
   timeDisplay: string;
@@ -97,21 +79,42 @@ export interface PlayerStateDto {
   rentDue: boolean;
   foodWeeks: number;
   clothing: number;
-  job: JobDto | null;
-  stats: StatsDto;
-  goals: GoalsDto;
+  job: JobDto;
   location: LocationDto;
+  degreesEarned: string[];
+  currentCourse: CurrentCourseDto | null;
+  goals: GoalsDto;
+  won: boolean;
+}
+
+export interface SaveSummaryDto {
+  id: number;
+  label: string;
+  round: number;
+  cash: number;
+  won: boolean;
+  updatedAt: string;
+}
+export interface GoalTargets {
+  wealth: number;
+  happiness: number;
+  education: number;
+  career: number;
+}
+export interface CreateSaveRequest {
+  label: string;
+  goals?: GoalTargets;
+  random?: boolean;
 }
 
 export interface MoveRequest {
   target: string;
 }
-
 export interface MoveResponse {
   target: string;
   steps: number;
   minutesCharged: number;
-  state: PlayerStateDto;
+  state: SaveStateDto;
 }
 
 export interface EndWeekResponse {
@@ -119,70 +122,64 @@ export interface EndWeekResponse {
   fed: boolean;
   rentDue: boolean;
   debtCharged: boolean;
-  state: PlayerStateDto;
+  won: boolean;
+  state: SaveStateDto;
 }
 
 export interface BankTransactionResponse {
   operation: string;
   amount: number;
-  state: PlayerStateDto;
+  state: SaveStateDto;
 }
-
 export interface RentPaymentResponse {
   amountPaid: number;
   minutesCharged: number;
-  state: PlayerStateDto;
+  state: SaveStateDto;
 }
 
 export interface JobListingDto {
+  id: number;
   name: string;
-  requiredEducation: number;
-  hourlyWage: number;
   location: string;
-  requiredClothing: number;
+  wage: number;
 }
-
 export interface ApplyResponse {
   hired: boolean;
-  reason: string | null;
+  reasons: string[];
   minutesCharged: number;
   job: string;
-  hourlyWage: number | null;
-  state: PlayerStateDto;
+  wage: number | null;
+  state: SaveStateDto;
 }
-
 export interface WorkResponse {
+  status: 'OK' | 'FIRED';
+  warning: boolean;
   job: string;
-  hourlyWage: number;
+  pay: number;
+  netPaid: number;
+  garnished: number;
   minutesCharged: number;
-  debtDocked: boolean;
-  state: PlayerStateDto;
+  state: SaveStateDto;
 }
 
-export interface DegreeDto {
-  level: number;
+export interface CourseDto {
+  id: number;
   name: string;
+  status: 'EARNED' | 'AVAILABLE' | 'LOCKED';
+  prereqName: string | null;
+  enrolled: boolean;
+  studiesDone: number;
 }
-
-export interface CoursesDto {
-  degrees: DegreeDto[];
-  enrollFee: number;
-  studiesPerDegree: number;
-  studyMinutes: number;
-}
-
 export interface EnrollResponse {
   feePaid: number;
-  state: PlayerStateDto;
+  state: SaveStateDto;
 }
-
 export interface StudyResponse {
-  progress: number;
+  studiesDone: number;
   studiesRemaining: number;
   degreeCompleted: string | null;
-  educationLevel: number;
   minutesCharged: number;
-  state: PlayerStateDto;
+  state: SaveStateDto;
 }
 
 export interface MenuItemDto {
@@ -209,7 +206,7 @@ export interface EatResponse {
   ate: boolean;
   reason: string | null;
   minutesCharged: number;
-  state: PlayerStateDto;
+  state: SaveStateDto;
 }
 
 export interface GroceriesResponse {
@@ -217,7 +214,7 @@ export interface GroceriesResponse {
   price: number;
   weeksAdded: number;
   foodWeeks: number;
-  state: PlayerStateDto;
+  state: SaveStateDto;
 }
 
 export interface ClothingItemDto {
@@ -231,5 +228,5 @@ export interface ClothesResponse {
   item: string;
   price: number;
   clothingLevel: number;
-  state: PlayerStateDto;
+  state: SaveStateDto;
 }

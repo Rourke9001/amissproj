@@ -40,5 +40,6 @@ npm run dev          # http://localhost:5173
   clock skew; the API has no refresh endpoint, so expiry means re-login) and
   `AuthContext` (login/logout, 401 → logout).
 - `src/routes/RequireAuth.tsx` — guard for authenticated routes.
-- `src/pages/` — screens; Home renders live `GET /api/highscores`, login/game
-  are placeholders until KAN-39/KAN-40.
+- `src/pages/` — screens; Home is a simple landing page linking to `/login`
+  or `/saves` depending on auth state; the saves screen and game itself are
+  what the API backs.

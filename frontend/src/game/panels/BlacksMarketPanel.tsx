@@ -1,31 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { buyGroceries, getFoodCatalog } from '../../api/food';
-import { ApiError } from '../../api/http';
+import { errorMessage } from '../../api/http';
 import { StorePanel } from './StorePanel';
 import type { StoreRow } from './StorePanel';
 import type { GroceriesResponse } from '../../api/types';
 import type { PanelProps } from './types';
 
-function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    return err.problem.detail ?? err.problem.title ?? err.message;
-  }
-  return 'Could not reach the server.';
-}
-
-export function BlacksMarketPanel({ username, onNotify }: PanelProps) {
+export function BlacksMarketPanel({ saveId, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
   const foodQuery = useQuery({ queryKey: ['food'], queryFn: getFoodCatalog, staleTime: Infinity });
 
   const mutation = useMutation({
-    mutationFn: (pack: string) => buyGroceries(username, pack),
+    mutationFn: (pack: string) => buyGroceries(saveId, pack),
     onSuccess: (res: GroceriesResponse) => {
-      queryClient.setQueryData(['player', username], res.state);
+      queryClient.setQueryData(['save', saveId], res.state);
       const name = foodQuery.data?.packs.find((pack) => pack.id === res.pack)?.name ?? res.pack;
       onNotify(`Bought ${name} (R${res.price}) — ${res.foodWeeks} wk stored`);
     },
     onError: () => {
-      void queryClient.invalidateQueries({ queryKey: ['player', username] });
+      void queryClient.invalidateQueries({ queryKey: ['save', saveId] });
     },
   });
 

@@ -1,19 +1,14 @@
 import { apiFetch } from './http';
-import type { EndWeekResponse, MoveResponse, PlayerStateDto } from './types';
+import type { EndWeekResponse, MoveResponse, SaveStateDto } from './types';
 
-export function getPlayerState(username: string): Promise<PlayerStateDto> {
-  return apiFetch<PlayerStateDto>(`/players/${encodeURIComponent(username)}`);
+export function getSaveState(saveId: number): Promise<SaveStateDto> {
+  return apiFetch<SaveStateDto>(`/saves/${saveId}`);
 }
 
-export function move(username: string, target: string): Promise<MoveResponse> {
-  return apiFetch<MoveResponse>(`/players/${encodeURIComponent(username)}/move`, {
-    method: 'POST',
-    body: { target },
-  });
+export function move(saveId: number, target: string): Promise<MoveResponse> {
+  return apiFetch<MoveResponse>(`/saves/${saveId}/move`, { method: 'POST', body: { target } });
 }
 
-export function endWeek(username: string): Promise<EndWeekResponse> {
-  return apiFetch<EndWeekResponse>(`/players/${encodeURIComponent(username)}/end-week`, {
-    method: 'POST',
-  });
+export function endWeek(saveId: number): Promise<EndWeekResponse> {
+  return apiFetch<EndWeekResponse>(`/saves/${saveId}/end-week`, { method: 'POST' });
 }

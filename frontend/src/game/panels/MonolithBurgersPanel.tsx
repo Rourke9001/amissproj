@@ -1,27 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { eat, getFoodCatalog } from '../../api/food';
-import { ApiError } from '../../api/http';
+import { errorMessage } from '../../api/http';
 import { formatMinutes } from '../formatMinutes';
 import { StorePanel } from './StorePanel';
 import type { StoreRow } from './StorePanel';
 import type { EatResponse } from '../../api/types';
 import type { PanelProps } from './types';
 
-function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    return err.problem.detail ?? err.problem.title ?? err.message;
-  }
-  return 'Could not reach the server.';
-}
-
-export function MonolithBurgersPanel({ username, player, onNotify }: PanelProps) {
+export function MonolithBurgersPanel({ saveId, player, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
   const foodQuery = useQuery({ queryKey: ['food'], queryFn: getFoodCatalog, staleTime: Infinity });
 
   const mutation = useMutation({
-    mutationFn: (item: string) => eat(username, item),
+    mutationFn: (item: string) => eat(saveId, item),
     onSuccess: (res: EatResponse) => {
-      queryClient.setQueryData(['player', username], res.state);
+      queryClient.setQueryData(['save', saveId], res.state);
       const name = foodQuery.data?.menu.find((item) => item.id === res.item)?.name ?? res.item;
       // Eating is free by default (purchases cost no time in the reference game);
       // only mention time when a deployment configures an eat cost.
@@ -37,7 +30,7 @@ export function MonolithBurgersPanel({ username, player, onNotify }: PanelProps)
     onError: () => {
       // Standing rule: this API charges on some rejection paths, so refetch
       // rather than trust the cached state after any error.
-      void queryClient.invalidateQueries({ queryKey: ['player', username] });
+      void queryClient.invalidateQueries({ queryKey: ['save', saveId] });
     },
   });
 

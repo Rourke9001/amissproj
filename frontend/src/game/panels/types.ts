@@ -1,7 +1,7 @@
-import type { PlayerStateDto } from '../../api/types';
+import type { SaveStateDto } from '../../api/types';
 
 export interface PanelProps {
-  username: string;
-  player: PlayerStateDto;
+  saveId: number;
+  player: SaveStateDto;
   onNotify: (message: string) => void;
 }

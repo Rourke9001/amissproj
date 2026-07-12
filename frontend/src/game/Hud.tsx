@@ -1,17 +1,17 @@
-import type { GoalDto, GoalsDto, PlayerStateDto } from '../api/types';
+import type { GoalDto, GoalsDto, SaveStateDto } from '../api/types';
 import { storefrontImage } from '../assets/manifest';
 
 interface HudProps {
-  player: PlayerStateDto;
+  player: SaveStateDto;
   onEndWeek: () => void;
   endWeekPending: boolean;
 }
 
 const GOALS: { key: keyof GoalsDto; label: string }[] = [
-  { key: 'cash', label: 'Cash' },
+  { key: 'wealth', label: 'Wealth' },
   { key: 'happiness', label: 'Happiness' },
-  { key: 'workExperience', label: 'Work Experience' },
   { key: 'education', label: 'Education' },
+  { key: 'career', label: 'Career' },
 ];
 
 function goalPercent(goal: GoalDto): number {
@@ -22,7 +22,7 @@ function goalPercent(goal: GoalDto): number {
 }
 
 export function Hud({ player, onEndWeek, endWeekPending }: HudProps) {
-  const { location, job, stats, goals } = player;
+  const { location, job, goals } = player;
 
   return (
     <div className="hud">
@@ -48,20 +48,14 @@ export function Hud({ player, onEndWeek, endWeekPending }: HudProps) {
         )}
         <div className="hud-stat">
           <dt>Job</dt>
-          <dd>
-            {job === null
-              ? 'Unemployed'
-              : job.hourlyWage !== null && job.location
-                ? `${job.name} R${job.hourlyWage}/h`
-                : job.name}
-          </dd>
+          <dd>{job.hourlyWage === null ? job.name : `${job.name} R${job.hourlyWage}/h`}</dd>
         </div>
         <div className="hud-stat">
           <dt>Education</dt>
           <dd>
-            {/* educationProgress mirrors UniversityService's 1-based `prog` out of 10 studies. */}
-            Level {stats.education}
-            {stats.educationProgress > 0 && ` (${stats.educationProgress}/10 studies)`}
+            {player.degreesEarned.length > 0 ? player.degreesEarned.join(', ') : 'None yet'}
+            {player.currentCourse !== null &&
+              ` — Studying ${player.currentCourse.name} (${player.currentCourse.studiesDone}/10)`}
           </dd>
         </div>
         <div className="hud-stat">
@@ -74,7 +68,7 @@ export function Hud({ player, onEndWeek, endWeekPending }: HudProps) {
         </div>
         <div className="hud-stat">
           <dt>Happiness</dt>
-          <dd>{stats.happiness}</dd>
+          <dd>{goals.happiness.current}</dd>
         </div>
       </dl>
 
