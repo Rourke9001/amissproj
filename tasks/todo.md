@@ -1215,6 +1215,8 @@ from DTOs, not just hidden); multiple saves per account; highscores retired.
 - [ ] PR 5 `feat/saves-employment-api` — saves CRUD + route cutover
       /api/saves/{id}/… + hidden job listings + V6 drops legacy shapes + delete
       highscores; MockMvc pins the no-requirements/no-exp/dep wire contract
+      *(KAN-54; implementation complete, PR opened 2026-07-12 — awaiting
+      Rourke's review/merge, see the session block below; box ticks on merge)*
 - [ ] PR 6 `feat/frontend-saves-employment` — saves screen, goal setup, two-step
       employment office, course tree, win banner; highscores page removed
 
@@ -1231,14 +1233,40 @@ SDD ledger: `.superpowers/sdd/progress.md`. Steps per the session handoff:
       bank week-over gate restored, 12386a7; study-takes-no-degree-id accepted
       as a documented deviation). Reactor green 240 core + 177 api. Details in
       `.superpowers/sdd/progress.md`.*
-- [ ] Step B — legacy deletion (compiler as checklist), register rewrite to
+- [x] Step B — legacy deletion (compiler as checklist), register rewrite to
       name+password only, V6__drop_legacy_state.sql; re-verify
       AuthRoundTripIT/SecurityLockdownIT
-- [ ] Step C — migration IT: clean V1→V6 + seeded pre-V5 user survives into a
+      *Done 2026-07-12: Task 2 (commits 31f92c5..9b7e0c1, review clean) deleted
+      every legacy player-state service/port/entity + highscores; an escalation
+      mid-task (User/UserStatsRepository still live under AuthService) moved
+      those two into Task 3 by advisor decision. Task 3 (commits 9b7e0c1..d44e6d0,
+      Gate B advisor-reviewed pre-commit, task review clean) shrank
+      UserRepository/UserEntity to name+password, rewired AuthService's register
+      path, and shipped `V6__drop_legacy_state.sql` (DROP TABLE tbluserstats/
+      tbljobs + 11 tbluser columns; no FK drops needed, verified by reading
+      V1-V5 in full). Full detail + both advisor decisions:
+      `.superpowers/sdd/progress.md`.*
+- [x] Step C — migration IT: clean V1→V6 + seeded pre-V5 user survives into a
       tblsave row; reconcile SaveSchemaIT.COPY_SQL
-- [ ] Step D — `.\mvnw -B clean verify` green; MySQL97 smoke (register → create
+      *Done 2026-07-12: Task 4 (commit d44e6d0..be9431b). New
+      `LegacyToSaveMigrationIT` runs Flyway to V4, seeds a legacy tbluser+
+      tbluserstats pair by hand, migrates the rest of the way, and asserts the
+      account's state landed verbatim in a `tblsave` row, `tbluser` survived
+      V6 with only 2 columns, and tbluserstats/tbljobs are gone while tblhelp
+      remains. `SaveSchemaIT` reconciled (its COPY_SQL copy-verification
+      superseded, 6 non-legacy assertions kept). Gate C (final whole-branch
+      review, full 15,939-line diff): 0 Critical/Important findings.*
+- [x] Step D — `.\mvnw -B clean verify` green; MySQL97 smoke (register → create
       save → apply Cook → work → enroll → rollover); push; PR → develop;
       KAN-54 PR comment; **cv-highlights section for PR 5**; tick PR 5 above
+      *Done 2026-07-12: full reactor green (core 108/108, api unit 128/128, api
+      IT 30/30). Live smoke against MySQL97 (V5+V6 applied to the dev DB at
+      boot, one-way): register→login→create save→list→job listing (verified no
+      req/experience/dependability keys)→move→apply Cook (hired)→move→work
+      (paid)→move→enroll Junior College→study→end-week (409 week-not-over,
+      correct — time remained)→GET state (goals + won present). Smoke rows
+      deleted, server killed by port-owner PID. cv-highlights section added
+      below. PR link + any leftovers: see the session's final report.*
 - [x] Side-track: `tasks/lessons.md` distilled (93 → 48 prescriptive entries;
       format/reorg/stale-removal approved at checkpoint)
 - [x] Side-track: cv-highlights backfill — retire-Swing, KAN-52, KAN-53
