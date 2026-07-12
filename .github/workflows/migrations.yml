@@ -68,8 +68,10 @@ jobs:
 
       - name: Verify seed data as the least-privilege runtime user
         run: |
-          jobs=$(mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -N -e 'SELECT COUNT(*) FROM tbljobs')
+          jobs=$(mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -N -e 'SELECT COUNT(*) FROM tbljob')
+          degrees=$(mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -N -e 'SELECT COUNT(*) FROM tbldegrees')
           topics=$(mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -N -e 'SELECT COUNT(*) FROM tblhelp')
-          echo "tbljobs rows: $jobs (want 17); tblhelp rows: $topics (want 4)"
-          test "$jobs" -eq 17
+          echo "tbljob rows: $jobs (want 39); tbldegrees rows: $degrees (want 11); tblhelp rows: $topics (want 4)"
+          test "$jobs" -eq 39
+          test "$degrees" -eq 11
           test "$topics" -eq 4

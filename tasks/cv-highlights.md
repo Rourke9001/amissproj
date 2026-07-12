@@ -285,3 +285,76 @@ security config actually loaded."*
 every response, invalidate on every error — came out of a live bug where a 409'd move
 had actually moved the player. It's a small discipline that eliminates a whole class of
 stale-UI bugs."*
+
+### Retiring the legacy desktop client
+- Sunset the original Swing client once the web stack reached feature parity: one
+  deletion PR removed the whole module (−4,700 lines) plus its Swing-only plumbing,
+  leaving the REST API + SPA as the single product surface.
+
+**Talking point:** *"Knowing when to delete is a skill: the desktop client had been the
+safety net through every refactor, and the moment the SPA covered its last screen it
+became pure maintenance drag. Because the rules lived behind ports, deleting an entire
+client was a low-risk PR, not a rewrite."*
+
+### Save slots & Jones-parity catalog schema (expand phase, Flyway V5)
+- Designed an **expand/contract schema migration**: an additive V5 introduces multiple
+  save slots per account (`tblsave` with per-save goal targets) and a normalized
+  job/degree catalog (`tbljob`, `tbldegrees`, a `tbljob_degrees` prerequisite mapping,
+  per-save application history) — while the legacy tables kept serving the live API
+  untouched; the destructive V6 lands only after the code cutover.
+- Mapped the new schema with validate-only JPA entities and Spring Data repositories,
+  proven against real MySQL 9 with Testcontainers integration tests before any consumer
+  code existed.
+
+**Talking point:** *"This is the zero-downtime schema-change discipline banks expect:
+expand first (additive, old code still runs), migrate the code, contract last. The
+migration history shows exactly that sequence — V5 additive, cutover PR, V6 drops the
+legacy shapes."*
+
+### Jones-parity hiring & progression mechanics (save-scoped core rules)
+- Implemented the reference game's employment model as pure, framework-free core
+  services behind ports: probabilistic hiring (odds reconstructed from the community
+  wiki as a function of experience, dependability and degrees), multi-reason rejection
+  outcomes with per-save turn-down history, pro-rated shift pay (wage × 8) with
+  warning/fired dependability bands, a prerequisite-driven degree tree, and per-save
+  goals with a sticky win condition — all TDD'd with a comprehensive unit suite.
+- Kept the game's hidden-information rule enforceable at the API boundary by design:
+  job requirements, experience and dependability live only in core outcome types, so
+  the web layer can expose player-visible results without ever leaking the hidden stats.
+
+**Talking point:** *"The fun part was reverse-engineering the 1990 game's hiring odds
+from wiki notes; the engineering part was where the rules live: save-scoped services
+behind ports with typed outcomes, so the API cutover that followed was a pure web-layer
+change — and 'the UI shouldn't show job requirements' became 'the wire contract has no
+requirement fields, pinned by tests', which is the difference between hiding data and
+not sending it."*
+
+### Multi-save API cutover + destructive contract migration (Flyway V5/V6)
+- Completed the expand/contract pair started by the V5 schema: every mutating route
+  moved from a single implicit per-user game state to `/api/saves/{saveId}/...`,
+  resolved through one ownership guard (`SaveScope`) shared by every controller —
+  closing the IDOR class for save access the same way the earlier `PlayerScopeFilter`
+  closed it for per-user routes, but now for a save a user can own several of.
+  Unknown save → 404, someone else's save → 403, one problem+json shape either way.
+  Legacy player-state services, ports and the high-score board were then deleted
+  wholesale (compiler-driven), and `V6__drop_legacy_state.sql` performed the
+  destructive half of the migration — shrinking `tbluser` to credentials only — behind
+  a dedicated pre-commit review of the migration and FK impact, since a `DROP TABLE`
+  can't be undone once it ships.
+- Kept the hidden-information rule enforced as an **absence from the wire**, not a
+  filtered field: job listings and save-state DTOs are structurally incapable of
+  carrying `experience`/`dependability`/requirement data, pinned by tests that assert
+  against the raw JSON body so a leak via a renamed field would still be caught.
+- Proved the two-phase migration end-to-end with a purpose-built integration test that
+  runs Flyway to the pre-expand version, seeds a legacy account exactly as pre-cutover
+  registration would have, then migrates the rest of the way — asserting the account's
+  state survives into its new save row, its credentials survive V6's column drop, and
+  the dropped legacy tables are actually gone, against a real MySQL 9 container.
+
+**Talking point:** *"The riskiest line in this PR was a `DROP TABLE` — once it ships,
+there's no rolling it back without a restore. So before that commit landed, the
+migration file and the full FK/entity diff went through a dedicated review focused on
+exactly one question: does this drop anything something else still reads? The
+migration integration test is the proof: it doesn't just check the schema shape, it
+seeds a real pre-migration account and watches it survive the full V1-to-latest path,
+which is the actual guarantee an existing user cares about."*

@@ -25,6 +25,10 @@ public class SaveGameServices {
     private final CourseService courses;
     private final GoalService goals;
     private final WeekRolloverService weeks;
+    private final TravelService travel;
+    private final BankService bank;
+    private final RentService rent;
+    private final ShopService shop;
 
     public SaveGameServices(SaveRepository saves, JobCatalog jobs, DegreeCatalog degreeCatalog,
             SaveDegrees saveDegrees, Turndowns turndowns, ActionCosts costs, IntSupplier roll1to100) {
@@ -34,6 +38,10 @@ public class SaveGameServices {
         this.shifts = new ShiftService(saves, jobs, saveDegrees, costs);
         this.courses = new CourseService(saves, degreeCatalog, saveDegrees, costs);
         this.weeks = new WeekRolloverService(saves, goals, costs);
+        this.travel = new TravelService(saves, costs);
+        this.bank = new BankService(saves);
+        this.rent = new RentService(saves, costs);
+        this.shop = new ShopService(saves, costs);
     }
 
     /** Production wiring: a uniform 1–100 roll. */
@@ -67,5 +75,21 @@ public class SaveGameServices {
 
     public WeekRolloverService weeks() {
         return weeks;
+    }
+
+    public TravelService travel() {
+        return travel;
+    }
+
+    public BankService bank() {
+        return bank;
+    }
+
+    public RentService rent() {
+        return rent;
+    }
+
+    public ShopService shop() {
+        return shop;
     }
 }

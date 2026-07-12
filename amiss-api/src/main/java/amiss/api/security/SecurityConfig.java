@@ -29,7 +29,6 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -38,17 +37,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * Stateless HS256 JWT security for the REST API (KAN-36 issues/verifies the token; KAN-37
  * gates every route with it).
  *
- * <p><b>Routes:</b> register, login, {@code GET /api/highscores}, actuator health and
- * {@code /error} are public; everything else requires a bearer token. {@code OPTIONS} is also
- * {@code permitAll()} — a CORS preflight carries no {@code Authorization} header, so it would
- * otherwise 401 before the browser sends the real request (the documented Spring Security
- * CORS gotcha).
+ * <p><b>Routes:</b> register, login, actuator health and {@code /error} are public; everything
+ * else requires a bearer token. {@code OPTIONS} is also {@code permitAll()} — a CORS preflight
+ * carries no {@code Authorization} header, so it would otherwise 401 before the browser sends
+ * the real request (the documented Spring Security CORS gotcha).
  *
- * <p><b>Player scoping (IDOR prevention):</b> {@link PlayerScopeFilter} enforces
- * path-username == principal on every {@code /api/players/{username}...} route; see its
- * javadoc for why a filter beats per-method annotations. Its {@link AccessDeniedException}
- * and auth failures both leave as RFC 7807 problem JSON, matching
- * {@code GlobalExceptionHandler}.
+ * <p><b>Save scoping (IDOR prevention):</b> unlike the retired {@code PlayerScopeFilter} (a
+ * single filter regex over the flat {@code /api/players/{username}} segment), ownership of a
+ * {@code /api/saves/{saveId}...} route is enforced per controller via {@code
+ * amiss.api.web.SaveScope}, since the id sits inside a path template that varies by
+ * controller. It throws the same {@link AccessDeniedException} type, so the failure still
+ * leaves as RFC 7807 problem JSON through this class's {@code AccessDeniedHandler}.
  *
  * <p><b>CORS:</b> allowed origins come from {@code amiss.cors.allowed-origins}
  * (config change, not code change). Credentials are off — the JWT travels in the
@@ -71,8 +70,7 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationEntryPoint problemDetailEntryPoint,
-            AccessDeniedHandler problemDetailAccessDeniedHandler, PlayerScopeFilter playerScopeFilter)
-            throws Exception {
+            AccessDeniedHandler problemDetailAccessDeniedHandler) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -80,7 +78,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/highscores").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/**").authenticated()
@@ -91,14 +88,8 @@ public class SecurityConfig {
                 })
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(problemDetailEntryPoint)
-                        .accessDeniedHandler(problemDetailAccessDeniedHandler))
-                .addFilterAfter(playerScopeFilter, AuthorizationFilter.class);
+                        .accessDeniedHandler(problemDetailAccessDeniedHandler));
         return http.build();
-    }
-
-    @Bean
-    PlayerScopeFilter playerScopeFilter() {
-        return new PlayerScopeFilter();
     }
 
     /**
@@ -120,8 +111,8 @@ public class SecurityConfig {
     }
 
     /**
-     * RFC 7807 403 for an authenticated-but-not-allowed request — today only {@link
-     * PlayerScopeFilter}'s IDOR check, but any future {@code AccessDeniedException} takes the
+     * RFC 7807 403 for an authenticated-but-not-allowed request — today only {@code
+     * SaveScope}'s ownership check, but any future {@code AccessDeniedException} takes the
      * same path. The {@code detail} comes from the exception's message; {@code type}/{@code
      * title} stay fixed.
      */

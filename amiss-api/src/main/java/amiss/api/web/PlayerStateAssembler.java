@@ -1,50 +1,44 @@
 package amiss.api.web;
 
+import amiss.api.web.dto.CurrentCourseDto;
 import amiss.api.web.dto.GoalDto;
 import amiss.api.web.dto.GoalsDto;
 import amiss.api.web.dto.JobDto;
 import amiss.api.web.dto.LocationDto;
-import amiss.api.web.dto.PlayerStateDto;
-import amiss.api.web.dto.StatsDto;
-import amiss.application.service.EducationService;
-import amiss.application.service.GameServices;
-import amiss.application.service.JobService;
-import amiss.application.service.StatsService;
-import amiss.application.service.TimeService;
-import amiss.application.service.TimeSpend;
+import amiss.api.web.dto.SaveStateDto;
+import amiss.application.port.JobCatalog;
+import amiss.application.service.save.CourseService;
+import amiss.application.service.save.GoalService;
+import amiss.application.service.save.SaveGameServices;
 import amiss.domain.board.Board;
 import amiss.domain.board.Location;
-import amiss.domain.validation.Validation;
+import amiss.domain.model.SaveState;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
- * Builds the wire representation of a player from their {@link GameServices}. Board data
- * comes exclusively from {@code domain.board.Board} — never from the Swing-side
- * {@code OpenLocation}, whose coordinate map is stale. A saved position that is not a stop
- * (e.g. from a pre-ring save) is reported as home; gameplay actions persist real positions.
+ * Builds the wire representation of a save (KAN-54: rewritten from the per-username
+ * successor over {@link SaveGameServices}). Board data comes exclusively from {@code
+ * domain.board.Board}; a saved position that is not a stop (e.g. from a pre-ring save) is
+ * reported as home. Goals are per-save (no hardcoded targets); education is degrees earned
+ * plus the course in progress, never a linear level. {@code experience} and {@code
+ * dependability} are hidden stats and never appear on the wire.
  */
 @Component
 public class PlayerStateAssembler {
 
-    /** Goal targets shown on {@code MainGameGUI}'s progress bars. */
-    private static final int CASH_GOAL = 1000;
-    private static final int HAPPINESS_GOAL = 200;
-    private static final int WORK_EXPERIENCE_GOAL = 200;
-    private static final int EDUCATION_GOAL = 8;
-
     private static final String UNEMPLOYED = "Unemployed";
 
+    private final JobCatalog jobs;
     private final Board board = new Board();
 
-    public PlayerStateDto assemble(String username, GameServices services) {
-        TimeService time = services.time();
-        StatsService stats = services.stats();
-        JobService jobs = services.jobs();
-        EducationService education = services.education();
+    public PlayerStateAssembler(JobCatalog jobs) {
+        this.jobs = jobs;
+    }
 
-        TimeSpend clock = time.spendMinutes(0);
-        int row = time.getX();
-        int col = time.getY();
+    public SaveStateDto assemble(SaveGameServices services, SaveState save) {
+        int row = save.xpos();
+        int col = save.ypos();
         if (!board.isStop(row, col)) {
             int[] home = board.cellOf(0);
             row = home[0];
@@ -52,40 +46,71 @@ public class PlayerStateAssembler {
         }
         Location location = board.locationAt(row, col);
 
-        String jobName = jobs.getJob();
-        boolean employed = !UNEMPLOYED.equals(jobName);
-        JobDto job = new JobDto(jobName,
-                employed ? jobs.getEarnings() : null,
-                employed ? jobs.getLocation() : null);
+        List<CourseService.CourseView> courses = services.courses().courses(save);
+        List<String> degreesEarned = courses.stream()
+                .filter(c -> c.status() == CourseService.CourseStatus.EARNED)
+                .map(c -> c.degree().name())
+                .toList();
+        CurrentCourseDto currentCourse = courses.stream()
+                .filter(CourseService.CourseView::enrolled)
+                .findFirst()
+                .map(c -> new CurrentCourseDto(c.degree().id(), c.degree().name(), c.studiesDone()))
+                .orElse(null);
 
-        int happiness = Validation.parseIntOrDefault(stats.getHappiness(), 0);
-        int workExperience = Validation.parseIntOrDefault(stats.getWork(), 0);
-        int educationLevel = education.getEducation();
-        int cash = stats.getCash();
+        return new SaveStateDto(
+                save.id(),
+                save.label(),
+                save.round(),
+                save.timeMinutes(),
+                format(save.timeMinutes()),
+                save.weekOver(),
+                save.cash(),
+                save.bank(),
+                save.debt(),
+                save.rent() == 1,
+                save.eat(),
+                save.clothing(),
+                jobFor(save),
+                new LocationDto(location.name(), location.displayName(), board.ringIndex(row, col), row, col),
+                degreesEarned,
+                currentCourse,
+                goalsFor(services, save),
+                save.won());
+    }
 
-        StatsDto statsDto = new StatsDto(educationLevel, education.getProg(), happiness, workExperience);
-        GoalsDto goals = new GoalsDto(
-                new GoalDto(cash, CASH_GOAL),
-                new GoalDto(happiness, HAPPINESS_GOAL),
-                new GoalDto(workExperience, WORK_EXPERIENCE_GOAL),
-                new GoalDto(educationLevel, EDUCATION_GOAL));
+    private JobDto jobFor(SaveState save) {
+        if (!save.employed()) {
+            return new JobDto(UNEMPLOYED, null, null);
+        }
+        return jobs.byId(save.jobId())
+                .map(job -> new JobDto(job.name(), job.wage(), job.location()))
+                .orElse(new JobDto(UNEMPLOYED, null, null));
+    }
 
-        return new PlayerStateDto(
-                username,
-                Integer.parseInt(time.getRound()),
-                clock.remainingMinutes(),
-                TimeService.format(clock.remainingMinutes()),
-                clock.weekOver(),
-                cash,
-                services.bank().balance(),
-                stats.getDebt(),
-                stats.getRent() == 1,
-                services.food().getFood(),
-                jobs.getClothingLevel(),
-                job,
-                statsDto,
-                goals,
-                new LocationDto(location.name(), location.displayName(),
-                        board.ringIndex(row, col), row, col));
+    private static GoalsDto goalsFor(SaveGameServices services, SaveState save) {
+        GoalService.GoalsProgress progress = services.goals().progress(save);
+        return new GoalsDto(
+                new GoalDto(progress.wealth().current(), progress.wealth().target()),
+                new GoalDto(progress.happiness().current(), progress.happiness().target()),
+                new GoalDto(progress.education().current(), progress.education().target()),
+                new GoalDto(progress.career().current(), progress.career().target()));
+    }
+
+    /**
+     * Renders a minutes budget as {@code "38h 30m"} / {@code "72h"} / {@code "45m"} /
+     * {@code "0h"} — moved here byte-identical from the retired {@code TimeService.format}
+     * (KAN-54), whose only caller this was. Wire contract: mirrored by {@code
+     * frontend/src/game/formatMinutes.ts}.
+     */
+    private static String format(int minutes) {
+        int h = minutes / 60;
+        int m = minutes % 60;
+        if (m == 0) {
+            return h + "h";
+        }
+        if (h == 0) {
+            return m + "m";
+        }
+        return h + "h " + m + "m";
     }
 }

@@ -1,6 +1,9 @@
 package amiss.api.web;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -9,45 +12,57 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import amiss.api.config.GameServicesFactory;
+import amiss.api.config.CostsConfig;
 import amiss.api.security.SecurityConfig;
+import amiss.api.web.dto.GoalDto;
+import amiss.api.web.dto.GoalsDto;
 import amiss.api.web.dto.LocationDto;
-import amiss.api.web.dto.PlayerStateDto;
-import amiss.application.config.ActionCosts;
-import amiss.application.service.EatOutcome;
-import amiss.application.service.FoodService;
-import amiss.application.service.GameServices;
-import amiss.application.service.PurchaseOutcome;
-import amiss.application.service.StatsService;
-import amiss.application.service.TravelService;
+import amiss.api.web.dto.SaveStateDto;
+import amiss.application.service.save.EatOutcome;
+import amiss.application.service.save.PurchaseOutcome;
+import amiss.application.service.save.SaveGameServices;
+import amiss.application.service.save.ShopService;
+import amiss.application.service.save.TravelService;
 import amiss.domain.board.Location;
+import amiss.domain.model.FastFoodItem;
+import amiss.domain.model.FoodPack;
+import amiss.domain.model.SaveState;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-/** The KAN-32 food endpoints: catalog, eating, groceries and clothes. */
+/** The KAN-54 food endpoints: catalog, eating, groceries and clothes, save-scoped. */
 @WebMvcTest(FoodController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class})
+@Import({GlobalExceptionHandler.class, CostsConfig.class, SecurityConfig.class})
 class FoodControllerTest {
 
     @Autowired
     private MockMvc mvc;
 
     @MockitoBean
-    private GameServicesFactory factory;
-
+    private SaveScope scope;
+    @MockitoBean
+    private SaveGameServices services;
     @MockitoBean
     private PlayerStateAssembler assembler;
 
-    private static PlayerStateDto dto() {
-        return new PlayerStateDto("bob", 3, 3960, "66h", false, 70, 0, 0, false,
-                1, 1, null, null, null,
-                new LocationDto("MONOLITH_BURGERS", "Monolith Burgers", 3, 1, 4));
+    private static SaveState save() {
+        return new SaveState(7L, "bob", "My Save", 1, 4, 3960, 3, 70, 0, 0, 0, 0, 1,
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false);
+    }
+
+    private static SaveStateDto dto() {
+        GoalDto goal = new GoalDto(0, 1);
+        return new SaveStateDto(7L, "My Save", 3, 3960, "66h", false, 70, 0, 0, false,
+                1, 1, null, new LocationDto("MONOLITH_BURGERS", "Monolith Burgers", 3, 1, 4),
+                List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 
     private static MockHttpServletRequestBuilder postBody(String path, String field, String value) {
@@ -57,14 +72,12 @@ class FoodControllerTest {
                 .content("{\"" + field + "\":\"" + value + "\"}");
     }
 
-    private GameServices mockServicesAt(Location location) {
-        GameServices services = mock(GameServices.class);
+    private TravelService mockTravelAt(SaveState save, Location location) {
         TravelService travel = mock(TravelService.class);
-        when(factory.forPlayer("bob")).thenReturn(services);
+        when(scope.require(eq(7L), any())).thenReturn(save);
         when(services.travel()).thenReturn(travel);
-        when(travel.currentLocation()).thenReturn(location);
-        when(services.costs()).thenReturn(ActionCosts.defaults());
-        return services;
+        when(travel.currentLocation(save)).thenReturn(location);
+        return travel;
     }
 
     // ---- GET /api/food ---------------------------------------------------------
@@ -99,11 +112,23 @@ class FoodControllerTest {
                 .andExpect(jsonPath("$[2].level").value(3));
     }
 
-    // ---- POST /api/players/{u}/eat --------------------------------------------
+    // ---- POST /api/saves/{id}/eat -----------------------------------------------
+
+    @Test
+    void eat_anotherPlayersSaveIsForbiddenAndNeverReachesTheServices() throws Exception {
+        when(scope.require(eq(7L), any())).thenThrow(new AccessDeniedException("nope"));
+
+        mvc.perform(postBody("/api/saves/7/eat", "item", "BURGER"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:amiss:forbidden"));
+
+        verifyNoInteractions(services, assembler);
+    }
 
     @Test
     void eat_unknownItemIsA400Problem() throws Exception {
-        mvc.perform(postBody("/api/players/bob/eat", "item", "CAVIAR"))
+        mvc.perform(postBody("/api/saves/7/eat", "item", "CAVIAR"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:unknown-item"));
@@ -111,9 +136,9 @@ class FoodControllerTest {
 
     @Test
     void eat_wrongLocationIsA409Problem() throws Exception {
-        mockServicesAt(Location.PAWN_SHOP);
+        mockTravelAt(save(), Location.PAWN_SHOP);
 
-        mvc.perform(postBody("/api/players/bob/eat", "item", "BURGER"))
+        mvc.perform(postBody("/api/saves/7/eat", "item", "BURGER"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:wrong-location"));
@@ -121,12 +146,14 @@ class FoodControllerTest {
 
     @Test
     void eat_insufficientTimeIsA409Problem() throws Exception {
-        GameServices services = mockServicesAt(Location.MONOLITH_BURGERS);
-        StatsService stats = mock(StatsService.class);
-        when(services.stats()).thenReturn(stats);
-        when(stats.eat(32)).thenReturn(new EatOutcome(EatOutcome.Status.INSUFFICIENT_TIME, 50, -1, 32));
+        SaveState save = save();
+        mockTravelAt(save, Location.MONOLITH_BURGERS);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.eat(save, FastFoodItem.BURGER))
+                .thenReturn(new EatOutcome(EatOutcome.Status.INSUFFICIENT_TIME, 50, -1, 32));
 
-        mvc.perform(postBody("/api/players/bob/eat", "item", "BURGER"))
+        mvc.perform(postBody("/api/saves/7/eat", "item", "BURGER"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-time"));
@@ -134,42 +161,46 @@ class FoodControllerTest {
 
     @Test
     void eat_insufficientCashIsA200WithAteFalse() throws Exception {
-        GameServices services = mockServicesAt(Location.MONOLITH_BURGERS);
-        StatsService stats = mock(StatsService.class);
-        when(services.stats()).thenReturn(stats);
-        when(stats.eat(32)).thenReturn(new EatOutcome(EatOutcome.Status.INSUFFICIENT_CASH, 3900, 10, 32));
-        when(assembler.assemble("bob", services)).thenReturn(dto());
+        SaveState save = save();
+        mockTravelAt(save, Location.MONOLITH_BURGERS);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.eat(save, FastFoodItem.BURGER))
+                .thenReturn(new EatOutcome(EatOutcome.Status.INSUFFICIENT_CASH, 3900, 10, 32));
+        when(assembler.assemble(services, save)).thenReturn(dto());
 
-        mvc.perform(postBody("/api/players/bob/eat", "item", "BURGER"))
+        mvc.perform(postBody("/api/saves/7/eat", "item", "BURGER"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.item").value("BURGER"))
                 .andExpect(jsonPath("$.price").value(32))
                 .andExpect(jsonPath("$.ate").value(false))
                 .andExpect(jsonPath("$.reason").value("INSUFFICIENT_CASH"))
-                .andExpect(jsonPath("$.minutesCharged").value(0)); // eating costs no time
+                .andExpect(jsonPath("$.minutesCharged").value(0));
     }
 
     @Test
     void eat_okReturnsAteTrue() throws Exception {
-        GameServices services = mockServicesAt(Location.MONOLITH_BURGERS);
-        StatsService stats = mock(StatsService.class);
-        when(services.stats()).thenReturn(stats);
-        when(stats.eat(32)).thenReturn(new EatOutcome(EatOutcome.Status.OK, 3900, 38, 32));
-        when(assembler.assemble("bob", services)).thenReturn(dto());
+        SaveState save = save();
+        mockTravelAt(save, Location.MONOLITH_BURGERS);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.eat(save, FastFoodItem.BURGER))
+                .thenReturn(new EatOutcome(EatOutcome.Status.OK, 3900, 38, 32));
+        when(assembler.assemble(services, save)).thenReturn(dto());
 
-        mvc.perform(postBody("/api/players/bob/eat", "item", "BURGER"))
+        mvc.perform(postBody("/api/saves/7/eat", "item", "BURGER"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ate").value(true))
                 .andExpect(jsonPath("$.reason").doesNotExist())
-                .andExpect(jsonPath("$.minutesCharged").value(0)) // eating costs no time
-                .andExpect(jsonPath("$.state.username").value("bob"));
+                .andExpect(jsonPath("$.minutesCharged").value(0))
+                .andExpect(jsonPath("$.state.id").value(7));
     }
 
-    // ---- POST /api/players/{u}/groceries ---------------------------------------
+    // ---- POST /api/saves/{id}/groceries -----------------------------------------
 
     @Test
     void groceries_unknownItemIsA400Problem() throws Exception {
-        mvc.perform(postBody("/api/players/bob/groceries", "pack", "FIFTY_WEEKS"))
+        mvc.perform(postBody("/api/saves/7/groceries", "pack", "FIFTY_WEEKS"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:unknown-item"));
@@ -177,9 +208,9 @@ class FoodControllerTest {
 
     @Test
     void groceries_wrongLocationIsA409Problem() throws Exception {
-        mockServicesAt(Location.PAWN_SHOP);
+        mockTravelAt(save(), Location.PAWN_SHOP);
 
-        mvc.perform(postBody("/api/players/bob/groceries", "pack", "TWO_WEEKS"))
+        mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:wrong-location"));
@@ -187,12 +218,14 @@ class FoodControllerTest {
 
     @Test
     void groceries_weekOverIsA409Problem() throws Exception {
-        GameServices services = mockServicesAt(Location.BLACKS_MARKET);
-        StatsService stats = mock(StatsService.class);
-        when(services.stats()).thenReturn(stats);
-        when(stats.buyGroceries(48, 2)).thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.WEEK_OVER, 0, 70));
+        SaveState save = save();
+        mockTravelAt(save, Location.BLACKS_MARKET);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.buyGroceries(save, FoodPack.TWO_WEEKS))
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.WEEK_OVER, 0, 70));
 
-        mvc.perform(postBody("/api/players/bob/groceries", "pack", "TWO_WEEKS"))
+        mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:week-over"));
@@ -200,12 +233,14 @@ class FoodControllerTest {
 
     @Test
     void groceries_insufficientCashIsA409Problem() throws Exception {
-        GameServices services = mockServicesAt(Location.BLACKS_MARKET);
-        StatsService stats = mock(StatsService.class);
-        when(services.stats()).thenReturn(stats);
-        when(stats.buyGroceries(48, 2)).thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10));
+        SaveState save = save();
+        mockTravelAt(save, Location.BLACKS_MARKET);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.buyGroceries(save, FoodPack.TWO_WEEKS))
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10));
 
-        mvc.perform(postBody("/api/players/bob/groceries", "pack", "TWO_WEEKS"))
+        mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-funds"));
@@ -213,12 +248,14 @@ class FoodControllerTest {
 
     @Test
     void groceries_insufficientTimeIsA409Problem() throws Exception {
-        GameServices services = mockServicesAt(Location.BLACKS_MARKET);
-        StatsService stats = mock(StatsService.class);
-        when(services.stats()).thenReturn(stats);
-        when(stats.buyGroceries(48, 2)).thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, 50, 70));
+        SaveState save = save();
+        mockTravelAt(save, Location.BLACKS_MARKET);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.buyGroceries(save, FoodPack.TWO_WEEKS))
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, 50, 70));
 
-        mvc.perform(postBody("/api/players/bob/groceries", "pack", "TWO_WEEKS"))
+        mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-time"));
@@ -226,29 +263,30 @@ class FoodControllerTest {
 
     @Test
     void groceries_okReturnsWeeksAddedAndFoodWeeks() throws Exception {
-        GameServices services = mockServicesAt(Location.BLACKS_MARKET);
-        StatsService stats = mock(StatsService.class);
-        FoodService food = mock(FoodService.class);
-        when(services.stats()).thenReturn(stats);
-        when(services.food()).thenReturn(food);
-        when(stats.buyGroceries(48, 2)).thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 22));
-        when(food.getFood()).thenReturn(2);
-        when(assembler.assemble("bob", services)).thenReturn(dto());
+        SaveState save = save();
+        mockTravelAt(save, Location.BLACKS_MARKET);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.buyGroceries(save, FoodPack.TWO_WEEKS)).thenAnswer(invocation -> {
+            save.setEat(2);
+            return new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 22);
+        });
+        when(assembler.assemble(services, save)).thenReturn(dto());
 
-        mvc.perform(postBody("/api/players/bob/groceries", "pack", "TWO_WEEKS"))
+        mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pack").value("TWO_WEEKS"))
                 .andExpect(jsonPath("$.price").value(48))
                 .andExpect(jsonPath("$.weeksAdded").value(2))
                 .andExpect(jsonPath("$.foodWeeks").value(2))
-                .andExpect(jsonPath("$.state.username").value("bob"));
+                .andExpect(jsonPath("$.state.id").value(7));
     }
 
-    // ---- POST /api/players/{u}/clothes -----------------------------------------
+    // ---- POST /api/saves/{id}/clothes -------------------------------------------
 
     @Test
     void clothes_unknownItemIsA400Problem() throws Exception {
-        mvc.perform(postBody("/api/players/bob/clothes", "item", "TUXEDO"))
+        mvc.perform(postBody("/api/saves/7/clothes", "item", "TUXEDO"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:unknown-item"));
@@ -256,9 +294,9 @@ class FoodControllerTest {
 
     @Test
     void clothes_wrongLocationIsA409Problem() throws Exception {
-        mockServicesAt(Location.PAWN_SHOP);
+        mockTravelAt(save(), Location.PAWN_SHOP);
 
-        mvc.perform(postBody("/api/players/bob/clothes", "item", "SUIT"))
+        mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:wrong-location"));
@@ -266,12 +304,14 @@ class FoodControllerTest {
 
     @Test
     void clothes_insufficientCashIsA409Problem() throws Exception {
-        GameServices services = mockServicesAt(Location.QT_CLOTHING);
-        StatsService stats = mock(StatsService.class);
-        when(services.stats()).thenReturn(stats);
-        when(stats.buyClothes(3, 55)).thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10));
+        SaveState save = save();
+        mockTravelAt(save, Location.QT_CLOTHING);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.buyClothes(any(), any()))
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10));
 
-        mvc.perform(postBody("/api/players/bob/clothes", "item", "SUIT"))
+        mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-funds"));
@@ -279,17 +319,19 @@ class FoodControllerTest {
 
     @Test
     void clothes_okReturnsClothingLevelAndFreshState() throws Exception {
-        GameServices services = mockServicesAt(Location.QT_CLOTHING);
-        StatsService stats = mock(StatsService.class);
-        when(services.stats()).thenReturn(stats);
-        when(stats.buyClothes(3, 55)).thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 15));
-        when(assembler.assemble("bob", services)).thenReturn(dto());
+        SaveState save = save();
+        mockTravelAt(save, Location.QT_CLOTHING);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.buyClothes(any(), any()))
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 15));
+        when(assembler.assemble(services, save)).thenReturn(dto());
 
-        mvc.perform(postBody("/api/players/bob/clothes", "item", "SUIT"))
+        mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.item").value("SUIT"))
                 .andExpect(jsonPath("$.price").value(55))
                 .andExpect(jsonPath("$.clothingLevel").value(3))
-                .andExpect(jsonPath("$.state.username").value("bob"));
+                .andExpect(jsonPath("$.state.id").value(7));
     }
 }

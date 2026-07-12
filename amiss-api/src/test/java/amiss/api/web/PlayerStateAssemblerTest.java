@@ -4,65 +4,78 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
-import amiss.api.web.dto.PlayerStateDto;
+import amiss.api.web.dto.SaveStateDto;
 import amiss.application.config.ActionCosts;
-import amiss.application.port.JobRepository;
-import amiss.application.port.UserRepository;
-import amiss.application.port.UserStatsRepository;
-import amiss.application.service.GameServices;
-import amiss.domain.model.User;
+import amiss.application.port.DegreeCatalog;
+import amiss.application.port.JobCatalog;
+import amiss.application.port.SaveDegrees;
+import amiss.application.port.SaveRepository;
+import amiss.application.port.Turndowns;
+import amiss.application.service.save.SaveGameServices;
+import amiss.domain.model.DegreeSpec;
+import amiss.domain.model.JobSpec;
+import amiss.domain.model.SaveState;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tests for {@link PlayerStateAssembler}. Wired with a <em>real</em> {@link GameServices}
- * over mocked repositories (the {@code GameServices} composition-root convention), since the
- * assembler drives every service through it exactly as the controllers do.
+ * Tests for {@link PlayerStateAssembler} (KAN-54: rewritten over the save-scoped facade).
+ * Wired with a <em>real</em> {@link SaveGameServices} over mocked ports, since the assembler
+ * drives goals/courses through it exactly as the controllers do.
  */
 @ExtendWith(MockitoExtension.class)
 class PlayerStateAssemblerTest {
 
-    private static final String USER = "bob";
+    private static final long SAVE_ID = 7L;
 
     @Mock
-    private UserRepository users;
+    private SaveRepository saves;
     @Mock
-    private UserStatsRepository userStats;
+    private JobCatalog jobCatalog;
     @Mock
-    private JobRepository jobs;
+    private DegreeCatalog degreeCatalog;
+    @Mock
+    private SaveDegrees saveDegrees;
+    @Mock
+    private Turndowns turndowns;
 
-    private final PlayerStateAssembler assembler = new PlayerStateAssembler();
+    private PlayerStateAssembler assembler;
 
-    private GameServices services(String job) {
-        User user = new User(USER, 0, 2, 3960, 120, 3, job, 1, 0, 1, 0);
-        return new GameServices(user, users, userStats, jobs, ActionCosts.defaults());
+    @BeforeEach
+    void setUp() {
+        // Built here, not as a field initializer: @Mock fields are injected by MockitoExtension
+        // after JUnit constructs the test instance, so a field initializer would capture a
+        // still-null jobCatalog.
+        assembler = new PlayerStateAssembler(jobCatalog);
     }
 
-    private void stubCommonState(String job) {
-        when(users.getXpos(USER)).thenReturn(0);
-        when(users.getYpos(USER)).thenReturn(2);
-        when(users.getTime(USER)).thenReturn(3960);
-        when(users.getRound(USER)).thenReturn(3);
-        when(users.getCash(USER)).thenReturn(120);
-        when(users.getBank(USER)).thenReturn(50);
-        when(users.getDebt(USER)).thenReturn(0);
-        when(users.getRent(USER)).thenReturn(0);
-        when(users.getEat(USER)).thenReturn(1);
-        when(users.getJob(USER)).thenReturn(job);
-        when(users.getUserClothing(USER)).thenReturn("1");
-        when(userStats.getEducation(USER)).thenReturn(2);
-        when(userStats.getEduprog(USER)).thenReturn(4);
-        when(userStats.getHappiness(USER)).thenReturn("50");
-        when(userStats.getWork(USER)).thenReturn("30");
+    private SaveGameServices services() {
+        return new SaveGameServices(saves, jobCatalog, degreeCatalog, saveDegrees, turndowns,
+                ActionCosts.defaults(), () -> 100);
+    }
+
+    private static SaveState save(Integer jobId, Integer currentCourseId, int eduprog) {
+        return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, 3960, 3, 120, 50, 0, 0, 1, 1,
+                jobId, 60, 30, 40, currentCourseId, eduprog, 200, 100, 30, 50, false);
+    }
+
+    private static SaveState save(int timeMinutes) {
+        return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, timeMinutes, 3, 120, 50, 0, 0, 1, 1,
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false);
     }
 
     @Test
-    void assemble_unemployedPlayerHasNullJobWageAndLocation() {
-        stubCommonState("Unemployed");
+    void assemble_unemployedSaveHasUnemployedJobWageAndLocation() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
 
-        PlayerStateDto dto = assembler.assemble(USER, services("Unemployed"));
+        SaveStateDto dto = assembler.assemble(services(), save(null, null, 0));
 
         assertEquals("Unemployed", dto.job().name());
         assertNull(dto.job().hourlyWage());
@@ -70,12 +83,12 @@ class PlayerStateAssemblerTest {
     }
 
     @Test
-    void assemble_employedPlayerReportsWageAndLocation() {
-        stubCommonState("Cook");
-        when(jobs.getSalary("Cook")).thenReturn(6);
-        when(jobs.getLocation("Cook")).thenReturn("Monolith Burgers");
+    void assemble_employedSaveReportsWageAndLocation() {
+        when(jobCatalog.byId(4)).thenReturn(Optional.of(new JobSpec(4, "Cook", "Monolith Burgers", 6, 0, 0, 0)));
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
 
-        PlayerStateDto dto = assembler.assemble(USER, services("Cook"));
+        SaveStateDto dto = assembler.assemble(services(), save(4, null, 0));
 
         assertEquals("Cook", dto.job().name());
         assertEquals(6, dto.job().hourlyWage());
@@ -83,52 +96,99 @@ class PlayerStateAssemblerTest {
     }
 
     @Test
-    void assemble_populatesStatsFoodClothingAndGoalTargets() {
-        stubCommonState("Unemployed");
+    void assemble_populatesGoalsFoodClothingAndEarnedDegrees() {
+        when(degreeCatalog.all()).thenReturn(List.of(new DegreeSpec(1, "Junior College", null)));
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of(1));
 
-        PlayerStateDto dto = assembler.assemble(USER, services("Unemployed"));
+        SaveStateDto dto = assembler.assemble(services(), save(null, null, 0));
 
-        assertEquals(2, dto.stats().education());
-        assertEquals(4, dto.stats().educationProgress());
-        assertEquals(50, dto.stats().happiness());
-        assertEquals(30, dto.stats().workExperience());
         assertEquals(1, dto.foodWeeks());
         assertEquals(1, dto.clothing());
         assertEquals(50, dto.bank());
+        assertEquals(List.of("Junior College"), dto.degreesEarned());
+        assertNull(dto.currentCourse());
 
-        assertEquals(120, dto.goals().cash().current());
-        assertEquals(1000, dto.goals().cash().target());
-        assertEquals(50, dto.goals().happiness().current());
-        assertEquals(200, dto.goals().happiness().target());
-        assertEquals(30, dto.goals().workExperience().current());
-        assertEquals(200, dto.goals().workExperience().target());
-        assertEquals(2, dto.goals().education().current());
-        assertEquals(8, dto.goals().education().target());
+        assertEquals(1, dto.goals().wealth().current());
+        assertEquals(200, dto.goals().wealth().target());
+        assertEquals(60, dto.goals().happiness().current());
+        assertEquals(100, dto.goals().happiness().target());
+        assertEquals(10, dto.goals().education().current());
+        assertEquals(30, dto.goals().education().target());
+        assertEquals(0, dto.goals().career().current());
+        assertEquals(50, dto.goals().career().target());
+    }
+
+    @Test
+    void assemble_currentCourseReportsProgress() {
+        when(degreeCatalog.all()).thenReturn(List.of(
+                new DegreeSpec(1, "Junior College", null),
+                new DegreeSpec(2, "Business", 1)));
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of(1));
+
+        SaveStateDto dto = assembler.assemble(services(), save(null, 2, 4));
+
+        assertEquals(List.of("Junior College"), dto.degreesEarned());
+        assertEquals(2, dto.currentCourse().id());
+        assertEquals("Business", dto.currentCourse().name());
+        assertEquals(4, dto.currentCourse().studiesDone());
     }
 
     @Test
     void assemble_staleSavedPositionClampsToHome() {
-        when(users.getXpos(USER)).thenReturn(9);
-        when(users.getYpos(USER)).thenReturn(9);
-        when(users.getTime(USER)).thenReturn(3960);
-        when(users.getRound(USER)).thenReturn(3);
-        when(users.getCash(USER)).thenReturn(120);
-        when(users.getBank(USER)).thenReturn(50);
-        when(users.getDebt(USER)).thenReturn(0);
-        when(users.getRent(USER)).thenReturn(0);
-        when(users.getEat(USER)).thenReturn(1);
-        when(users.getJob(USER)).thenReturn("Unemployed");
-        when(users.getUserClothing(USER)).thenReturn("1");
-        when(userStats.getEducation(USER)).thenReturn(2);
-        when(userStats.getEduprog(USER)).thenReturn(4);
-        when(userStats.getHappiness(USER)).thenReturn("50");
-        when(userStats.getWork(USER)).thenReturn("30");
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+        SaveState stale = new SaveState(SAVE_ID, "bob", "My Save", 9, 9, 3960, 3, 120, 50, 0, 0, 1, 1,
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false);
 
-        PlayerStateDto dto = assembler.assemble(USER, services("Unemployed"));
+        SaveStateDto dto = assembler.assemble(services(), stale);
 
         assertEquals("LOW_COST_HOUSING", dto.location().id());
         assertEquals(0, dto.location().row());
         assertEquals(2, dto.location().col());
         assertEquals(0, dto.location().ringIndex());
+    }
+
+    // ---- timeDisplay: wire contract, mirrored by frontend/src/game/formatMinutes.ts --------
+    // Carried over from the retired TimeServiceTest's format_* pins (KAN-54) now that
+    // PlayerStateAssembler owns the formatting.
+
+    @Test
+    void assemble_timeDisplayRendersHoursAndMinutes() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+
+        SaveStateDto dto = assembler.assemble(services(), save(2310));
+
+        assertEquals("38h 30m", dto.timeDisplay());
+    }
+
+    @Test
+    void assemble_timeDisplayOmitsTheMinutesPartWhenZero() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+
+        SaveStateDto dto = assembler.assemble(services(), save(4320));
+
+        assertEquals("72h", dto.timeDisplay());
+    }
+
+    @Test
+    void assemble_timeDisplayRendersUnderAnHourAsMinutesOnly() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+
+        SaveStateDto dto = assembler.assemble(services(), save(45));
+
+        assertEquals("45m", dto.timeDisplay());
+    }
+
+    @Test
+    void assemble_timeDisplayRendersAnEmptyClockAsZeroHours() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+
+        SaveStateDto dto = assembler.assemble(services(), save(0));
+
+        assertEquals("0h", dto.timeDisplay());
     }
 }

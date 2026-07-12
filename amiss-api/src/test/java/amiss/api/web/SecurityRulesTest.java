@@ -1,6 +1,7 @@
 package amiss.api.web;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -13,29 +14,33 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import amiss.api.config.CostsConfig;
-import amiss.api.config.GameServicesFactory;
 import amiss.api.security.SecurityConfig;
-import amiss.api.web.dto.PlayerStateDto;
-import amiss.application.port.UserRepository;
-import amiss.application.service.GameServices;
+import amiss.api.web.dto.GoalDto;
+import amiss.api.web.dto.GoalsDto;
+import amiss.api.web.dto.LocationDto;
+import amiss.api.web.dto.SaveStateDto;
+import amiss.application.service.save.SaveGameServices;
+import amiss.domain.model.SaveState;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * The KAN-37 acceptance contract, in one slice: anonymous callers get 401, an authenticated
- * player reading/writing someone else's state gets 403 without ever touching the game
- * services, an authenticated player reaches their own state fine, {@code /api/highscores}
- * stays public, and CORS preflight is only honoured for an allowed origin. {@link
- * BoardController}, {@link PlayerController} and {@link HighscoresController} are loaded
- * together purely so every scenario fits in one test class; none of their behaviour beyond
- * routing/security is under test here (see each controller's own {@code *ControllerTest}).
+ * The KAN-37/KAN-54 acceptance contract, in one slice: anonymous callers get 401, an
+ * authenticated player reading/writing someone else's save gets 403 without ever touching
+ * the save-scoped services, an authenticated player reaches their own save fine, and CORS
+ * preflight is only honoured for an allowed origin. {@link BoardController} and {@link
+ * PlayerController} are loaded together purely so every scenario fits in one test class; none
+ * of their behaviour beyond routing/security is under test here (see each controller's own
+ * {@code *ControllerTest}).
  */
-@WebMvcTest(controllers = {BoardController.class, PlayerController.class, HighscoresController.class})
+@WebMvcTest(controllers = {BoardController.class, PlayerController.class})
 @Import({CostsConfig.class, GlobalExceptionHandler.class, SecurityConfig.class})
 class SecurityRulesTest {
 
@@ -43,13 +48,13 @@ class SecurityRulesTest {
     private MockMvc mvc;
 
     @MockitoBean
-    private GameServicesFactory factory;
+    private SaveScope scope;
+
+    @MockitoBean
+    private SaveGameServices services;
 
     @MockitoBean
     private PlayerStateAssembler assembler;
-
-    @MockitoBean
-    private UserRepository users;
 
     private static final String ALLOWED_ORIGIN = "http://localhost:5173";
     private static final String DISALLOWED_ORIGIN = "http://evil.example";
@@ -65,28 +70,32 @@ class SecurityRulesTest {
     }
 
     @Test
-    void anonymousPlayerState_is401Unauthenticated() throws Exception {
-        mvc.perform(get("/api/players/alice"))
+    void anonymousSaveState_is401Unauthenticated() throws Exception {
+        mvc.perform(get("/api/saves/7"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:unauthenticated"));
     }
 
-    // ---- player scoping: authenticated, but not your own state ---------------------
+    // ---- save scoping: authenticated, but not your own save ------------------------
 
     @Test
-    void authenticatedAsAlice_readingBobsState_is403AndNeverReachesTheController() throws Exception {
-        mvc.perform(get("/api/players/bob").with(jwt().jwt(j -> j.subject("alice"))))
+    void authenticatedAsAlice_readingBobsSave_is403AndNeverReachesTheServices() throws Exception {
+        when(scope.require(eq(7L), any())).thenThrow(new AccessDeniedException("You may only access your own save"));
+
+        mvc.perform(get("/api/saves/7").with(jwt().jwt(j -> j.subject("alice"))))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:forbidden"));
 
-        verifyNoInteractions(factory, assembler);
+        verifyNoInteractions(services, assembler);
     }
 
     @Test
-    void authenticatedAsAlice_movingBob_is403AndNeverReachesTheController() throws Exception {
-        mvc.perform(post("/api/players/bob/move")
+    void authenticatedAsAlice_movingBobsSave_is403AndNeverReachesTheServices() throws Exception {
+        when(scope.require(eq(7L), any())).thenThrow(new AccessDeniedException("You may only access your own save"));
+
+        mvc.perform(post("/api/saves/7/move")
                         .with(jwt().jwt(j -> j.subject("alice")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"target\":\"BANK\"}"))
@@ -94,34 +103,26 @@ class SecurityRulesTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:forbidden"));
 
-        verifyNoInteractions(factory, assembler);
+        verifyNoInteractions(services, assembler);
     }
 
     @Test
-    void authenticatedAsAlice_readingOwnState_is200() throws Exception {
-        GameServices services = mock(GameServices.class);
-        when(factory.forPlayer("alice")).thenReturn(services);
-        when(assembler.assemble("alice", services)).thenReturn(dto("alice"));
+    void authenticatedAsAlice_readingOwnSave_is200() throws Exception {
+        SaveState save = new SaveState(7L, "alice", "My Save", 0, 2, 3600, 1, 120, 0, 0, 1, 1, 1,
+                null, 0, 10, 20, null, 0, 200, 100, 30, 50, false);
+        when(scope.require(eq(7L), any())).thenReturn(save);
+        when(assembler.assemble(services, save)).thenReturn(dto());
 
-        mvc.perform(get("/api/players/alice").with(jwt().jwt(j -> j.subject("alice"))))
+        mvc.perform(get("/api/saves/7").with(jwt().jwt(j -> j.subject("alice"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("alice"));
+                .andExpect(jsonPath("$.id").value(7));
     }
 
-    private static PlayerStateDto dto(String username) {
-        return new PlayerStateDto(username, 1, 3600, "60h", false, 120, 0, 0, false,
-                1, 1, null, null, null,
-                new amiss.api.web.dto.LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2));
-    }
-
-    // ---- the public trio stays public -----------------------------------------------
-
-    @Test
-    void anonymousHighscores_is200() throws Exception {
-        when(users.highScores()).thenReturn(java.util.List.of());
-
-        mvc.perform(get("/api/highscores"))
-                .andExpect(status().isOk());
+    private static SaveStateDto dto() {
+        GoalDto goal = new GoalDto(0, 1);
+        return new SaveStateDto(7L, "My Save", 1, 3600, "60h", false, 120, 0, 0, false,
+                1, 1, null, new LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2),
+                List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 
     // ---- CORS preflight ---------------------------------------------------------------
