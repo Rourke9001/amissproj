@@ -2,11 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EndWeekModal } from './EndWeekModal';
-import type { PlayerStateDto } from '../api/types';
+import type { SaveStateDto } from '../api/types';
 
-function stateFixture(): PlayerStateDto {
+function stateFixture(): SaveStateDto {
   return {
-    username: 'alice',
+    id: 42,
+    label: 'Save 42',
     round: 4,
     timeMinutes: 4320,
     timeDisplay: '72h',
@@ -17,14 +18,16 @@ function stateFixture(): PlayerStateDto {
     rentDue: true,
     foodWeeks: 1,
     clothing: 1,
-    job: null,
-    stats: { education: 0, educationProgress: 0, happiness: 50, workExperience: 0 },
+    job: { name: 'Unemployed', hourlyWage: null, location: null },
+    degreesEarned: [],
+    currentCourse: null,
     goals: {
-      cash: { current: 500, target: 5000 },
-      happiness: { current: 50, target: 100 },
-      workExperience: { current: 0, target: 10 },
-      education: { current: 0, target: 100 },
+      wealth: { current: 500, target: 5000, met: false },
+      happiness: { current: 50, target: 100, met: false },
+      education: { current: 0, target: 100, met: false },
+      career: { current: 0, target: 10, met: false },
     },
+    won: false,
     location: { id: 'BANK', name: 'Bank', ringIndex: 9, row: 2, col: 0 },
   };
 }
@@ -33,7 +36,14 @@ describe('EndWeekModal', () => {
   it('shows the round, fed, debtCharged and rentDue summary lines', () => {
     render(
       <EndWeekModal
-        result={{ round: 4, fed: true, rentDue: true, debtCharged: true, state: stateFixture() }}
+        result={{
+          round: 4,
+          fed: true,
+          rentDue: true,
+          debtCharged: true,
+          won: false,
+          state: stateFixture(),
+        }}
         onClose={vi.fn()}
       />,
     );
@@ -48,7 +58,14 @@ describe('EndWeekModal', () => {
   it('shows the hungry message and hides debtCharged/rentDue lines when false', () => {
     render(
       <EndWeekModal
-        result={{ round: 5, fed: false, rentDue: false, debtCharged: false, state: stateFixture() }}
+        result={{
+          round: 5,
+          fed: false,
+          rentDue: false,
+          debtCharged: false,
+          won: false,
+          state: stateFixture(),
+        }}
         onClose={vi.fn()}
       />,
     );
@@ -63,7 +80,14 @@ describe('EndWeekModal', () => {
     const onClose = vi.fn();
     render(
       <EndWeekModal
-        result={{ round: 4, fed: true, rentDue: false, debtCharged: false, state: stateFixture() }}
+        result={{
+          round: 4,
+          fed: true,
+          rentDue: false,
+          debtCharged: false,
+          won: false,
+          state: stateFixture(),
+        }}
         onClose={onClose}
       />,
     );

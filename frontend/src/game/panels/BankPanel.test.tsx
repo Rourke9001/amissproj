@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BankPanel } from './BankPanel';
 import { deposit, withdraw } from '../../api/bank';
 import { ApiError } from '../../api/http';
-import type { PlayerStateDto } from '../../api/types';
+import type { SaveStateDto } from '../../api/types';
 
 vi.mock('../../api/bank', () => ({
   deposit: vi.fn(),
@@ -15,9 +15,10 @@ vi.mock('../../api/bank', () => ({
 const depositMock = vi.mocked(deposit);
 const withdrawMock = vi.mocked(withdraw);
 
-function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto {
+function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
   return {
-    username: 'alice',
+    id: 42,
+    label: 'Save 42',
     round: 3,
     timeMinutes: 4320,
     timeDisplay: '72h',
@@ -28,27 +29,29 @@ function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto 
     rentDue: false,
     foodWeeks: 2,
     clothing: 1,
-    job: null,
-    stats: { education: 0, educationProgress: 0, happiness: 50, workExperience: 0 },
+    job: { name: 'Unemployed', hourlyWage: null, location: null },
+    degreesEarned: [],
+    currentCourse: null,
     goals: {
-      cash: { current: 500, target: 5000 },
-      happiness: { current: 50, target: 100 },
-      workExperience: { current: 0, target: 10 },
-      education: { current: 0, target: 100 },
+      wealth: { current: 500, target: 5000, met: false },
+      happiness: { current: 50, target: 100, met: false },
+      education: { current: 0, target: 100, met: false },
+      career: { current: 0, target: 10, met: false },
     },
+    won: false,
     location: { id: 'BANK', name: 'Bank', ringIndex: 9, row: 2, col: 0 },
     ...overrides,
   };
 }
 
-function renderBankPanel(player: PlayerStateDto, onNotify = vi.fn()) {
+function renderBankPanel(player: SaveStateDto, onNotify = vi.fn()) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
   const utils = render(
     <QueryClientProvider client={queryClient}>
-      <BankPanel username="alice" player={player} onNotify={onNotify} />
+      <BankPanel saveId={42} player={player} onNotify={onNotify} />
     </QueryClientProvider>,
   );
   return { ...utils, queryClient, invalidateSpy, onNotify };
@@ -120,7 +123,7 @@ describe('BankPanel', () => {
     await user.type(input, '50');
     await user.click(screen.getByRole('button', { name: 'Deposit' }));
 
-    expect(depositMock).toHaveBeenCalledWith('alice', 50);
+    expect(depositMock).toHaveBeenCalledWith(42, 50);
     await waitFor(() => expect(onNotify).toHaveBeenCalledWith('Deposited R50'));
     expect(input.value).toBe('');
   });
@@ -138,7 +141,7 @@ describe('BankPanel', () => {
     await user.type(input, '30');
     await user.click(screen.getByRole('button', { name: 'Withdraw' }));
 
-    expect(withdrawMock).toHaveBeenCalledWith('alice', 30);
+    expect(withdrawMock).toHaveBeenCalledWith(42, 30);
     await waitFor(() => expect(onNotify).toHaveBeenCalledWith('Withdrew R30'));
     expect(input.value).toBe('');
   });
@@ -178,6 +181,6 @@ describe('BankPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Deposit' }));
 
     await screen.findByRole('alert');
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['player', 'alice'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['save', 42] });
   });
 });

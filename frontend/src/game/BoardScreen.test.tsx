@@ -5,17 +5,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BoardScreen } from './BoardScreen';
 import { ApiError } from '../api/http';
 import { getBoard } from '../api/board';
-import { endWeek, getPlayerState, move } from '../api/player';
+import { endWeek, getSaveState, move } from '../api/player';
 import { getJobs } from '../api/jobs';
 import { getCourses } from '../api/university';
-import type { BoardDto, PlayerStateDto } from '../api/types';
+import type { BoardDto, SaveStateDto } from '../api/types';
 
 vi.mock('../api/board', () => ({
   getBoard: vi.fn(),
 }));
 
 vi.mock('../api/player', () => ({
-  getPlayerState: vi.fn(),
+  getSaveState: vi.fn(),
   move: vi.fn(),
   endWeek: vi.fn(),
 }));
@@ -56,7 +56,7 @@ vi.mock('../api/clothes', () => ({
 }));
 
 const getBoardMock = vi.mocked(getBoard);
-const getPlayerStateMock = vi.mocked(getPlayerState);
+const getSaveStateMock = vi.mocked(getSaveState);
 const moveMock = vi.mocked(move);
 const endWeekMock = vi.mocked(endWeek);
 const getJobsMock = vi.mocked(getJobs);
@@ -82,9 +82,10 @@ const BOARD_FIXTURE: BoardDto = {
   travel: { minutesPerStep: 40, enterBuildingMinutes: 120 },
 };
 
-function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto {
+function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
   return {
-    username: 'alice',
+    id: 42,
+    label: 'Save 42',
     round: 3,
     timeMinutes: 4320,
     timeDisplay: '72h',
@@ -95,14 +96,16 @@ function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto 
     rentDue: false,
     foodWeeks: 2,
     clothing: 1,
-    job: null,
-    stats: { education: 0, educationProgress: 0, happiness: 50, workExperience: 0 },
+    job: { name: 'Unemployed', hourlyWage: null, location: null },
+    degreesEarned: [],
+    currentCourse: null,
     goals: {
-      cash: { current: 500, target: 5000 },
-      happiness: { current: 50, target: 100 },
-      workExperience: { current: 0, target: 10 },
-      education: { current: 0, target: 100 },
+      wealth: { current: 500, target: 5000, met: false },
+      happiness: { current: 50, target: 100, met: false },
+      education: { current: 0, target: 100, met: false },
+      career: { current: 0, target: 10, met: false },
     },
+    won: false,
     location: BOARD_FIXTURE.stops[9], // BANK
     ...overrides,
   };
@@ -114,7 +117,7 @@ function renderBoardScreen() {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <BoardScreen username="alice" />
+      <BoardScreen saveId={42} />
     </QueryClientProvider>,
   );
 }
@@ -123,22 +126,18 @@ describe('BoardScreen', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     getBoardMock.mockResolvedValue(BOARD_FIXTURE);
-    getPlayerStateMock.mockResolvedValue(playerFixture());
-    getJobsMock.mockResolvedValue([
+    getSaveStateMock.mockResolvedValue(playerFixture());
+    getJobsMock.mockResolvedValue([{ id: 1, name: 'Bank Janitor', location: 'Bank', wage: 6 }]);
+    getCoursesMock.mockResolvedValue([
       {
-        name: 'Bank Janitor',
-        requiredEducation: 0,
-        hourlyWage: 6,
-        location: 'Bank',
-        requiredClothing: 1,
+        id: 1,
+        name: 'Certificate',
+        status: 'AVAILABLE',
+        prereqName: null,
+        enrolled: false,
+        studiesDone: 0,
       },
     ]);
-    getCoursesMock.mockResolvedValue({
-      degrees: [{ level: 1, name: 'Certificate' }],
-      enrollFee: 100,
-      studiesPerDegree: 10,
-      studyMinutes: 240,
-    });
   });
 
   it('renders all 13 hotspots positioned from the board data', async () => {
@@ -204,7 +203,7 @@ describe('BoardScreen', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Low-Cost Housing' }));
 
-    expect(moveMock).toHaveBeenCalledWith('alice', 'LOW_COST_HOUSING');
+    expect(moveMock).toHaveBeenCalledWith(42, 'LOW_COST_HOUSING');
     expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
 
     const feed = screen.getByRole('log', { name: 'Notifications' });
@@ -233,7 +232,7 @@ describe('BoardScreen', () => {
   });
 
   it('refetches the player state when a move is rejected (an exact-zero landing is charged server-side)', async () => {
-    getPlayerStateMock
+    getSaveStateMock
       .mockResolvedValueOnce(playerFixture({ timeMinutes: 120, timeDisplay: '2h' }))
       .mockResolvedValue(playerFixture({ timeMinutes: 0, timeDisplay: '0h', weekOver: true }));
     moveMock.mockRejectedValue(
@@ -241,7 +240,7 @@ describe('BoardScreen', () => {
         type: 'urn:amiss:week-over',
         title: 'Conflict',
         status: 409,
-        detail: "Player 'alice' has used up the week; end it via POST .../end-week",
+        detail: 'The week is used up; end it via POST .../end-week',
       }),
     );
     const user = userEvent.setup();
@@ -252,7 +251,7 @@ describe('BoardScreen', () => {
     // The 409 lands in the feed AND the state is refetched, so the charged clock
     // and the End Week button appear without a manual reload.
     expect(await screen.findByRole('button', { name: 'End Week' })).toBeInTheDocument();
-    expect(getPlayerStateMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(getSaveStateMock.mock.calls.length).toBeGreaterThanOrEqual(2);
     const clock = document.querySelector('.board-clock');
     expect(clock?.textContent).toContain('0h');
   });
@@ -269,7 +268,7 @@ describe('BoardScreen', () => {
   });
 
   it('shows HUD stats sourced from the player state', async () => {
-    getPlayerStateMock.mockResolvedValue(
+    getSaveStateMock.mockResolvedValue(
       playerFixture({ job: { name: 'Cashier', hourlyWage: 25, location: 'Z_MART' } }),
     );
     renderBoardScreen();
@@ -294,7 +293,8 @@ describe('BoardScreen', () => {
   });
 
   it('renders the Employment Office panel when standing at that stop', async () => {
-    getPlayerStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[7] })); // EMPLOYMENT_OFFICE
+    getSaveStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[7] })); // EMPLOYMENT_OFFICE
+    const user = userEvent.setup();
     renderBoardScreen();
     await screen.findByRole('button', { name: 'Employment Office' });
 
@@ -302,21 +302,23 @@ describe('BoardScreen', () => {
     expect(
       await within(centre).findByRole('heading', { name: 'Employment Office' }),
     ).toBeInTheDocument();
+
+    await user.click(within(centre).getByRole('button', { name: 'Bank' }));
     expect(within(centre).getByText('Bank Janitor')).toBeInTheDocument();
   });
 
   it('renders the Hi-Tech U panel when standing at that stop', async () => {
-    getPlayerStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[6] })); // HI_TECH_U
+    getSaveStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[6] })); // HI_TECH_U
     renderBoardScreen();
     await screen.findByRole('button', { name: 'Hi-Tech U' });
 
     const centre = document.querySelector('.board-centre') as HTMLElement;
     expect(await within(centre).findByRole('heading', { name: 'Hi-Tech U' })).toBeInTheDocument();
-    expect(within(centre).getByRole('button', { name: 'Enroll (R100)' })).toBeInTheDocument();
+    expect(within(centre).getByRole('button', { name: 'Enroll' })).toBeInTheDocument();
   });
 
   it('shows the WorkAction button when the player has a job located at the current stop', async () => {
-    getPlayerStateMock.mockResolvedValue(
+    getSaveStateMock.mockResolvedValue(
       playerFixture({ job: { name: 'Bank Janitor', hourlyWage: 6, location: 'Bank' } }),
     );
     renderBoardScreen();
@@ -327,7 +329,7 @@ describe('BoardScreen', () => {
   });
 
   it('renders the Home panel when standing at Low-Cost Housing', async () => {
-    getPlayerStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[0] })); // LOW_COST_HOUSING
+    getSaveStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[0] })); // LOW_COST_HOUSING
     renderBoardScreen();
     await screen.findByRole('button', { name: 'Low-Cost Housing' });
 
@@ -336,7 +338,7 @@ describe('BoardScreen', () => {
   });
 
   it('renders the DefaultPanel for a stop with no registered panel', async () => {
-    getPlayerStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[1] })); // PAWN_SHOP
+    getSaveStateMock.mockResolvedValue(playerFixture({ location: BOARD_FIXTURE.stops[1] })); // PAWN_SHOP
     renderBoardScreen();
     await screen.findByRole('button', { name: 'Pawn Shop' });
 
@@ -354,12 +356,13 @@ describe('BoardScreen', () => {
   });
 
   it('runs the End Week flow: button click, modal summary, close, and cache update', async () => {
-    getPlayerStateMock.mockResolvedValue(playerFixture({ weekOver: true, round: 3 }));
+    getSaveStateMock.mockResolvedValue(playerFixture({ weekOver: true, round: 3 }));
     endWeekMock.mockResolvedValue({
       round: 4,
       fed: false,
       rentDue: true,
       debtCharged: true,
+      won: false,
       state: playerFixture({ weekOver: false, round: 4, timeDisplay: '72h' }),
     });
     const user = userEvent.setup();
@@ -368,7 +371,7 @@ describe('BoardScreen', () => {
     const endWeekButton = await screen.findByRole('button', { name: 'End Week' });
     await user.click(endWeekButton);
 
-    expect(endWeekMock).toHaveBeenCalledWith('alice');
+    expect(endWeekMock).toHaveBeenCalledWith(42);
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Week over — Round 4 begins')).toBeInTheDocument();
@@ -388,7 +391,7 @@ describe('BoardScreen', () => {
   });
 
   it('shows the problem detail in the feed on an end-week error (week not over)', async () => {
-    getPlayerStateMock.mockResolvedValue(playerFixture({ weekOver: true }));
+    getSaveStateMock.mockResolvedValue(playerFixture({ weekOver: true }));
     endWeekMock.mockRejectedValue(
       new ApiError(409, {
         type: 'urn:amiss:week-not-over',

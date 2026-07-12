@@ -1,125 +1,93 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { enroll, getCourses, study } from '../../api/university';
-import { getJobs } from '../../api/jobs';
-import { ApiError } from '../../api/http';
-import { formatMinutes } from '../formatMinutes';
-import type { EnrollResponse, StudyResponse } from '../../api/types';
+import { errorMessage } from '../../api/http';
 import type { PanelProps } from './types';
 
-function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    return err.problem.detail ?? err.problem.title ?? err.message;
-  }
-  return 'Could not reach the server.';
-}
+const STATUS_LABEL: Record<string, string> = {
+  EARNED: 'Earned',
+  AVAILABLE: 'Available',
+  LOCKED: 'Locked',
+};
 
-export function UniversityPanel({ username, player, onNotify }: PanelProps) {
+export function UniversityPanel({ saveId, player, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
   const coursesQuery = useQuery({
-    queryKey: ['courses'],
-    queryFn: getCourses,
-    staleTime: Infinity,
+    queryKey: ['courses', saveId],
+    queryFn: () => getCourses(saveId),
   });
-  const jobsQuery = useQuery({ queryKey: ['jobs'], queryFn: getJobs, staleTime: Infinity });
 
   const enrollMutation = useMutation({
-    mutationFn: () => enroll(username),
-    onSuccess: (res: EnrollResponse) => {
-      queryClient.setQueryData(['player', username], res.state);
-      onNotify(`Enrolled at Hi-Tech U (R${res.feePaid})`);
+    mutationFn: (degreeId: number) => enroll(saveId, degreeId),
+    onSuccess: (res) => {
+      queryClient.setQueryData(['save', saveId], res.state);
+      queryClient.invalidateQueries({ queryKey: ['courses', saveId] });
+      onNotify(`Enrolled, R${res.feePaid} fee paid.`);
     },
-    onError: () => {
-      void queryClient.invalidateQueries({ queryKey: ['player', username] });
+    onError: (err) => {
+      queryClient.invalidateQueries({ queryKey: ['save', saveId] });
+      onNotify(errorMessage(err));
     },
   });
 
   const studyMutation = useMutation({
-    mutationFn: () => study(username),
-    onSuccess: (res: StudyResponse) => {
-      queryClient.setQueryData(['player', username], res.state);
+    mutationFn: () => study(saveId),
+    onSuccess: (res) => {
+      queryClient.setQueryData(['save', saveId], res.state);
+      queryClient.invalidateQueries({ queryKey: ['courses', saveId] });
       onNotify(
-        res.degreeCompleted !== null
-          ? `Degree completed: ${res.degreeCompleted} — education level ${res.educationLevel}!`
-          : `Studied — ${res.progress}/${coursesQuery.data?.studiesPerDegree ?? res.progress} (${formatMinutes(res.minutesCharged)})`,
+        res.degreeCompleted
+          ? `Studied, graduated with a degree in ${res.degreeCompleted}!`
+          : `Studied, ${res.studiesRemaining} sessions to go.`,
       );
     },
-    onError: () => {
-      void queryClient.invalidateQueries({ queryKey: ['player', username] });
+    onError: (err) => {
+      queryClient.invalidateQueries({ queryKey: ['save', saveId] });
+      onNotify(errorMessage(err));
     },
   });
 
-  if (coursesQuery.isPending || jobsQuery.isPending) {
-    return <p>Loading courses…</p>;
+  if (coursesQuery.isPending) {
+    return <p className="panel-muted">Loading course board...</p>;
   }
-  if (coursesQuery.error !== null) {
-    return <p role="alert">{coursesQuery.error.message}</p>;
+  if (coursesQuery.isError) {
+    return <p role="alert">{errorMessage(coursesQuery.error)}</p>;
   }
-  if (jobsQuery.error !== null) {
-    return <p role="alert">{jobsQuery.error.message}</p>;
-  }
-
-  const courses = coursesQuery.data;
-  const jobs = jobsQuery.data ?? [];
-  if (courses === undefined) {
-    return null;
-  }
-
-  const enrolled = player.stats.educationProgress > 0;
-  const error = enrollMutation.error ?? studyMutation.error;
 
   return (
     <div className="university-panel">
-      <h2>Hi-Tech U</h2>
-      <ul className="degree-list">
-        {courses.degrees.map((degree) => {
-          const completed = player.stats.education >= degree.level;
-          const isNext = player.stats.education + 1 === degree.level;
-          const unlockedJobs = jobs
-            .filter((j) => j.requiredEducation === degree.level)
-            .map((j) => j.name)
-            .join(', ');
-          const className = completed
-            ? 'degree degree--completed'
-            : isNext
-              ? 'degree degree--next'
-              : 'degree';
-          return (
-            <li key={degree.level} className={className}>
-              <span className="degree-label">
-                Level {degree.level}: {degree.name}
-                {completed && ' (completed)'}
-                {isNext && ' (in progress)'}
-              </span>
-              {unlockedJobs !== '' && <p className="degree-jobs">Unlocks: {unlockedJobs}</p>}
-            </li>
-          );
-        })}
-      </ul>
-      {player.stats.education >= 8 ? (
-        <p>All degrees completed.</p>
-      ) : enrolled ? (
-        <>
-          <p>
-            Studies: {player.stats.educationProgress}/{courses.studiesPerDegree}
-          </p>
+      <h3>Hi-Tech U</h3>
+      {player.currentCourse && (
+        <p className="current-course">
+          Studying {player.currentCourse.name} ({player.currentCourse.studiesDone}/10){' '}
           <button
             type="button"
-            onClick={() => studyMutation.mutate()}
             disabled={studyMutation.isPending}
+            onClick={() => studyMutation.mutate()}
           >
-            Study ({formatMinutes(courses.studyMinutes)})
+            Study
           </button>
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={() => enrollMutation.mutate()}
-          disabled={enrollMutation.isPending}
-        >
-          Enroll (R{courses.enrollFee})
-        </button>
+        </p>
       )}
-      {error !== null && <p role="alert">{errorMessage(error)}</p>}
+      <ul className="degree-list">
+        {coursesQuery.data.map((course) => (
+          <li key={course.id} className="degree-row">
+            <span className="degree-name">{course.name}</span>
+            <span className="degree-status">{STATUS_LABEL[course.status]}</span>
+            {course.status === 'LOCKED' && course.prereqName && (
+              <span className="degree-prereq">Requires: {course.prereqName}</span>
+            )}
+            {course.status === 'AVAILABLE' && !course.enrolled && (
+              <button
+                type="button"
+                disabled={enrollMutation.isPending}
+                onClick={() => enrollMutation.mutate(course.id)}
+              >
+                Enroll
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

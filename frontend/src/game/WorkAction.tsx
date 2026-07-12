@@ -1,39 +1,35 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { work } from '../api/jobs';
-import { ApiError } from '../api/http';
-import { formatMinutes } from './formatMinutes';
+import { errorMessage } from '../api/http';
 import type { WorkResponse } from '../api/types';
 import type { PanelProps } from './panels/types';
 
-function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    return err.problem.detail ?? err.problem.title ?? err.message;
-  }
-  return 'Could not reach the server.';
-}
-
-export function WorkAction({ username, player, onNotify }: PanelProps) {
+export function WorkAction({ saveId, player, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: () => work(username),
+    mutationFn: () => work(saveId),
     onSuccess: (res: WorkResponse) => {
-      queryClient.setQueryData(['player', username], res.state);
-      // `hourlyWage` is the per-SHIFT payout despite its name (the DTO inherited the
-      // ambiguous tbljobs.salary naming; core pays it once per shift, Jones-style).
-      onNotify(
-        res.debtDocked
-          ? `Worked ${formatMinutes(res.minutesCharged)} as ${res.job} — wages went to your debt`
-          : `Worked ${formatMinutes(res.minutesCharged)} as ${res.job} — earned R${res.hourlyWage}`,
-      );
+      queryClient.setQueryData(['save', saveId], res.state);
+      if (res.status === 'FIRED') {
+        onNotify(`You've been fired from ${res.job}.`);
+      } else if (res.garnished > 0) {
+        onNotify(
+          `Worked a shift as ${res.job}: earned R${res.pay}, R${res.garnished} garnished for debt (net R${res.netPaid}).${res.warning ? ' Final warning.' : ''}`,
+        );
+      } else {
+        onNotify(
+          `Worked a shift as ${res.job}: earned R${res.netPaid}.${res.warning ? ' Final warning.' : ''}`,
+        );
+      }
     },
     onError: (err: unknown) => {
       onNotify(errorMessage(err));
-      void queryClient.invalidateQueries({ queryKey: ['player', username] });
+      void queryClient.invalidateQueries({ queryKey: ['save', saveId] });
     },
   });
 
-  if (player.job === null || player.location.name !== player.job.location) {
+  if (player.job.hourlyWage === null || player.location.name !== player.job.location) {
     return null;
   }
 

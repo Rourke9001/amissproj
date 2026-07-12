@@ -1,215 +1,161 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EmploymentOfficePanel } from './EmploymentOfficePanel';
 import { applyForJob, getJobs } from '../../api/jobs';
-import { ApiError } from '../../api/http';
-import type { JobListingDto, PlayerStateDto } from '../../api/types';
+import type { ApplyResponse, JobListingDto, SaveStateDto } from '../../api/types';
 
-vi.mock('../../api/jobs', () => ({
-  getJobs: vi.fn(),
-  applyForJob: vi.fn(),
-  work: vi.fn(),
-}));
+vi.mock('../../api/jobs', () => ({ getJobs: vi.fn(), applyForJob: vi.fn() }));
 
-const getJobsMock = vi.mocked(getJobs);
-const applyForJobMock = vi.mocked(applyForJob);
-
-const JOBS_FIXTURE: JobListingDto[] = [
-  {
-    name: 'Cook',
-    requiredEducation: 0,
-    hourlyWage: 6,
-    location: 'Monolith Burgers',
-    requiredClothing: 1,
-  },
-  {
-    name: 'Clerk',
-    requiredEducation: 1,
-    hourlyWage: 10,
-    location: 'Socket City',
-    requiredClothing: 2,
-  },
-];
-
-function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto {
+function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
   return {
-    username: 'alice',
-    round: 3,
-    timeMinutes: 4320,
-    timeDisplay: '72h',
+    id: 1,
+    label: 'Save 1',
+    round: 1,
+    timeMinutes: 3600,
+    timeDisplay: '60h',
     weekOver: false,
-    cash: 500,
-    bank: 100,
+    cash: 100,
+    bank: 0,
     debt: 0,
     rentDue: false,
-    foodWeeks: 2,
+    foodWeeks: 0,
     clothing: 1,
-    job: null,
-    stats: { education: 0, educationProgress: 0, happiness: 50, workExperience: 0 },
-    goals: {
-      cash: { current: 500, target: 5000 },
-      happiness: { current: 50, target: 100 },
-      workExperience: { current: 0, target: 10 },
-      education: { current: 0, target: 100 },
-    },
+    job: { name: 'Unemployed', hourlyWage: null, location: null },
     location: { id: 'EMPLOYMENT_OFFICE', name: 'Employment Office', ringIndex: 7, row: 3, col: 1 },
+    degreesEarned: [],
+    currentCourse: null,
+    goals: {
+      wealth: { current: 1, target: 100, met: false },
+      happiness: { current: 0, target: 29, met: false },
+      education: { current: 1, target: 15, met: false },
+      career: { current: 0, target: 39, met: false },
+    },
+    won: false,
     ...overrides,
   };
 }
 
-function renderPanel(player: PlayerStateDto, onNotify = vi.fn()) {
+const JOB_LISTINGS: JobListingDto[] = [
+  { id: 4, name: 'Cook', location: 'Monolith Burgers', wage: 5 },
+  { id: 5, name: 'Clerk', location: 'Monolith Burgers', wage: 6 },
+  { id: 1, name: 'Clerk', location: 'Z-Mart', wage: 5 },
+];
+
+function renderPanel(saveId = 1) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-  const utils = render(
+  const onNotify = vi.fn();
+  render(
     <QueryClientProvider client={queryClient}>
-      <EmploymentOfficePanel username="alice" player={player} onNotify={onNotify} />
+      <EmploymentOfficePanel saveId={saveId} player={playerFixture()} onNotify={onNotify} />
     </QueryClientProvider>,
   );
-  return { ...utils, queryClient, invalidateSpy, onNotify };
+  return { queryClient, invalidateSpy, onNotify };
 }
 
 describe('EmploymentOfficePanel', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    getJobsMock.mockResolvedValue(JOBS_FIXTURE);
+    vi.mocked(getJobs).mockResolvedValue(JOB_LISTINGS);
   });
 
-  it('shows a loading message before the job catalog resolves', () => {
-    getJobsMock.mockReturnValue(new Promise(() => {}));
-    renderPanel(playerFixture());
-
-    expect(screen.getByText('Loading jobs…')).toBeInTheDocument();
+  it('lists workplaces with no requirement/experience/dependability text anywhere', async () => {
+    renderPanel();
+    expect(await screen.findByRole('button', { name: 'Monolith Burgers' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Z-Mart' })).toBeInTheDocument();
+    expect(screen.queryByText(/experience/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/dependability/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/require/i)).not.toBeInTheDocument();
   });
 
-  it('renders each job with its wage and location', async () => {
-    renderPanel(playerFixture());
+  it('drills into a workplace: shows only name + wage, every Apply button enabled', async () => {
+    renderPanel();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Monolith Burgers' }));
 
-    const cook = await screen.findByText('Cook');
-    const cookRow = cook.closest('li') as HTMLElement;
-    expect(within(cookRow).getByText('R6/h')).toBeInTheDocument();
-    expect(within(cookRow).getByText('Monolith Burgers')).toBeInTheDocument();
+    expect(screen.getByText('Cook')).toBeInTheDocument();
+    expect(screen.getByText('R5/h')).toBeInTheDocument();
+    const applyButtons = screen.getAllByRole('button', { name: 'Apply' });
+    expect(applyButtons).toHaveLength(2);
+    applyButtons.forEach((button) => expect(button).toBeEnabled());
   });
 
-  it('marks requirements met/unmet with modifier classes and a "needs" prefix when unmet', async () => {
-    renderPanel(
-      playerFixture({
-        stats: { education: 0, educationProgress: 0, happiness: 50, workExperience: 0 },
-        clothing: 2,
-      }),
-    );
-
-    const clerk = await screen.findByText('Clerk');
-    const clerkRow = clerk.closest('li') as HTMLElement;
-
-    const eduBadge = within(clerkRow).getByText('needs Education 1');
-    expect(eduBadge.className).toContain('job-req--unmet');
-
-    const clothingBadge = within(clerkRow).getByText('Clothing 2');
-    expect(clothingBadge.className).toContain('job-req--met');
-
-    const cook = screen.getByText('Cook');
-    const cookRow = cook.closest('li') as HTMLElement;
-    const cookEduBadge = within(cookRow).getByText('Education 0');
-    expect(cookEduBadge.className).toContain('job-req--met');
-  });
-
-  it('shows the current job with a marker', async () => {
-    renderPanel(
-      playerFixture({ job: { name: 'Cook', hourlyWage: 6, location: 'Monolith Burgers' } }),
-    );
-
-    const cook = await screen.findByText((content) => content.startsWith('Cook'));
-    const cookRow = cook.closest('li') as HTMLElement;
-    expect(cookRow.className).toContain('job-listing--current');
-    expect(within(cookRow).getByText('Cook (current)')).toBeInTheDocument();
-  });
-
-  it('disables Apply (with a title) for unmet education, but not for unmet clothing', async () => {
-    renderPanel(
-      playerFixture({
-        stats: { education: 0, educationProgress: 0, happiness: 50, workExperience: 0 },
-        clothing: 0,
-      }),
-    );
-
-    const clerk = await screen.findByText('Clerk');
-    const clerkRow = clerk.closest('li') as HTMLElement;
-    const clerkApply = within(clerkRow).getByRole('button', { name: 'Apply' });
-    expect(clerkApply).toBeDisabled();
-    expect(clerkApply).toHaveAttribute('title', 'Requires education level 1');
-
-    const cook = screen.getByText('Cook');
-    const cookRow = cook.closest('li') as HTMLElement;
-    const cookApply = within(cookRow).getByRole('button', { name: 'Apply' });
-    expect(cookApply).not.toBeDisabled();
-  });
-
-  it('applies for a job, gets hired, notifies, and updates the cache', async () => {
-    applyForJobMock.mockResolvedValue({
+  it('reports a hire with the wage and writes the fresh save state into the cache', async () => {
+    const response: ApplyResponse = {
       hired: true,
-      reason: null,
+      reasons: [],
       minutesCharged: 240,
       job: 'Cook',
-      hourlyWage: 6,
-      state: playerFixture({ job: { name: 'Cook', hourlyWage: 6, location: 'Monolith Burgers' } }),
-    });
+      wage: 5,
+      state: playerFixture({ job: { name: 'Cook', hourlyWage: 5, location: 'Monolith Burgers' } }),
+    };
+    vi.mocked(applyForJob).mockResolvedValue(response);
+    const { onNotify, queryClient } = renderPanel();
     const user = userEvent.setup();
-    const { onNotify } = renderPanel(playerFixture());
+    await user.click(await screen.findByRole('button', { name: 'Monolith Burgers' }));
+    await user.click(screen.getAllByRole('button', { name: 'Apply' })[0]);
 
-    const cook = await screen.findByText('Cook');
-    const cookRow = cook.closest('li') as HTMLElement;
-    await user.click(within(cookRow).getByRole('button', { name: 'Apply' }));
-
-    expect(applyForJobMock).toHaveBeenCalledWith('alice', 'Cook');
-    await waitFor(() => expect(onNotify).toHaveBeenCalledWith('Hired as Cook at R6/h (4h)'));
+    await waitFor(() => expect(onNotify).toHaveBeenCalledWith('Hired as Cook at R5/h.'));
+    expect(applyForJob).toHaveBeenCalledWith(1, 4);
+    expect(queryClient.getQueryData(['save', 1])).toEqual(response.state);
   });
 
-  it('applies for a job, gets rejected for education, still charges time, and updates the cache', async () => {
-    applyForJobMock.mockResolvedValue({
+  it('renders officer-style copy for a multi-reason rejection', async () => {
+    const response: ApplyResponse = {
       hired: false,
-      reason: 'INSUFFICIENT_EDUCATION',
+      reasons: ['NOT_ENOUGH_EXPERIENCE', 'POOR_WORK_HISTORY'],
       minutesCharged: 240,
       job: 'Cook',
-      hourlyWage: null,
-      state: playerFixture({ timeMinutes: 4080, timeDisplay: '68h' }),
-    });
+      wage: null,
+      state: playerFixture(),
+    };
+    vi.mocked(applyForJob).mockResolvedValue(response);
+    const { onNotify } = renderPanel();
     const user = userEvent.setup();
-    const { onNotify, queryClient } = renderPanel(playerFixture());
-
-    const cook = await screen.findByText('Cook');
-    const cookRow = cook.closest('li') as HTMLElement;
-    await user.click(within(cookRow).getByRole('button', { name: 'Apply' }));
+    await user.click(await screen.findByRole('button', { name: 'Monolith Burgers' }));
+    await user.click(screen.getAllByRole('button', { name: 'Apply' })[0]);
 
     await waitFor(() =>
       expect(onNotify).toHaveBeenCalledWith(
-        'Application for Cook rejected — more education needed (4h)',
+        "You don't have enough work experience for this position. Your work history doesn't meet our standards for this position.",
       ),
     );
-    expect(queryClient.getQueryData(['player', 'alice'])).toMatchObject({ timeDisplay: '68h' });
   });
 
-  it('renders the problem detail inline on an ApiError and invalidates the player query', async () => {
-    applyForJobMock.mockRejectedValue(
-      new ApiError(409, {
-        type: 'urn:amiss:wrong-location',
-        title: 'Conflict',
-        status: 409,
-        detail: 'Must be at the Employment Office.',
-      }),
-    );
+  it('renders No Openings copy for that specific rejection reason', async () => {
+    const response: ApplyResponse = {
+      hired: false,
+      reasons: ['NO_OPENINGS'],
+      minutesCharged: 240,
+      job: 'Cook',
+      wage: null,
+      state: playerFixture(),
+    };
+    vi.mocked(applyForJob).mockResolvedValue(response);
+    const { onNotify } = renderPanel();
     const user = userEvent.setup();
-    const { onNotify, invalidateSpy } = renderPanel(playerFixture());
+    await user.click(await screen.findByRole('button', { name: 'Monolith Burgers' }));
+    await user.click(screen.getAllByRole('button', { name: 'Apply' })[0]);
 
-    const cook = await screen.findByText('Cook');
-    const cookRow = cook.closest('li') as HTMLElement;
-    await user.click(within(cookRow).getByRole('button', { name: 'Apply' }));
+    await waitFor(() =>
+      expect(onNotify).toHaveBeenCalledWith(
+        'Sorry, there are no openings right now, try again another day.',
+      ),
+    );
+  });
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Must be at the Employment Office.');
-    expect(onNotify).not.toHaveBeenCalled();
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['player', 'alice'] });
+  it('invalidates save state and reports the error on a network/server failure', async () => {
+    vi.mocked(applyForJob).mockRejectedValue(new Error('week over'));
+    const { invalidateSpy, onNotify } = renderPanel();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Monolith Burgers' }));
+    await user.click(screen.getAllByRole('button', { name: 'Apply' })[0]);
+
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['save', 1] }));
+    expect(onNotify).toHaveBeenCalledWith('Could not reach the server.');
   });
 });

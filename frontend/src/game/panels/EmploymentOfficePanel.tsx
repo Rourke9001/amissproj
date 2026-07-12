@@ -1,93 +1,107 @@
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { applyForJob, getJobs } from '../../api/jobs';
-import { ApiError } from '../../api/http';
-import { formatMinutes } from '../formatMinutes';
-import type { ApplyResponse, JobListingDto } from '../../api/types';
+import { errorMessage } from '../../api/http';
 import type { PanelProps } from './types';
 
-function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    return err.problem.detail ?? err.problem.title ?? err.message;
+const REJECTION_COPY: Record<string, string> = {
+  NOT_ENOUGH_EDUCATION: "You don't have the degree this position needs.",
+  NOT_ENOUGH_EXPERIENCE: "You don't have enough work experience for this position.",
+  POOR_WORK_HISTORY: "Your work history doesn't meet our standards for this position.",
+  NO_OPENINGS: 'Sorry, there are no openings right now, try again another day.',
+};
+
+function rejectionMessage(reasons: string[]): string {
+  if (reasons.length === 0) {
+    return 'Application declined.';
   }
-  return 'Could not reach the server.';
+  return reasons.map((reason) => REJECTION_COPY[reason] ?? 'Application declined.').join(' ');
 }
 
-function reqBadge(label: string, requirement: number, met: boolean) {
-  const className = met ? 'job-req job-req--met' : 'job-req job-req--unmet';
-  const text = met ? `${label} ${requirement}` : `needs ${label} ${requirement}`;
-  return <span className={className}>{text}</span>;
-}
-
-export function EmploymentOfficePanel({ username, player, onNotify }: PanelProps) {
+export function EmploymentOfficePanel({ saveId, onNotify }: PanelProps) {
+  const [workplace, setWorkplace] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const jobsQuery = useQuery({ queryKey: ['jobs'], queryFn: getJobs, staleTime: Infinity });
 
-  const mutation = useMutation({
-    mutationFn: (job: string) => applyForJob(username, job),
-    onSuccess: (res: ApplyResponse) => {
-      queryClient.setQueryData(['player', username], res.state);
-      const charged = formatMinutes(res.minutesCharged);
+  const jobsQuery = useQuery({ queryKey: ['jobs'], queryFn: () => getJobs(), staleTime: Infinity });
+
+  const workplaces = useMemo(() => {
+    if (!jobsQuery.data) return [];
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const listing of jobsQuery.data) {
+      if (!seen.has(listing.location)) {
+        seen.add(listing.location);
+        result.push(listing.location);
+      }
+    }
+    return result;
+  }, [jobsQuery.data]);
+
+  const jobsAtWorkplace = useMemo(
+    () => (jobsQuery.data ?? []).filter((listing) => listing.location === workplace),
+    [jobsQuery.data, workplace],
+  );
+
+  const applyMutation = useMutation({
+    mutationFn: (jobId: number) => applyForJob(saveId, jobId),
+    onSuccess: (res) => {
+      queryClient.setQueryData(['save', saveId], res.state);
       onNotify(
-        res.hired
-          ? `Hired as ${res.job} at R${res.hourlyWage}/h (${charged})`
-          : `Application for ${res.job} rejected — more education needed (${charged})`,
+        res.hired ? `Hired as ${res.job} at R${res.wage}/h.` : rejectionMessage(res.reasons),
       );
     },
-    onError: () => {
-      // An interview can still charge time even when the application is
-      // rejected as an error (e.g. wrong location), so never leave a stale
-      // cached state around.
-      void queryClient.invalidateQueries({ queryKey: ['player', username] });
+    onError: (err) => {
+      queryClient.invalidateQueries({ queryKey: ['save', saveId] });
+      onNotify(errorMessage(err));
     },
   });
 
   if (jobsQuery.isPending) {
-    return <p>Loading jobs…</p>;
+    return <p className="panel-muted">Loading job listings...</p>;
   }
-  if (jobsQuery.error !== null) {
-    return <p role="alert">{jobsQuery.error.message}</p>;
+  if (jobsQuery.isError) {
+    return <p role="alert">{errorMessage(jobsQuery.error)}</p>;
   }
 
-  const jobs: JobListingDto[] = jobsQuery.data ?? [];
-
-  return (
-    <div className="employment-office-panel">
-      <h2>Employment Office</h2>
-      <ul className="job-list">
-        {jobs.map((listing) => {
-          const educationMet = player.stats.education >= listing.requiredEducation;
-          const clothingMet = player.clothing >= listing.requiredClothing;
-          const isCurrent = player.job?.name === listing.name;
-          return (
-            <li
-              key={listing.name}
-              className={isCurrent ? 'job-listing job-listing--current' : 'job-listing'}
-            >
-              <span className="job-listing-name">
-                {listing.name}
-                {isCurrent && ' (current)'}
-              </span>
-              <span className="job-listing-wage">R{listing.hourlyWage}/h</span>
-              <span className="job-listing-location">{listing.location}</span>
-              {reqBadge('Education', listing.requiredEducation, educationMet)}
-              {reqBadge('Clothing', listing.requiredClothing, clothingMet)}
-              <button
-                type="button"
-                onClick={() => mutation.mutate(listing.name)}
-                disabled={!educationMet || mutation.isPending}
-                title={
-                  !educationMet
-                    ? `Requires education level ${listing.requiredEducation}`
-                    : undefined
-                }
-              >
-                Apply
+  if (workplace === null) {
+    return (
+      <div className="employment-panel">
+        <h3>Employment Office</h3>
+        <p>Which workplace are you interested in?</p>
+        <ul className="workplace-list">
+          {workplaces.map((location) => (
+            <li key={location}>
+              <button type="button" onClick={() => setWorkplace(location)}>
+                {location}
               </button>
             </li>
-          );
-        })}
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  return (
+    <div className="employment-panel">
+      <h3>{workplace}</h3>
+      <button type="button" className="link-button" onClick={() => setWorkplace(null)}>
+        Back to workplaces
+      </button>
+      <ul className="job-list">
+        {jobsAtWorkplace.map((listing) => (
+          <li key={listing.id} className="job-listing">
+            <span>{listing.name}</span>
+            <span>R{listing.wage}/h</span>
+            <button
+              type="button"
+              disabled={applyMutation.isPending}
+              onClick={() => applyMutation.mutate(listing.id)}
+            >
+              Apply
+            </button>
+          </li>
+        ))}
       </ul>
-      {mutation.error !== null && <p role="alert">{errorMessage(mutation.error)}</p>}
     </div>
   );
 }

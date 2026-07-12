@@ -2,11 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Hud } from './Hud';
-import type { PlayerStateDto } from '../api/types';
+import type { SaveStateDto } from '../api/types';
 
-function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto {
+function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
   return {
-    username: 'alice',
+    id: 42,
+    label: 'Save 42',
     round: 3,
     timeMinutes: 4320,
     timeDisplay: '72h',
@@ -17,14 +18,16 @@ function playerFixture(overrides: Partial<PlayerStateDto> = {}): PlayerStateDto 
     rentDue: false,
     foodWeeks: 2,
     clothing: 1,
-    job: null,
-    stats: { education: 0, educationProgress: 0, happiness: 50, workExperience: 0 },
+    job: { name: 'Unemployed', hourlyWage: null, location: null },
+    degreesEarned: [],
+    currentCourse: null,
     goals: {
-      cash: { current: 500, target: 5000 },
-      happiness: { current: 50, target: 100 },
-      workExperience: { current: 0, target: 10 },
-      education: { current: 0, target: 100 },
+      wealth: { current: 500, target: 5000, met: false },
+      happiness: { current: 50, target: 100, met: false },
+      education: { current: 0, target: 100, met: false },
+      career: { current: 0, target: 10, met: false },
     },
+    won: false,
     location: { id: 'BANK', name: 'Bank', ringIndex: 9, row: 2, col: 0 },
     ...overrides,
   };
@@ -47,7 +50,11 @@ describe('Hud', () => {
 
   it('shows Unemployed when there is no job', () => {
     render(
-      <Hud player={playerFixture({ job: null })} onEndWeek={vi.fn()} endWeekPending={false} />,
+      <Hud
+        player={playerFixture({ job: { name: 'Unemployed', hourlyWage: null, location: null } })}
+        onEndWeek={vi.fn()}
+        endWeekPending={false}
+      />,
     );
     expect(screen.getByText('Unemployed')).toBeInTheDocument();
   });
