@@ -20,6 +20,7 @@ import amiss.api.web.dto.GoalDto;
 import amiss.api.web.dto.GoalsDto;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.SaveStateDto;
+import amiss.application.service.save.EconomyEvent;
 import amiss.application.service.save.MoveResult;
 import amiss.application.service.save.SaveGameServices;
 import amiss.application.service.save.TravelService;
@@ -128,7 +129,7 @@ class PlayerControllerTest {
         WeekRolloverService weeks = mock(WeekRolloverService.class);
         when(services.weeks()).thenReturn(weeks);
         when(weeks.endWeek(save)).thenReturn(new WeekRolloverService.RolloverResult(
-                false, -1, false, -1, false, false, false));
+                false, -1, false, -1, false, false, false, EconomyEvent.none()));
 
         mvc.perform(post("/api/saves/7/end-week").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
@@ -143,7 +144,7 @@ class PlayerControllerTest {
         WeekRolloverService weeks = mock(WeekRolloverService.class);
         when(services.weeks()).thenReturn(weeks);
         when(weeks.endWeek(save)).thenReturn(new WeekRolloverService.RolloverResult(
-                true, 4, true, 4320, true, false, false));
+                true, 4, true, 4320, true, false, false, EconomyEvent.none()));
         when(assembler.assemble(services, save)).thenReturn(dto());
 
         mvc.perform(post("/api/saves/7/end-week").with(jwt().jwt(j -> j.subject("bob"))))
@@ -153,6 +154,7 @@ class PlayerControllerTest {
                 .andExpect(jsonPath("$.rentDue").value(true))
                 .andExpect(jsonPath("$.debtCharged").value(false))
                 .andExpect(jsonPath("$.won").value(false))
+                .andExpect(jsonPath("$.economy.event").value("NONE"))
                 .andExpect(jsonPath("$.state.id").value(7));
     }
 

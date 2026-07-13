@@ -21,10 +21,11 @@ public class WeekRolloverService {
 
     /** What happened at rollover; {@code rolled} false = the week wasn't over. */
     public record RolloverResult(boolean rolled, int newRound, boolean fed, int weekMinutes,
-            boolean rentDue, boolean debtCharged, boolean won) {
+            boolean rentDue, boolean debtCharged, boolean won, EconomyEvent economy) {
 
         static RolloverResult weekStillRunning() {
-            return new RolloverResult(false, -1, false, -1, false, false, false);
+            return new RolloverResult(false, -1, false, -1, false, false, false,
+                    EconomyEvent.none());
         }
     }
 
@@ -71,11 +72,13 @@ public class WeekRolloverService {
         save.setDependability(Math.max(0, save.dependability() - WEEKLY_DEPENDABILITY_DECAY));
 
         economy.driftWeekly(save);
+        EconomyEvent economyEvent = economy.rollEvent(save);
 
         boolean wonNow = save.won() || goals.progress(save).allMet();
         save.setWon(wonNow);
 
         saves.update(save);
-        return new RolloverResult(true, newRound, fed, save.timeMinutes(), rentDue, debtCharged, wonNow);
+        return new RolloverResult(true, newRound, fed, save.timeMinutes(), rentDue,
+                debtCharged, wonNow, economyEvent);
     }
 }
