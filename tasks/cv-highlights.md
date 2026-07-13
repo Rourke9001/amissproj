@@ -394,3 +394,50 @@ explicitly has to set the other too, or it's a coin flip per visitor's OS theme.
 that rule into the project's lessons file as a review checkpoint, not just a one-off
 patch — the same review that caught it also went looking for, and found, a second
 instance of the identical mistake before it shipped."*
+
+### Economy engine core — one pricing authority over hidden state (KAN-48 PR 1)
+- Implemented the reference game's economy as wiki-exact rules: two **hidden per-save
+  values** (Index −3..+3, Reading −30..+90) drifting weekly, with every price derived as
+  `base + base×reading/60` (50%–250% of base) in **integer-only math** (`Math.floorDiv`,
+  never floats) — base prices in the catalog enums and `tbljob` are never mutated.
+- Made a single `EconomyService` in the core application layer the **one pricing
+  authority**: the charge paths (shop, enroll) and the API's catalog/DTO reads both call
+  it, so the price a player is shown is the price they are charged, by construction —
+  pinned by tests that stub a formula-based economy so identity pricing cannot pass.
+- Extended the expand/contract discipline with an additive **V7 migration** whose
+  defaults (0/0) reproduce exactly the pre-economy prices, so existing saves migrate
+  with zero price shock; Hibernate's validate-only mode then caught a real
+  entity-vs-schema drift (fields retyped to match V7's `TINYINT`/`SMALLINT`), proven
+  against real MySQL 9 with Testcontainers.
+- Generalised the injected-randomness pattern (`IntUnaryOperator` roll) so every
+  probabilistic economy outcome is scriptable in tests, and kept the hidden-information
+  rule intact: `economyIndex`/`economyReading` never appear on a wire DTO.
+
+**Talking point:** *"The design decision that matters is 'one pricing authority'. The
+moment two code paths each compute a price, they eventually disagree — and in this game
+a rejected purchase can still charge you, so shown-vs-charged drift is a real bug class.
+Routing both the catalog reads and the charge paths through one service makes the
+invariant structural, and the tests enforce it with a non-identity economy stub so a
+lazy mock can't fake compliance. The migration is the banking habit again: additive,
+default-safe, and the ORM's validate mode caught the one place the mapping drifted."*
+
+### Wage snapshot at hire — temporal consistency for pay (KAN-48 PR 2)
+- Added **V8** (`wage INT NULL` on `tblsave`) with a backfill deliberately scoped
+  `WHERE job_id IS NOT NULL`, and proved the MySQL-specific `ALTER`/`UPDATE`-join
+  syntax against a real MySQL 9 container rather than trusting H2-alike leniency.
+- Implemented **wage snapshotting**: hiring locks the listed (economy-adjusted) wage
+  onto the save, shift pay derives from the snapshot (`wage × 8`), and being fired
+  clears it — so later economy drift can never retroactively change agreed pay. The
+  reviewer traced every job-assignment site to confirm the pair (`jobId`, `wage`) is
+  always set and cleared together.
+- Cut job listings over to save-scoped, economy-priced wages end-to-end (API DTO →
+  React Employment Office), live-verified against the running stack: listings repriced
+  with the economy, a hire locked wage 10, the snapshot survived an economy reset, and
+  a worked shift paid exactly 80.
+
+**Talking point:** *"Snapshot-at-agreement is a pattern straight from financial systems:
+the rate you contracted at is the rate you settle at, whatever the market does after.
+Here that meant the wage moves from being derived (recomputed from the economy every
+read) to being recorded (written once at hire) — and the interesting review question was
+lifecycle: every path that sets or clears the job must set or clear the snapshot with
+it, which we verified by tracing all assignment sites rather than assuming."*
