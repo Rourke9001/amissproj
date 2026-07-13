@@ -1,6 +1,7 @@
 package amiss.api.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -81,49 +82,62 @@ class FoodControllerTest {
         return travel;
     }
 
-    // ---- GET /api/saves/{id}/food ----------------------------------------------
+    /** A reading of +30 makes every adjusted price {@code base + base/2} (floor), never the base. */
+    private static final int READING = 30;
 
-    @Test
-    void catalog_returnsTheMenuAndPacks() throws Exception {
-        SaveState save = save();
+    private void mockEconomyAt(SaveState save) {
         when(scope.require(eq(7L), any())).thenReturn(save);
         EconomyService economy = mock(EconomyService.class);
         when(services.economy()).thenReturn(economy);
-        when(economy.price(32, save)).thenReturn(32); // BURGER base price
-        when(economy.price(25, save)).thenReturn(25); // ONE_WEEK base price
+        when(economy.price(anyInt(), eq(save))).thenAnswer(invocation -> {
+            int base = invocation.getArgument(0);
+            return base + Math.floorDiv(base * READING, 60);
+        });
+    }
+
+    // ---- GET /api/saves/{id}/food ----------------------------------------------
+
+    @Test
+    void catalog_returnsTheMenuAndPacksAtEconomyPrices() throws Exception {
+        mockEconomyAt(save());
 
         mvc.perform(get("/api/saves/7/food").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.menu.length()").value(6))
                 .andExpect(jsonPath("$.menu[0].id").value("BURGER"))
                 .andExpect(jsonPath("$.menu[0].name").value("Burger"))
-                .andExpect(jsonPath("$.menu[0].price").value(32))
+                .andExpect(jsonPath("$.menu[0].price").value(48))   // base 32 + 16
+                .andExpect(jsonPath("$.menu[3].id").value("MILKSHAKE"))
+                .andExpect(jsonPath("$.menu[3].price").value(33))   // base 22 + 11
+                .andExpect(jsonPath("$.menu[5].id").value("FAMILY_MEAL"))
+                .andExpect(jsonPath("$.menu[5].price").value(75))   // base 50 + 25
                 .andExpect(jsonPath("$.packs.length()").value(4))
                 .andExpect(jsonPath("$.packs[0].id").value("ONE_WEEK"))
-                .andExpect(jsonPath("$.packs[0].price").value(25))
-                .andExpect(jsonPath("$.packs[0].weeks").value(1));
+                .andExpect(jsonPath("$.packs[0].price").value(37))  // base 25 + 12 (floor)
+                .andExpect(jsonPath("$.packs[0].weeks").value(1))
+                .andExpect(jsonPath("$.packs[3].id").value("EIGHT_WEEKS"))
+                .andExpect(jsonPath("$.packs[3].price").value(210)) // base 140 + 70
+                .andExpect(jsonPath("$.packs[3].weeks").value(8));
     }
 
     // ---- GET /api/saves/{id}/clothes -------------------------------------------
 
     @Test
-    void clothesCatalog_returnsTheStock() throws Exception {
-        SaveState save = save();
-        when(scope.require(eq(7L), any())).thenReturn(save);
-        EconomyService economy = mock(EconomyService.class);
-        when(services.economy()).thenReturn(economy);
-        when(economy.price(20, save)).thenReturn(20); // CASUAL base price
-        when(economy.price(55, save)).thenReturn(55); // SUIT base price
+    void clothesCatalog_returnsTheStockAtEconomyPrices() throws Exception {
+        mockEconomyAt(save());
 
         mvc.perform(get("/api/saves/7/clothes").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(3))
                 .andExpect(jsonPath("$[0].id").value("CASUAL"))
                 .andExpect(jsonPath("$[0].name").value("Casual Clothes"))
-                .andExpect(jsonPath("$[0].price").value(20))
+                .andExpect(jsonPath("$[0].price").value(30))  // base 20 + 10
                 .andExpect(jsonPath("$[0].level").value(1))
+                .andExpect(jsonPath("$[1].id").value("FORMAL"))
+                .andExpect(jsonPath("$[1].price").value(52))  // base 35 + 17 (floor)
+                .andExpect(jsonPath("$[1].level").value(2))
                 .andExpect(jsonPath("$[2].id").value("SUIT"))
-                .andExpect(jsonPath("$[2].price").value(55))
+                .andExpect(jsonPath("$[2].price").value(82))  // base 55 + 27 (floor)
                 .andExpect(jsonPath("$[2].level").value(3));
     }
 
