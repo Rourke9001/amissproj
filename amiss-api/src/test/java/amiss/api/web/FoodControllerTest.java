@@ -19,6 +19,7 @@ import amiss.api.web.dto.GoalsDto;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.SaveStateDto;
 import amiss.application.service.save.EatOutcome;
+import amiss.application.service.save.EconomyService;
 import amiss.application.service.save.PurchaseOutcome;
 import amiss.application.service.save.SaveGameServices;
 import amiss.application.service.save.ShopService;
@@ -80,11 +81,18 @@ class FoodControllerTest {
         return travel;
     }
 
-    // ---- GET /api/food ---------------------------------------------------------
+    // ---- GET /api/saves/{id}/food ----------------------------------------------
 
     @Test
     void catalog_returnsTheMenuAndPacks() throws Exception {
-        mvc.perform(get("/api/food").with(jwt()))
+        SaveState save = save();
+        when(scope.require(eq(7L), any())).thenReturn(save);
+        EconomyService economy = mock(EconomyService.class);
+        when(services.economy()).thenReturn(economy);
+        when(economy.price(32, save)).thenReturn(32); // BURGER base price
+        when(economy.price(25, save)).thenReturn(25); // ONE_WEEK base price
+
+        mvc.perform(get("/api/saves/7/food").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.menu.length()").value(6))
                 .andExpect(jsonPath("$.menu[0].id").value("BURGER"))
@@ -96,11 +104,18 @@ class FoodControllerTest {
                 .andExpect(jsonPath("$.packs[0].weeks").value(1));
     }
 
-    // ---- GET /api/clothes ------------------------------------------------------
+    // ---- GET /api/saves/{id}/clothes -------------------------------------------
 
     @Test
     void clothesCatalog_returnsTheStock() throws Exception {
-        mvc.perform(get("/api/clothes").with(jwt()))
+        SaveState save = save();
+        when(scope.require(eq(7L), any())).thenReturn(save);
+        EconomyService economy = mock(EconomyService.class);
+        when(services.economy()).thenReturn(economy);
+        when(economy.price(20, save)).thenReturn(20); // CASUAL base price
+        when(economy.price(55, save)).thenReturn(55); // SUIT base price
+
+        mvc.perform(get("/api/saves/7/clothes").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(3))
                 .andExpect(jsonPath("$[0].id").value("CASUAL"))

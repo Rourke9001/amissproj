@@ -16,6 +16,7 @@ import amiss.api.web.dto.GroceriesResponse;
 import amiss.api.web.dto.MenuItemDto;
 import amiss.application.config.ActionCosts;
 import amiss.application.service.save.EatOutcome;
+import amiss.application.service.save.EconomyService;
 import amiss.application.service.save.PurchaseOutcome;
 import amiss.application.service.save.SaveGameServices;
 import amiss.domain.board.Location;
@@ -36,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * The food/clothing catalogs, eating, buying groceries and buying clothes (KAN-54: cut over
  * to {@code /api/saves/{saveId}}). Each mutating action requires standing at the item's
- * building; the catalogs themselves stay unscoped.
+ * building; the catalogs are save-scoped so displayed prices follow the save's economy (KAN-48).
  */
 @RestController
 public class FoodController {
@@ -54,24 +55,31 @@ public class FoodController {
         this.costs = costs;
     }
 
-    @GetMapping("/api/food")
-    public FoodCatalogDto catalog() {
+    @GetMapping("/api/saves/{saveId}/food")
+    public FoodCatalogDto catalog(@PathVariable long saveId, Authentication authentication) {
+        SaveState save = scope.require(saveId, authentication);
+        EconomyService economy = services.economy();
         List<MenuItemDto> menu = new ArrayList<>(FastFoodItem.values().length);
         for (FastFoodItem item : FastFoodItem.values()) {
-            menu.add(new MenuItemDto(item.name(), item.displayName(), item.price()));
+            menu.add(new MenuItemDto(item.name(), item.displayName(),
+                    economy.price(item.price(), save)));
         }
         List<FoodPackDto> packs = new ArrayList<>(FoodPack.values().length);
         for (FoodPack pack : FoodPack.values()) {
-            packs.add(new FoodPackDto(pack.name(), pack.displayName(), pack.price(), pack.weeks()));
+            packs.add(new FoodPackDto(pack.name(), pack.displayName(),
+                    economy.price(pack.price(), save), pack.weeks()));
         }
         return new FoodCatalogDto(menu, packs);
     }
 
-    @GetMapping("/api/clothes")
-    public List<ClothingItemDto> clothesCatalog() {
+    @GetMapping("/api/saves/{saveId}/clothes")
+    public List<ClothingItemDto> clothesCatalog(@PathVariable long saveId, Authentication authentication) {
+        SaveState save = scope.require(saveId, authentication);
+        EconomyService economy = services.economy();
         List<ClothingItemDto> items = new ArrayList<>(ClothingItem.values().length);
         for (ClothingItem item : ClothingItem.values()) {
-            items.add(new ClothingItemDto(item.name(), item.displayName(), item.price(), item.level()));
+            items.add(new ClothingItemDto(item.name(), item.displayName(),
+                    economy.price(item.price(), save), item.level()));
         }
         return items;
     }
@@ -87,10 +95,10 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(saveId);
             case INSUFFICIENT_CASH:
-                return new EatResponse(item.name(), item.price(), false, "INSUFFICIENT_CASH",
+                return new EatResponse(item.name(), outcome.price(), false, "INSUFFICIENT_CASH",
                         costs.eatMinutes(), assembler.assemble(services, save));
             default:
-                return new EatResponse(item.name(), item.price(), true, null,
+                return new EatResponse(item.name(), outcome.price(), true, null,
                         costs.eatMinutes(), assembler.assemble(services, save));
         }
     }
@@ -111,7 +119,7 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(saveId);
             default:
-                return new GroceriesResponse(pack.name(), pack.price(), pack.weeks(), save.eat(),
+                return new GroceriesResponse(pack.name(), outcome.pricePaid(), pack.weeks(), save.eat(),
                         assembler.assemble(services, save));
         }
     }
@@ -132,7 +140,7 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(saveId);
             default:
-                return new ClothesResponse(item.name(), item.price(), item.level(), assembler.assemble(services, save));
+                return new ClothesResponse(item.name(), outcome.pricePaid(), item.level(), assembler.assemble(services, save));
         }
     }
 
