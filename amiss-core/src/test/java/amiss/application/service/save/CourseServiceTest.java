@@ -25,6 +25,7 @@ class CourseServiceTest {
     private static final DegreeSpec JUNIOR_COLLEGE = new DegreeSpec(1, "Junior College", null);
     private static final DegreeSpec TRADE_SCHOOL = new DegreeSpec(2, "Trade School", null);
     private static final DegreeSpec BUSINESS_ADMIN = new DegreeSpec(3, "Business Administration", 1);
+    private static final int DEGREE_ID = 1;
 
     @Mock
     private SaveRepository saves;
@@ -34,7 +35,7 @@ class CourseServiceTest {
     private SaveDegrees degrees;
 
     private CourseService service() {
-        return new CourseService(saves, catalog, degrees, ActionCosts.defaults());
+        return new CourseService(saves, catalog, degrees, ActionCosts.defaults(), new EconomyService(n -> 1));
     }
 
     @Test
@@ -130,5 +131,30 @@ class CourseServiceTest {
         save.setCurrentCourseId(1);
         save.setTimeMinutes(0);
         assertEquals(CourseService.StudyResult.Status.WEEK_OVER, service().study(save).status());
+    }
+
+    @Test
+    void enrollChargesTheEconomyAdjustedFee() {
+        SaveState save = TestSaves.newSave();   // R100 cash
+        save.setEconomyReading(60);             // fee 50 -> 100
+        when(catalog.byId(DEGREE_ID)).thenReturn(Optional.of(JUNIOR_COLLEGE));
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+
+        CourseService.EnrollResult result = service().enroll(save, DEGREE_ID);
+
+        assertEquals(CourseService.EnrollResult.Status.OK, result.status());
+        assertEquals(100, result.feePaid());
+        assertEquals(0, save.cash());
+    }
+
+    @Test
+    void enrollRejectsWhenCashIsBelowTheAdjustedFee() {
+        SaveState save = TestSaves.newSave();   // R100 < 125
+        save.setEconomyReading(90);             // fee 50 -> 125
+        when(catalog.byId(DEGREE_ID)).thenReturn(Optional.of(JUNIOR_COLLEGE));
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+
+        assertEquals(CourseService.EnrollResult.Status.INSUFFICIENT_CASH,
+                service().enroll(save, DEGREE_ID).status());
     }
 }

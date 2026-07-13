@@ -40,7 +40,7 @@ public class SaveGameServices {
         this.goals = new GoalService(saveDegrees);
         this.hiring = new HiringService(saves, jobs, saveDegrees, turndowns, costs, roll1to100);
         this.shifts = new ShiftService(saves, jobs, saveDegrees, costs);
-        this.courses = new CourseService(saves, degreeCatalog, saveDegrees, costs);
+        this.courses = new CourseService(saves, degreeCatalog, saveDegrees, costs, economy);
         this.weeks = new WeekRolloverService(saves, goals, costs, economy);
         this.travel = new TravelService(saves, costs);
         this.bank = new BankService(saves);

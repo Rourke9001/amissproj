@@ -20,6 +20,7 @@ import java.util.Set;
  */
 public class CourseService {
 
+    /** The base fee — the charged fee scales with the economy (KAN-48). */
     public static final int ENROLL_FEE = 50;
     public static final int STUDIES_PER_DEGREE = 10;
     private static final int GRADUATION_DEPENDABILITY_BONUS = 5;
@@ -32,7 +33,7 @@ public class CourseService {
     public record CourseView(DegreeSpec degree, CourseStatus status, boolean enrolled, int studiesDone) {
     }
 
-    public record EnrollResult(Status status, int cash) {
+    public record EnrollResult(Status status, int cash, int feePaid) {
         public enum Status {
             OK, UNKNOWN_DEGREE, ALREADY_EARNED, LOCKED, ALREADY_ENROLLED, INSUFFICIENT_CASH
         }
@@ -48,13 +49,15 @@ public class CourseService {
     private final DegreeCatalog catalog;
     private final SaveDegrees degrees;
     private final ActionCosts costs;
+    private final EconomyService economy;
 
     public CourseService(SaveRepository saves, DegreeCatalog catalog, SaveDegrees degrees,
-            ActionCosts costs) {
+            ActionCosts costs, EconomyService economy) {
         this.saves = saves;
         this.catalog = catalog;
         this.degrees = degrees;
         this.costs = costs;
+        this.economy = economy;
     }
 
     /** The whole course board for this save, in catalog order. */
@@ -78,28 +81,29 @@ public class CourseService {
 
     public EnrollResult enroll(SaveState save, int degreeId) {
         Optional<DegreeSpec> found = catalog.byId(degreeId);
+        int fee = economy.price(ENROLL_FEE, save);
         if (found.isEmpty()) {
-            return new EnrollResult(EnrollResult.Status.UNKNOWN_DEGREE, save.cash());
+            return new EnrollResult(EnrollResult.Status.UNKNOWN_DEGREE, save.cash(), fee);
         }
         DegreeSpec degree = found.get();
         Set<Integer> earned = degrees.earned(save.id());
         if (earned.contains(degree.id())) {
-            return new EnrollResult(EnrollResult.Status.ALREADY_EARNED, save.cash());
+            return new EnrollResult(EnrollResult.Status.ALREADY_EARNED, save.cash(), fee);
         }
         if (degree.prereqDegreeId() != null && !earned.contains(degree.prereqDegreeId())) {
-            return new EnrollResult(EnrollResult.Status.LOCKED, save.cash());
+            return new EnrollResult(EnrollResult.Status.LOCKED, save.cash(), fee);
         }
         if (save.currentCourseId() != null) {
-            return new EnrollResult(EnrollResult.Status.ALREADY_ENROLLED, save.cash());
+            return new EnrollResult(EnrollResult.Status.ALREADY_ENROLLED, save.cash(), fee);
         }
-        if (save.cash() < ENROLL_FEE) {
-            return new EnrollResult(EnrollResult.Status.INSUFFICIENT_CASH, save.cash());
+        if (save.cash() < fee) {
+            return new EnrollResult(EnrollResult.Status.INSUFFICIENT_CASH, save.cash(), fee);
         }
-        save.setCash(save.cash() - ENROLL_FEE);
+        save.setCash(save.cash() - fee);
         save.setCurrentCourseId(degree.id());
         save.setEduprog(0);
         saves.update(save);
-        return new EnrollResult(EnrollResult.Status.OK, save.cash());
+        return new EnrollResult(EnrollResult.Status.OK, save.cash(), fee);
     }
 
     public StudyResult study(SaveState save) {

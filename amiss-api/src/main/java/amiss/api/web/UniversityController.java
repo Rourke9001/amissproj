@@ -84,7 +84,7 @@ public class UniversityController {
             case INSUFFICIENT_CASH:
                 throw new InsufficientFundsException(saveId);
             default:
-                return new EnrollResponse(CourseService.ENROLL_FEE, assembler.assemble(services, save));
+                return new EnrollResponse(outcome.feePaid(), assembler.assemble(services, save));
         }
     }
 
