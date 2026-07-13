@@ -78,6 +78,7 @@ describe('MonolithBurgersPanel', () => {
   it('renders the menu from the catalog', async () => {
     renderPanel(playerFixture());
 
+    expect(getFoodCatalogMock).toHaveBeenCalledWith(42);
     expect(await screen.findByText('Burger')).toBeInTheDocument();
     expect(screen.getByText('R32')).toBeInTheDocument();
     expect(screen.getByText('Pizza')).toBeInTheDocument();

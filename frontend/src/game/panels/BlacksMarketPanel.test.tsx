@@ -75,6 +75,7 @@ describe('BlacksMarketPanel', () => {
   it('renders the grocery packs with their price and weeks detail', async () => {
     renderPanel(playerFixture());
 
+    expect(getFoodCatalogMock).toHaveBeenCalledWith(42);
     expect(await screen.findByText('1 Weeks of Food')).toBeInTheDocument();
     expect(screen.getByText('R25')).toBeInTheDocument();
     expect(screen.getByText('+1 wk')).toBeInTheDocument();
