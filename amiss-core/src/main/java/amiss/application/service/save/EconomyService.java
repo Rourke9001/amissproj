@@ -52,7 +52,7 @@ public class EconomyService {
         save.setEconomyReading((short) reading);
     }
 
-    static int clamp(int value, int min, int max) {
+    private static int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(max, value));
     }
 
