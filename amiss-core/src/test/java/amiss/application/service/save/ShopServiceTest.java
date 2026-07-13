@@ -217,7 +217,7 @@ class ShopServiceTest {
     @Test
     void eatChargesTheEconomyAdjustedPrice() {
         SaveState save = TestSaves.newSave();
-        save.setEconomyReading(60);   // +100%: every price doubles
+        save.setEconomyReading((short) 60);   // +100%: every price doubles
         ShopService shop = new ShopService(saves, ActionCosts.defaults(),
                 new EconomyService(n -> 1));
 
@@ -231,7 +231,7 @@ class ShopServiceTest {
     @Test
     void groceriesAndClothesChargeAndReportTheAdjustedPrice() {
         SaveState save = TestSaves.newSave();
-        save.setEconomyReading(-30);  // -50%: half price
+        save.setEconomyReading((short) -30);  // -50%: half price
         ShopService shop = new ShopService(saves, ActionCosts.defaults(),
                 new EconomyService(n -> 1));
 

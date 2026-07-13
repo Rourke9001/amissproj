@@ -37,8 +37,8 @@ public class EconomyService {
         int index = clamp(save.economyIndex() + roll1toN.applyAsInt(3) - 2, INDEX_MIN, INDEX_MAX);
         int reading = clamp(save.economyReading() + READING_STEP_PER_INDEX * index
                 + roll1toN.applyAsInt(11) - 6, READING_MIN, READING_MAX);
-        save.setEconomyIndex(index);
-        save.setEconomyReading(reading);
+        save.setEconomyIndex((byte) index);
+        save.setEconomyReading((short) reading);
     }
 
     private static int clamp(int value, int min, int max) {

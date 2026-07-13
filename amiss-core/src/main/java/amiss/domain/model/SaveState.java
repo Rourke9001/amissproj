@@ -36,15 +36,15 @@ public class SaveState {
     private final int goalEducation;
     private final int goalCareer;
     private boolean won;
-    private int economyIndex;
-    private int economyReading;
+    private byte economyIndex;
+    private short economyReading;
 
     public SaveState(long id, String owner, String label, int xpos, int ypos, int timeMinutes,
             int round, int cash, int bank, int debt, int rent, int eat, int clothing,
             Integer jobId, int happiness, int experience, int dependability,
             Integer currentCourseId, int eduprog,
             int goalWealth, int goalHappiness, int goalEducation, int goalCareer, boolean won,
-            int economyIndex, int economyReading) {
+            byte economyIndex, short economyReading) {
         this.id = id;
         this.owner = owner;
         this.label = label;
@@ -253,19 +253,19 @@ public class SaveState {
         this.won = won;
     }
 
-    public int economyIndex() {
+    public byte economyIndex() {
         return economyIndex;
     }
 
-    public void setEconomyIndex(int economyIndex) {
+    public void setEconomyIndex(byte economyIndex) {
         this.economyIndex = economyIndex;
     }
 
-    public int economyReading() {
+    public short economyReading() {
         return economyReading;
     }
 
-    public void setEconomyReading(int economyReading) {
+    public void setEconomyReading(short economyReading) {
         this.economyReading = economyReading;
     }
 }

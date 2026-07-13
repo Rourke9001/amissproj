@@ -21,7 +21,7 @@ class EconomyServiceTest {
 
     private static SaveState saveWithReading(int reading) {
         SaveState save = TestSaves.newSave();
-        save.setEconomyReading(reading);
+        save.setEconomyReading((short) reading);
         return save;
     }
 
@@ -60,7 +60,7 @@ class EconomyServiceTest {
     @Test
     void driftClampsIndexAndReadingAtTheirBounds() {
         SaveState save = saveWithReading(90);
-        save.setEconomyIndex(3);
+        save.setEconomyIndex((byte) 3);
         // Roll 3 -> +1 clamps at +3; noise roll 11 -> +5; reading 90 + 30 + 5 clamps at 90.
         new EconomyService(rolls(3, 11)).driftWeekly(save);
         assertEquals(3, save.economyIndex());
@@ -70,7 +70,7 @@ class EconomyServiceTest {
     @Test
     void driftClampsAtTheFloorToo() {
         SaveState save = saveWithReading(-30);
-        save.setEconomyIndex(-3);
+        save.setEconomyIndex((byte) -3);
         // Roll 1 -> -1 clamps at -3; noise roll 1 -> -5; reading floor holds.
         new EconomyService(rolls(1, 1)).driftWeekly(save);
         assertEquals(-3, save.economyIndex());

@@ -136,7 +136,7 @@ class CourseServiceTest {
     @Test
     void enrollChargesTheEconomyAdjustedFee() {
         SaveState save = TestSaves.newSave();   // R100 cash
-        save.setEconomyReading(60);             // fee 50 -> 100
+        save.setEconomyReading((short) 60);     // fee 50 -> 100
         when(catalog.byId(DEGREE_ID)).thenReturn(Optional.of(JUNIOR_COLLEGE));
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
 
@@ -150,7 +150,7 @@ class CourseServiceTest {
     @Test
     void enrollRejectsWhenCashIsBelowTheAdjustedFee() {
         SaveState save = TestSaves.newSave();   // R100 < 125
-        save.setEconomyReading(90);             // fee 50 -> 125
+        save.setEconomyReading((short) 90);     // fee 50 -> 125
         when(catalog.byId(DEGREE_ID)).thenReturn(Optional.of(JUNIOR_COLLEGE));
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
 
