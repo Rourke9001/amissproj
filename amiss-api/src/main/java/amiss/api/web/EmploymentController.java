@@ -10,6 +10,7 @@ import amiss.api.web.dto.ApplyResponse;
 import amiss.api.web.dto.JobListingDto;
 import amiss.api.web.dto.WorkResponse;
 import amiss.application.port.JobCatalog;
+import amiss.application.service.save.EconomyService;
 import amiss.application.service.save.HireOutcome;
 import amiss.application.service.save.SaveGameServices;
 import amiss.application.service.save.ShiftOutcome;
@@ -27,8 +28,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * The job catalog, applying and working (KAN-54: cut over to {@code /api/saves/{saveId}}
- * plus the V5 {@link JobCatalog}). The listing is deliberately requirement-free — {@code
- * apply} is the only channel a player learns why an application was turned down. Applying
+ * plus the V5 {@link JobCatalog}; KAN-48: listings now save-scoped and economy-priced).
+ * The listing is deliberately requirement-free — {@code apply} is the only channel a
+ * player learns why an application was turned down; displayed wages fluctuate with the
+ * save's economy and equal the wage that would be snapshotted if hired. Applying
  * is only reachable at the {@link Location#EMPLOYMENT_OFFICE}; working requires standing at
  * the held job's own location (read from the catalog), checked inline like the legacy
  * controller since it varies per job rather than being a fixed {@link Location}.
@@ -49,11 +52,15 @@ public class EmploymentController {
         this.jobCatalog = jobCatalog;
     }
 
-    @GetMapping("/api/jobs")
-    public List<JobListingDto> jobs(@RequestParam(required = false) String location) {
+    @GetMapping("/api/saves/{saveId}/jobs")
+    public List<JobListingDto> jobs(@PathVariable long saveId, Authentication authentication,
+            @RequestParam(required = false) String location) {
+        SaveState save = scope.require(saveId, authentication);
+        EconomyService economy = services.economy();
         List<JobSpec> listings = location == null ? jobCatalog.all() : jobCatalog.byLocation(location);
         return listings.stream()
-                .map(job -> new JobListingDto(job.id(), job.name(), job.location(), job.wage()))
+                .map(job -> new JobListingDto(job.id(), job.name(), job.location(),
+                        economy.price(job.wage(), save)))
                 .toList();
     }
 

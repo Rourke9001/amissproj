@@ -62,12 +62,13 @@ class PlayerStateAssemblerTest {
 
     private static SaveState save(Integer jobId, Integer currentCourseId, int eduprog) {
         return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, 3960, 3, 120, 50, 0, 0, 1, 1,
-                jobId, 60, 30, 40, currentCourseId, eduprog, 200, 100, 30, 50, false, (byte) 0, (short) 0);
+                jobId, 60, 30, 40, currentCourseId, eduprog, 200, 100, 30, 50, false, (byte) 0, (short) 0,
+                jobId != null ? 6 : null);  // wage snapshot when employed
     }
 
     private static SaveState save(int timeMinutes) {
         return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, timeMinutes, 3, 120, 50, 0, 0, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
     }
 
     @Test
@@ -84,14 +85,14 @@ class PlayerStateAssemblerTest {
 
     @Test
     void assemble_employedSaveReportsWageAndLocation() {
-        when(jobCatalog.byId(4)).thenReturn(Optional.of(new JobSpec(4, "Cook", "Monolith Burgers", 6, 0, 0, 0)));
+        when(jobCatalog.byId(4)).thenReturn(Optional.of(new JobSpec(4, "Cook", "Monolith Burgers", 5, 0, 0, 0)));
         when(degreeCatalog.all()).thenReturn(List.of());
         when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
 
         SaveStateDto dto = assembler.assemble(services(), save(4, null, 0));
 
         assertEquals("Cook", dto.job().name());
-        assertEquals(6, dto.job().hourlyWage());
+        assertEquals(6, dto.job().hourlyWage());  // snapshot wage, not catalog wage (5)
         assertEquals("Monolith Burgers", dto.job().location());
     }
 
@@ -138,7 +139,7 @@ class PlayerStateAssemblerTest {
         when(degreeCatalog.all()).thenReturn(List.of());
         when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
         SaveState stale = new SaveState(SAVE_ID, "bob", "My Save", 9, 9, 3960, 3, 120, 50, 0, 0, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
 
         SaveStateDto dto = assembler.assemble(services(), stale);
 

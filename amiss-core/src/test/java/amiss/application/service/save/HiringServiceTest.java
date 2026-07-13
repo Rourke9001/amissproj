@@ -14,6 +14,7 @@ import amiss.application.port.JobCatalog;
 import amiss.application.port.SaveDegrees;
 import amiss.application.port.SaveRepository;
 import amiss.application.port.Turndowns;
+import amiss.application.service.save.EconomyService;
 import amiss.domain.model.SaveState;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +38,8 @@ class HiringServiceTest {
     private Turndowns turndowns;
 
     private HiringService service(IntSupplier roll) {
-        return new HiringService(saves, jobs, degrees, turndowns, ActionCosts.defaults(), roll);
+        return new HiringService(saves, jobs, degrees, turndowns, ActionCosts.defaults(), roll,
+                new EconomyService(n -> 1));
     }
 
     private HiringService serviceAlwaysLucky() {
@@ -212,5 +214,20 @@ class HiringServiceTest {
         assertTrue(outcome.reasons().isEmpty());
         assertFalse(save.weekOver());
         assertNull(save.currentCourseId());
+    }
+
+    // ===== wage snapshotting =====
+
+    @Test
+    void hireSnapshotsTheEconomyAdjustedListingWage() {
+        SaveState save = TestSaves.newSave();
+        save.setEconomyReading((short) 60);   // listings pay double
+        when(jobs.byId(TestSaves.COOK.id())).thenReturn(Optional.of(TestSaves.COOK));
+
+        HireOutcome outcome = service(() -> 1).apply(save, TestSaves.COOK.id());
+
+        assertEquals(HireOutcome.Status.HIRED, outcome.status());
+        assertEquals(10, outcome.wage());          // base 5 doubled
+        assertEquals(10, save.wage());
     }
 }

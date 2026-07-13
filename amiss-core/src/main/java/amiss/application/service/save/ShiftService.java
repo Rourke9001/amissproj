@@ -53,6 +53,7 @@ public class ShiftService {
         int reqDep = job.effectiveReqDependability();
         if (save.dependability() < reqDep - FIRED_BELOW_REQ) {
             save.setJobId(null);
+            save.setWage(null);
             save.addHappiness(FIRED_HAPPINESS);
             saves.update(save);
             return new ShiftOutcome(ShiftOutcome.Status.FIRED, false, -1, -1, 0, 0,
@@ -65,7 +66,9 @@ public class ShiftService {
         }
 
         int minutes = save.spendUpTo(costs.workMinutes());
-        int pay = job.wage() * FULL_SESSION_PAY_MULTIPLIER * minutes / costs.workMinutes();
+        int wage = java.util.Objects.requireNonNull(save.wage(),
+                "employed save " + save.id() + " has no wage snapshot (V8 backfill)");
+        int pay = wage * FULL_SESSION_PAY_MULTIPLIER * minutes / costs.workMinutes();
 
         int garnished = 0;
         int net = pay;

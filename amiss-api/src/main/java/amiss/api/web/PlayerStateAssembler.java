@@ -83,7 +83,7 @@ public class PlayerStateAssembler {
             return new JobDto(UNEMPLOYED, null, null);
         }
         return jobs.byId(save.jobId())
-                .map(job -> new JobDto(job.name(), job.wage(), job.location()))
+                .map(job -> new JobDto(job.name(), save.wage(), job.location()))
                 .orElse(new JobDto(UNEMPLOYED, null, null));
     }
 

@@ -22,7 +22,11 @@ export function EmploymentOfficePanel({ saveId, onNotify }: PanelProps) {
   const [workplace, setWorkplace] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const jobsQuery = useQuery({ queryKey: ['jobs'], queryFn: () => getJobs(), staleTime: Infinity });
+  const jobsQuery = useQuery({
+    queryKey: ['jobs', saveId],
+    queryFn: () => getJobs(saveId),
+    staleTime: Infinity,
+  });
 
   const workplaces = useMemo(() => {
     if (!jobsQuery.data) return [];

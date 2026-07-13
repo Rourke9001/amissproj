@@ -66,6 +66,7 @@ describe('EmploymentOfficePanel', () => {
   it('lists workplaces with no requirement/experience/dependability text anywhere', async () => {
     renderPanel();
     expect(await screen.findByRole('button', { name: 'Monolith Burgers' })).toBeInTheDocument();
+    expect(getJobs).toHaveBeenCalledWith(1);
     expect(screen.getByRole('button', { name: 'Z-Mart' })).toBeInTheDocument();
     expect(screen.queryByText(/experience/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/dependability/i)).not.toBeInTheDocument();

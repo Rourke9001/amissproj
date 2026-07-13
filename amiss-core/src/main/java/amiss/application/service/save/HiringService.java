@@ -39,15 +39,17 @@ public class HiringService {
     private final Turndowns turndowns;
     private final ActionCosts costs;
     private final IntSupplier roll1to100;
+    private final EconomyService economy;
 
     public HiringService(SaveRepository saves, JobCatalog jobs, SaveDegrees degrees,
-            Turndowns turndowns, ActionCosts costs, IntSupplier roll1to100) {
+            Turndowns turndowns, ActionCosts costs, IntSupplier roll1to100, EconomyService economy) {
         this.saves = saves;
         this.jobs = jobs;
         this.degrees = degrees;
         this.turndowns = turndowns;
         this.costs = costs;
         this.roll1to100 = roll1to100;
+        this.economy = economy;
     }
 
     public HireOutcome apply(SaveState save, int jobId) {
@@ -97,12 +99,14 @@ public class HiringService {
     }
 
     private HireOutcome hire(SaveState save, JobSpec job, int charged) {
+        int listedWage = economy.price(job.wage(), save);
         save.setJobId(job.id());
+        save.setWage(listedWage);
         save.setExperience(save.experience() + JOB_SWITCH_EXPERIENCE_BONUS);
         save.setDependability(Math.max(save.dependability(), HIRE_DEPENDABILITY_FLOOR));
         save.addHappiness(HIRE_HAPPINESS);
         saves.update(save);
-        return HireOutcome.hired(charged, save.timeMinutes(), job.name(), job.wage());
+        return HireOutcome.hired(charged, save.timeMinutes(), job.name(), listedWage);
     }
 
     private HireOutcome reject(SaveState save, JobSpec job, List<HireOutcome.Reason> reasons, int charged) {

@@ -38,13 +38,14 @@ public class SaveState {
     private boolean won;
     private byte economyIndex;
     private short economyReading;
+    private Integer wage;
 
     public SaveState(long id, String owner, String label, int xpos, int ypos, int timeMinutes,
             int round, int cash, int bank, int debt, int rent, int eat, int clothing,
             Integer jobId, int happiness, int experience, int dependability,
             Integer currentCourseId, int eduprog,
             int goalWealth, int goalHappiness, int goalEducation, int goalCareer, boolean won,
-            byte economyIndex, short economyReading) {
+            byte economyIndex, short economyReading, Integer wage) {
         this.id = id;
         this.owner = owner;
         this.label = label;
@@ -71,6 +72,7 @@ public class SaveState {
         this.won = won;
         this.economyIndex = economyIndex;
         this.economyReading = economyReading;
+        this.wage = wage;
     }
 
     public long id() {
@@ -267,5 +269,14 @@ public class SaveState {
 
     public void setEconomyReading(short economyReading) {
         this.economyReading = economyReading;
+    }
+
+    /** Hired-at wage (economy-adjusted), null while unemployed. */
+    public Integer wage() {
+        return wage;
+    }
+
+    public void setWage(Integer wage) {
+        this.wage = wage;
     }
 }

@@ -37,6 +37,7 @@ class ShiftServiceTest {
     private SaveState employedSave() {
         SaveState save = TestSaves.newSave();
         save.setJobId(TestSaves.ASSISTANT.id());
+        save.setWage(TestSaves.ASSISTANT.wage());
         save.setDependability(30);
         when(jobs.byId(TestSaves.ASSISTANT.id())).thenReturn(Optional.of(TestSaves.ASSISTANT));
         return save;
@@ -187,5 +188,31 @@ class ShiftServiceTest {
         ShiftOutcome outcome = service().work(save);
 
         assertEquals(ShiftOutcome.Status.WEEK_OVER, outcome.status());
+    }
+
+    // ===== wage snapshotting =====
+
+    @Test
+    void workPaysFromTheWageSnapshotNotTheCatalog() {
+        SaveState save = TestSaves.newSave();
+        save.setJobId(TestSaves.COOK.id());
+        save.setWage(10);                          // snapshot differs from base 5
+        when(jobs.byId(TestSaves.COOK.id())).thenReturn(Optional.of(TestSaves.COOK));
+
+        ShiftOutcome outcome = service().work(save);
+
+        assertEquals(80, outcome.pay());           // 10 * 8 full session, not 40
+    }
+
+    @Test
+    void firingForLowDependabilityClearsTheWageSnapshot() {
+        SaveState save = TestSaves.newSave();
+        save.setJobId(TestSaves.ASSISTANT.id());
+        save.setWage(7);
+        save.setDependability(0);                  // 30-required, > 5 below -> fired
+        when(jobs.byId(TestSaves.ASSISTANT.id())).thenReturn(Optional.of(TestSaves.ASSISTANT));
+
+        assertEquals(ShiftOutcome.Status.FIRED, service().work(save).status());
+        assertNull(save.wage());
     }
 }

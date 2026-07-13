@@ -3,6 +3,7 @@ package amiss.api.web;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -20,6 +21,7 @@ import amiss.api.web.dto.GoalsDto;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.SaveStateDto;
 import amiss.application.port.JobCatalog;
+import amiss.application.service.save.EconomyService;
 import amiss.application.service.save.HireOutcome;
 import amiss.application.service.save.HiringService;
 import amiss.application.service.save.SaveGameServices;
@@ -60,7 +62,7 @@ class EmploymentControllerTest {
 
     private static SaveState save(Integer jobId) {
         return new SaveState(7L, "bob", "My Save", 3, 3, 3960, 3, 70, 0, 0, 0, 1, 1,
-                jobId, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0);
+                jobId, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
     }
 
     private static SaveStateDto dto() {
@@ -87,21 +89,35 @@ class EmploymentControllerTest {
         return hiring;
     }
 
-    // ---- GET /api/jobs ------------------------------------------------------
+    // ---- GET /api/saves/{id}/jobs ------------------------------------------
+
+    /** Stubs a +50% economy (reading 30): base + base*30/60, so adjusted always != base. */
+    private EconomyService mockEconomyPlusHalf(SaveState save) {
+        EconomyService economy = mock(EconomyService.class);
+        when(scope.require(eq(7L), any())).thenReturn(save);
+        when(services.economy()).thenReturn(economy);
+        when(economy.price(anyInt(), eq(save))).thenAnswer(inv -> {
+            int base = inv.getArgument(0);
+            return base + Math.floorDiv(base * 30, 60);
+        });
+        return economy;
+    }
 
     @Test
-    void jobs_returnsTheRequirementFreeMapping() throws Exception {
+    void jobs_returnsTheRequirementFreeMappingWithEconomyPricedWages() throws Exception {
+        mockEconomyPlusHalf(save(null));
         when(jobCatalog.all()).thenReturn(List.of(
                 new JobSpec(1, "Cook", "Monolith Burgers", 6, 0, 0, 0),
                 new JobSpec(2, "Clerk", "Socket City", 10, 20, 30, 2)));
 
-        mvc.perform(get("/api/jobs").with(jwt()))
+        mvc.perform(get("/api/saves/7/jobs").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].name").value("Cook"))
                 .andExpect(jsonPath("$[0].location").value("Monolith Burgers"))
-                .andExpect(jsonPath("$[0].wage").value(6))
+                .andExpect(jsonPath("$[0].wage").value(9))
+                .andExpect(jsonPath("$[1].wage").value(15))
                 .andExpect(jsonPath("$[1].reqExperience").doesNotExist())
                 .andExpect(jsonPath("$[1].reqDependability").doesNotExist())
                 .andExpect(jsonPath("$[1].reqClothing").doesNotExist())
@@ -111,36 +127,40 @@ class EmploymentControllerTest {
 
     @Test
     void jobs_locationFilterDelegatesToByLocation() throws Exception {
+        mockEconomyPlusHalf(save(null));
         when(jobCatalog.byLocation("Socket City")).thenReturn(List.of(
                 new JobSpec(2, "Clerk", "Socket City", 10, 20, 30, 2)));
 
-        mvc.perform(get("/api/jobs").param("location", "Socket City").with(jwt()))
+        mvc.perform(get("/api/saves/7/jobs").param("location", "Socket City").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name").value("Clerk"));
+                .andExpect(jsonPath("$[0].name").value("Clerk"))
+                .andExpect(jsonPath("$[0].wage").value(15));
     }
 
     /**
      * The KAN-54 hidden-requirements contract pin: not one requirement/hidden-stat field name
-     * appears anywhere in the raw {@code GET /api/jobs} JSON, not just absent from the fields
-     * this test happens to assert on individually.
+     * appears anywhere in the raw JSON, not just absent from the fields this test happens to
+     * assert on individually. Also pins that economyIndex/economyReading never appear.
      */
     @Test
     void jobs_wireContractNeverMentionsHiddenRequirementFields() throws Exception {
+        mockEconomyPlusHalf(save(null));
         when(jobCatalog.all()).thenReturn(List.of(
                 new JobSpec(2, "Clerk", "Socket City", 10, 20, 30, 2)));
 
-        mvc.perform(get("/api/jobs").with(jwt()))
+        mvc.perform(get("/api/saves/7/jobs").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(matchesPattern(
-                        "(?s).*(reqExperience|reqDependability|reqClothing|experience|dependability).*"))));
+                        "(?s).*(reqExperience|reqDependability|reqClothing|experience|dependability|economyIndex|economyReading).*"))));
     }
 
     @Test
     void jobs_emptyCatalogReturnsEmptyList() throws Exception {
+        mockEconomyPlusHalf(save(null));
         when(jobCatalog.all()).thenReturn(List.of());
 
-        mvc.perform(get("/api/jobs").with(jwt()))
+        mvc.perform(get("/api/saves/7/jobs").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }

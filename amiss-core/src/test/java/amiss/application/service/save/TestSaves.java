@@ -23,6 +23,6 @@ final class TestSaves {
     /** A brand-new save: 4320 min, round 1, R100, exp 10 / dep 20, happiness 50, no job. */
     static SaveState newSave() {
         return new SaveState(SAVE_ID, "tester", "Save 1", 0, 0, 4320, 1, 100, 0, 0, 1, 0, 1,
-                null, 50, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0);
+                null, 50, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0, null);
     }
 }
