@@ -173,6 +173,31 @@ class EconomyServiceTest {
     }
 
     @Test
+    void moderateCrashWhileUnemployedNeverRollsTheFireCoin() {
+        SaveState save = eventEligibleSave();      // no jobId/wage: unemployed
+
+        // Crash 1; severity 2 -> MODERATE. Nothing else queued: a fire-coin roll would throw.
+        EconomyEvent event = new EconomyService(rolls(1, 2)).rollEvent(save);
+
+        assertEquals(EconomyEvent.Severity.MODERATE, event.severity());
+        assertFalse(event.fired());
+        assertNull(event.wageCutTo());
+    }
+
+    @Test
+    void majorCrashWhileUnemployedStillWipesTheBank() {
+        SaveState save = eventEligibleSave();      // no jobId/wage: unemployed
+        save.setBank(300);
+
+        // Crash 1; severity 3 -> MAJOR.
+        EconomyEvent event = new EconomyService(rolls(1, 3)).rollEvent(save);
+
+        assertTrue(event.bankWiped());
+        assertEquals(0, save.bank());
+        assertFalse(event.fired());
+    }
+
+    @Test
     void aMissedCrashRollStillAllowsABoomRoll() {
         SaveState save = eventEligibleSave();      // reading 85: crash-eligible
 

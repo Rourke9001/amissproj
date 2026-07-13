@@ -2,6 +2,7 @@ package amiss.api.web;
 
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -155,6 +156,7 @@ class PlayerControllerTest {
                 .andExpect(jsonPath("$.debtCharged").value(false))
                 .andExpect(jsonPath("$.won").value(false))
                 .andExpect(jsonPath("$.economy.event").value("NONE"))
+                .andExpect(jsonPath("$.economy.severity").value(nullValue()))
                 .andExpect(jsonPath("$.state.id").value(7));
     }
 
