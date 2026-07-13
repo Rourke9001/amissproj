@@ -441,3 +441,33 @@ Here that meant the wage moves from being derived (recomputed from the economy e
 read) to being recorded (written once at hire) — and the interesting review question was
 lifecycle: every path that sets or clears the job must set or clear the snapshot with
 it, which we verified by tracing all assignment sites rather than assuming."*
+
+### Market crashes & booms — ordered events over deterministic randomness (KAN-48 PR 3)
+- Implemented the reference game's week-8+ market events as a typed
+  `EconomyEvent` outcome from one `rollEvent` step: crashes only off a near-peak
+  economy (Reading ≥ 80), with wiki-uniform severities — MINOR drops prices, MODERATE
+  is a coin flip between a pay cut to 80% and being fired, MAJOR fires you **and wipes
+  your bank account** — and a boom as the upside jolt.
+- Made event **ordering** an explicitly tested invariant, not an accident of statement
+  order: the event rolls after the weekly drift and *before* the win condition is
+  evaluated, pinned by a test where a save that would otherwise win has its bank wiped
+  by a MAJOR crash first — sequencing semantics (what settles before what is judged)
+  treated with the care a payments system gives value-dating.
+- Kept every probabilistic branch **deterministic in tests** via the injected-roll
+  pattern: scripted rolls are consumed from a queue that throws on over-consumption, so
+  the tests pin not just outcomes but the exact roll-stream contract (an ineligible
+  crash consumes no die; an unemployed MODERATE crash consumes no fire coin) —
+  replay-grade determinism over hidden randomness.
+- Surfaced events to the player as **consequences, never internals**: the end-week wire
+  DTO carries fired/pay-cut/bank-wiped/happiness facts while the hidden Index and
+  Reading stay structurally absent from every response, and the React end-week modal
+  renders one line per consequence, each pinned by exact-text tests.
+
+**Talking point:** *"The line I'd defend in review is the ordering test: a crash that
+wipes your bank has to land before the win check, or a player can win with money that
+no longer exists. That's a sequencing bug class banks care about deeply — settlement
+before judgment — and the test constructs exactly the pathological case. The other
+piece I like is the roll-queue discipline: because injected rolls throw when
+over-consumed, the tests prove which random draws each branch consumes, not just what
+it returns. That's what makes a probabilistic system auditable — same seed, same
+story, byte for byte."*
