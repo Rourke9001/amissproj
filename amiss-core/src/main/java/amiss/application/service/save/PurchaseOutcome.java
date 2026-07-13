@@ -7,8 +7,9 @@ package amiss.application.service.save;
  * @param status           {@link Status#OK} when the purchase happened; otherwise why not
  * @param remainingMinutes the clock after the attempt
  * @param cash             cash after the attempt
+ * @param pricePaid        the economy-adjusted price of the item — what was, or would have been, charged
  */
-public record PurchaseOutcome(Status status, int remainingMinutes, int cash) {
+public record PurchaseOutcome(Status status, int remainingMinutes, int cash, int pricePaid) {
 
     public enum Status {
         /** Bought: time and cash were charged. */

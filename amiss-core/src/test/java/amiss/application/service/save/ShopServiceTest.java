@@ -22,7 +22,8 @@ class ShopServiceTest {
     private SaveRepository saves;
 
     private ShopService service() {
-        return new ShopService(saves, ActionCosts.defaults()); // eatMinutes/shopMinutes = 0
+        return new ShopService(saves, ActionCosts.defaults(),
+                new EconomyService(n -> 1)); // eatMinutes/shopMinutes = 0
     }
 
     // ---- eat -----------------------------------------------------------------
@@ -72,7 +73,7 @@ class ShopServiceTest {
         SaveState save = TestSaves.newSave();
         save.setTimeMinutes(50); // 50 - 60 < 0
 
-        EatOutcome result = new ShopService(saves, costed).eat(save, FastFoodItem.BURGER);
+        EatOutcome result = new ShopService(saves, costed, new EconomyService(n -> 1)).eat(save, FastFoodItem.BURGER);
 
         assertEquals(EatOutcome.Status.INSUFFICIENT_TIME, result.status());
         assertEquals(50, result.remainingMinutes());
@@ -136,7 +137,7 @@ class ShopServiceTest {
         SaveState save = TestSaves.newSave();
         save.setTimeMinutes(50); // < 100
 
-        PurchaseOutcome result = new ShopService(saves, costed).buyGroceries(save, FoodPack.ONE_WEEK);
+        PurchaseOutcome result = new ShopService(saves, costed, new EconomyService(n -> 1)).buyGroceries(save, FoodPack.ONE_WEEK);
 
         assertEquals(PurchaseOutcome.Status.INSUFFICIENT_TIME, result.status());
         assertEquals(50, save.timeMinutes());
@@ -191,7 +192,7 @@ class ShopServiceTest {
         SaveState save = TestSaves.newSave();
         save.setTimeMinutes(50); // clock read (0-cost) OK, then 50 - 100 < 0
 
-        PurchaseOutcome result = new ShopService(saves, costed).buyClothes(save, ClothingItem.SUIT);
+        PurchaseOutcome result = new ShopService(saves, costed, new EconomyService(n -> 1)).buyClothes(save, ClothingItem.SUIT);
 
         assertEquals(PurchaseOutcome.Status.INSUFFICIENT_TIME, result.status());
         assertEquals(1, save.clothing());
@@ -209,5 +210,35 @@ class ShopServiceTest {
         assertEquals(PurchaseOutcome.Status.OK, result.status());
         assertEquals(0, save.cash());
         assertEquals(3, save.clothing());
+    }
+
+    // ---- economy pricing -------------------------------------------------------
+
+    @Test
+    void eatChargesTheEconomyAdjustedPrice() {
+        SaveState save = TestSaves.newSave();
+        save.setEconomyReading(60);   // +100%: every price doubles
+        ShopService shop = new ShopService(saves, ActionCosts.defaults(),
+                new EconomyService(n -> 1));
+
+        EatOutcome outcome = shop.eat(save, FastFoodItem.BURGER);
+
+        assertEquals(EatOutcome.Status.OK, outcome.status());
+        assertEquals(64, outcome.price());          // base 32 doubled
+        assertEquals(100 - 64, save.cash());
+    }
+
+    @Test
+    void groceriesAndClothesChargeAndReportTheAdjustedPrice() {
+        SaveState save = TestSaves.newSave();
+        save.setEconomyReading(-30);  // -50%: half price
+        ShopService shop = new ShopService(saves, ActionCosts.defaults(),
+                new EconomyService(n -> 1));
+
+        PurchaseOutcome groceries = shop.buyGroceries(save, FoodPack.ONE_WEEK);
+        assertEquals(12, groceries.pricePaid());    // floorDiv(25*-30,60)=-13 -> 12
+
+        PurchaseOutcome clothes = shop.buyClothes(save, ClothingItem.CASUAL);
+        assertEquals(10, clothes.pricePaid());      // base 20 halved
     }
 }

@@ -1,0 +1,16 @@
+feat: wire EconomyService into SaveGameServices + weekly rollover drift (KAN-48)
+
+Implement Task 3 of the KAN-48 economy engine plan:
+- Add EconomyService field to WeekRolloverService; call driftWeekly() after
+  dependability decay and before win check (per spec ordering)
+- Add IntUnaryOperator roll1toN parameter to SaveGameServices constructor
+- Build EconomyService in SaveGameServices and pass to WeekRolloverService
+- Add economy() getter to SaveGameServices for Tasks 4-6 and PR 2/3 consumption
+- Update static withRandomRolls() factory to wire both roll suppliers
+- Update test fixtures to provide the new roll1toN parameter
+- Add failing test for rollover drift in WeekRolloverServiceTest
+
+All 128 tests pass. No existing rollover test asserts economy fields, so
+byte-identical behavior preserved under neutral drift (roll 2?index 0, roll 6?noise 0).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>

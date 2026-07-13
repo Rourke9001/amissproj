@@ -1306,3 +1306,35 @@ branch `feat/frontend-saves-employment` off `develop` post-PR-5). Executed via
 ### Review
 *(fill in once PR #50 merges — will close out the whole "Jones-parity jobs &
 degrees, save slots, wiki win rules" goal spanning PRs 1-6)*
+
+---
+
+## Goal: Game-fidelity audit + SOLID/repo-structure audit (2026-07-12)
+
+Design-parity review vs the Jones wiki + Jira cross-reference + production/SOLID
+audit. Report only this pass — **no code, no Jira writes until Rourke approves
+the change plan.** Orchestration: efficient-fable (sonnet subagents scan, Fable
+synthesizes/judges).
+
+### Plan
+- [x] Step 1: Wiki reference checklist (subagent via Chrome tools — 20 pages read, no 404s)
+- [x] Step 2: Pull KAN board via JQL (inline) — 54 issues; bucketed per system
+- [x] Step 3: Repo implementation inventory per system (subagent, evidence-based)
+- [x] Step 3b: SOLID / production-structure audit (subagent)
+- [x] Step 4: Cross-reference — ✅/🟡/⬜ per checklist item, matched to tickets
+- [x] Step 5: Audit report + per-ticket Jira change plan delivered in chat; STOPPED for approval
+- [x] Apply approved Jira comments/transitions — KAN-38..44 + KAN-51 → Done;
+      fidelity-nits comment on KAN-53; implementation-plan comments on
+      KAN-23/24/48/49/50 (all confirmed 2026-07-12)
+
+### Review
+*Report delivered 2026-07-12. Headline: everything the board says is Done is
+genuinely implemented and wiki-faithful (verified formulas in StatFormulas/
+HiringService/ShiftService/CourseService/WeekRolloverService); the absent
+systems (economy engine, events, AI, housing tiers, pawn/loans, needs) all map
+cleanly onto existing KAN-23/24/48/49/50 tickets — no orphan systems. Small
+divergences found: no +5 happiness on graduation, 1 concurrent course vs wiki 4,
+wealth stat ignores debt, fed=72h vs wiki starvation−20h (known), rent R80 vs
+wiki $325/$475. Jira drift: KAN-38–44 + KAN-51 merged but still In Progress.
+SOLID audit: architecture genuinely clean; one real finding — no @Version on
+SaveEntity (lost-update race on money ops).*

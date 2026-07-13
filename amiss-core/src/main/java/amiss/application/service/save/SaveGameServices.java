@@ -45,7 +45,7 @@ public class SaveGameServices {
         this.travel = new TravelService(saves, costs);
         this.bank = new BankService(saves);
         this.rent = new RentService(saves, costs);
-        this.shop = new ShopService(saves, costs);
+        this.shop = new ShopService(saves, costs, economy);
     }
 
     /** Production wiring: uniform rolls off one shared PRNG. */
