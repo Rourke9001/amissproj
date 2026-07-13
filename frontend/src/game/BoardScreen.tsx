@@ -77,6 +77,7 @@ export function BoardScreen({ saveId }: BoardScreenProps) {
       // Prices move at rollover (KAN-48): refetch every catalog next time it's shown.
       queryClient.invalidateQueries({ queryKey: ['food'] });
       queryClient.invalidateQueries({ queryKey: ['clothes'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
       setEndWeekResult(res);
     },
     onError: (err: unknown) => {

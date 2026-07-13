@@ -94,6 +94,7 @@ class SavePortsAdapterIT extends MySqlITSupport {
         loaded.setWon(true);
         loaded.setEconomyIndex((byte) 2);
         loaded.setEconomyReading((short) 45);
+        loaded.setWage(12);
 
         saveRepository.update(loaded);
 
@@ -118,6 +119,7 @@ class SavePortsAdapterIT extends MySqlITSupport {
         assertThat(reloaded.won()).isTrue();
         assertThat(reloaded.economyIndex()).isEqualTo((byte) 2);
         assertThat(reloaded.economyReading()).isEqualTo((short) 45);
+        assertThat(reloaded.wage()).isEqualTo(Integer.valueOf(12));
         // goals are immutable on SaveState and untouched by update()
         assertThat(reloaded.goalWealth()).isEqualTo(40);
 

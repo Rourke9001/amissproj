@@ -1,9 +1,9 @@
 import { apiFetch } from './http';
 import type { ApplyResponse, JobListingDto, WorkResponse } from './types';
 
-export function getJobs(location?: string): Promise<JobListingDto[]> {
+export function getJobs(saveId: number, location?: string): Promise<JobListingDto[]> {
   const query = location ? `?location=${encodeURIComponent(location)}` : '';
-  return apiFetch<JobListingDto[]>(`/jobs${query}`);
+  return apiFetch<JobListingDto[]>(`/saves/${saveId}/jobs${query}`);
 }
 
 export function applyForJob(saveId: number, jobId: number): Promise<ApplyResponse> {
