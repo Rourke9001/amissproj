@@ -10,6 +10,7 @@ import amiss.domain.model.SaveState;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.IntSupplier;
+import java.util.function.IntUnaryOperator;
 
 /**
  * Composition root of the save-scoped rules layer (KAN-53) — the successor of the
@@ -20,6 +21,7 @@ import java.util.function.IntSupplier;
 public class SaveGameServices {
 
     private final SaveRepository saves;
+    private final EconomyService economy;
     private final HiringService hiring;
     private final ShiftService shifts;
     private final CourseService courses;
@@ -31,26 +33,28 @@ public class SaveGameServices {
     private final ShopService shop;
 
     public SaveGameServices(SaveRepository saves, JobCatalog jobs, DegreeCatalog degreeCatalog,
-            SaveDegrees saveDegrees, Turndowns turndowns, ActionCosts costs, IntSupplier roll1to100) {
+            SaveDegrees saveDegrees, Turndowns turndowns, ActionCosts costs,
+            IntSupplier roll1to100, IntUnaryOperator roll1toN) {
         this.saves = saves;
+        this.economy = new EconomyService(roll1toN);
         this.goals = new GoalService(saveDegrees);
         this.hiring = new HiringService(saves, jobs, saveDegrees, turndowns, costs, roll1to100);
         this.shifts = new ShiftService(saves, jobs, saveDegrees, costs);
         this.courses = new CourseService(saves, degreeCatalog, saveDegrees, costs);
-        this.weeks = new WeekRolloverService(saves, goals, costs);
+        this.weeks = new WeekRolloverService(saves, goals, costs, economy);
         this.travel = new TravelService(saves, costs);
         this.bank = new BankService(saves);
         this.rent = new RentService(saves, costs);
         this.shop = new ShopService(saves, costs);
     }
 
-    /** Production wiring: a uniform 1–100 roll. */
+    /** Production wiring: uniform rolls off one shared PRNG. */
     public static SaveGameServices withRandomRolls(SaveRepository saves, JobCatalog jobs,
             DegreeCatalog degreeCatalog, SaveDegrees saveDegrees, Turndowns turndowns,
             ActionCosts costs) {
         Random random = new Random();
         return new SaveGameServices(saves, jobs, degreeCatalog, saveDegrees, turndowns, costs,
-                () -> random.nextInt(100) + 1);
+                () -> random.nextInt(100) + 1, n -> random.nextInt(n) + 1);
     }
 
     public Optional<SaveState> load(long saveId) {
@@ -91,5 +95,9 @@ public class SaveGameServices {
 
     public ShopService shop() {
         return shop;
+    }
+
+    public EconomyService economy() {
+        return economy;
     }
 }

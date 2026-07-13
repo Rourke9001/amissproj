@@ -57,7 +57,7 @@ class PlayerStateAssemblerTest {
 
     private SaveGameServices services() {
         return new SaveGameServices(saves, jobCatalog, degreeCatalog, saveDegrees, turndowns,
-                ActionCosts.defaults(), () -> 100);
+                ActionCosts.defaults(), () -> 100, n -> 1);
     }
 
     private static SaveState save(Integer jobId, Integer currentCourseId, int eduprog) {
