@@ -3,6 +3,7 @@ package amiss.api.web;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -90,14 +91,21 @@ class EmploymentControllerTest {
 
     // ---- GET /api/saves/{id}/jobs ------------------------------------------
 
-    @Test
-    void jobs_returnsTheRequirementFreeMapping() throws Exception {
-        SaveState save = save(null);
+    /** Stubs a +50% economy (reading 30): base + base*30/60, so adjusted always != base. */
+    private EconomyService mockEconomyPlusHalf(SaveState save) {
         EconomyService economy = mock(EconomyService.class);
         when(scope.require(eq(7L), any())).thenReturn(save);
         when(services.economy()).thenReturn(economy);
-        when(economy.price(6, save)).thenReturn(6);
-        when(economy.price(10, save)).thenReturn(10);
+        when(economy.price(anyInt(), eq(save))).thenAnswer(inv -> {
+            int base = inv.getArgument(0);
+            return base + Math.floorDiv(base * 30, 60);
+        });
+        return economy;
+    }
+
+    @Test
+    void jobs_returnsTheRequirementFreeMappingWithEconomyPricedWages() throws Exception {
+        mockEconomyPlusHalf(save(null));
         when(jobCatalog.all()).thenReturn(List.of(
                 new JobSpec(1, "Cook", "Monolith Burgers", 6, 0, 0, 0),
                 new JobSpec(2, "Clerk", "Socket City", 10, 20, 30, 2)));
@@ -108,7 +116,8 @@ class EmploymentControllerTest {
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].name").value("Cook"))
                 .andExpect(jsonPath("$[0].location").value("Monolith Burgers"))
-                .andExpect(jsonPath("$[0].wage").value(6))
+                .andExpect(jsonPath("$[0].wage").value(9))
+                .andExpect(jsonPath("$[1].wage").value(15))
                 .andExpect(jsonPath("$[1].reqExperience").doesNotExist())
                 .andExpect(jsonPath("$[1].reqDependability").doesNotExist())
                 .andExpect(jsonPath("$[1].reqClothing").doesNotExist())
@@ -118,18 +127,15 @@ class EmploymentControllerTest {
 
     @Test
     void jobs_locationFilterDelegatesToByLocation() throws Exception {
-        SaveState save = save(null);
-        EconomyService economy = mock(EconomyService.class);
-        when(scope.require(eq(7L), any())).thenReturn(save);
-        when(services.economy()).thenReturn(economy);
-        when(economy.price(10, save)).thenReturn(10);
+        mockEconomyPlusHalf(save(null));
         when(jobCatalog.byLocation("Socket City")).thenReturn(List.of(
                 new JobSpec(2, "Clerk", "Socket City", 10, 20, 30, 2)));
 
         mvc.perform(get("/api/saves/7/jobs").param("location", "Socket City").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name").value("Clerk"));
+                .andExpect(jsonPath("$[0].name").value("Clerk"))
+                .andExpect(jsonPath("$[0].wage").value(15));
     }
 
     /**
@@ -139,11 +145,7 @@ class EmploymentControllerTest {
      */
     @Test
     void jobs_wireContractNeverMentionsHiddenRequirementFields() throws Exception {
-        SaveState save = save(null);
-        EconomyService economy = mock(EconomyService.class);
-        when(scope.require(eq(7L), any())).thenReturn(save);
-        when(services.economy()).thenReturn(economy);
-        when(economy.price(10, save)).thenReturn(10);
+        mockEconomyPlusHalf(save(null));
         when(jobCatalog.all()).thenReturn(List.of(
                 new JobSpec(2, "Clerk", "Socket City", 10, 20, 30, 2)));
 
@@ -155,10 +157,7 @@ class EmploymentControllerTest {
 
     @Test
     void jobs_emptyCatalogReturnsEmptyList() throws Exception {
-        SaveState save = save(null);
-        EconomyService economy = mock(EconomyService.class);
-        when(scope.require(eq(7L), any())).thenReturn(save);
-        when(services.economy()).thenReturn(economy);
+        mockEconomyPlusHalf(save(null));
         when(jobCatalog.all()).thenReturn(List.of());
 
         mvc.perform(get("/api/saves/7/jobs").with(jwt()))
