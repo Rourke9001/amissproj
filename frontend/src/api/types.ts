@@ -117,12 +117,22 @@ export interface MoveResponse {
   state: SaveStateDto;
 }
 
+export interface EconomyEventDto {
+  event: 'NONE' | 'BOOM' | 'CRASH';
+  severity: 'MINOR' | 'MODERATE' | 'MAJOR' | null;
+  fired: boolean;
+  wageCutTo: number | null;
+  bankWiped: boolean;
+  happinessLost: number;
+}
+
 export interface EndWeekResponse {
   round: number;
   fed: boolean;
   rentDue: boolean;
   debtCharged: boolean;
   won: boolean;
+  economy: EconomyEventDto;
   state: SaveStateDto;
 }
 

@@ -363,6 +363,14 @@ describe('BoardScreen', () => {
       rentDue: true,
       debtCharged: true,
       won: false,
+      economy: {
+        event: 'NONE',
+        severity: null,
+        fired: false,
+        wageCutTo: null,
+        bankWiped: false,
+        happinessLost: 0,
+      },
       state: playerFixture({ weekOver: false, round: 4, timeDisplay: '72h' }),
     });
     const user = userEvent.setup();
