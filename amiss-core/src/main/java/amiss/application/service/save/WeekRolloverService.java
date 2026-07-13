@@ -31,12 +31,15 @@ public class WeekRolloverService {
     private final SaveRepository saves;
     private final GoalService goals;
     private final ActionCosts costs;
+    private final EconomyService economy;
     private final Board board = new Board();
 
-    public WeekRolloverService(SaveRepository saves, GoalService goals, ActionCosts costs) {
+    public WeekRolloverService(SaveRepository saves, GoalService goals, ActionCosts costs,
+            EconomyService economy) {
         this.saves = saves;
         this.goals = goals;
         this.costs = costs;
+        this.economy = economy;
     }
 
     public RolloverResult endWeek(SaveState save) {
@@ -66,6 +69,8 @@ public class WeekRolloverService {
         }
 
         save.setDependability(Math.max(0, save.dependability() - WEEKLY_DEPENDABILITY_DECAY));
+
+        economy.driftWeekly(save);
 
         boolean wonNow = save.won() || goals.progress(save).allMet();
         save.setWon(wonNow);

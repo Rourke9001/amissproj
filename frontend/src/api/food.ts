@@ -1,8 +1,8 @@
 import { apiFetch } from './http';
 import type { EatResponse, FoodCatalogDto, GroceriesResponse } from './types';
 
-export function getFoodCatalog(): Promise<FoodCatalogDto> {
-  return apiFetch<FoodCatalogDto>('/food');
+export function getFoodCatalog(saveId: number): Promise<FoodCatalogDto> {
+  return apiFetch<FoodCatalogDto>(`/saves/${saveId}/food`);
 }
 
 export function eat(saveId: number, item: string): Promise<EatResponse> {

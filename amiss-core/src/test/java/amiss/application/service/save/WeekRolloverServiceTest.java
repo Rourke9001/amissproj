@@ -11,7 +11,10 @@ import amiss.application.config.ActionCosts;
 import amiss.application.port.SaveDegrees;
 import amiss.application.port.SaveRepository;
 import amiss.domain.model.SaveState;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Set;
+import java.util.function.IntUnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -25,8 +28,27 @@ class WeekRolloverServiceTest {
     @Mock
     private SaveDegrees degrees;
 
+    /** Scripted rolls: pops the next queued value whatever bound is asked for. */
+    private static IntUnaryOperator rolls(int... values) {
+        Deque<Integer> queue = new ArrayDeque<>();
+        for (int v : values) {
+            queue.add(v);
+        }
+        return n -> queue.pop();
+    }
+
+    /** Neutral economy: index step 0 (roll 2 on the 1..3 die), noise 0 (roll 6 on 1..11). */
+    private static IntUnaryOperator neutralRolls() {
+        return n -> n == 3 ? 2 : 6;
+    }
+
     private WeekRolloverService service() {
-        return new WeekRolloverService(saves, new GoalService(degrees), ActionCosts.defaults());
+        return service(neutralRolls());
+    }
+
+    private WeekRolloverService service(IntUnaryOperator rolls) {
+        return new WeekRolloverService(saves, new GoalService(degrees), ActionCosts.defaults(),
+                new EconomyService(rolls));
     }
 
     /** A save with the clock run out, ready to roll over. */
@@ -162,5 +184,17 @@ class WeekRolloverServiceTest {
 
         assertTrue(service().endWeek(save).won());
         assertTrue(save.won());
+    }
+
+    @Test
+    void rolloverDriftsTheEconomy() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+
+        // Index roll 3 -> +1; noise roll 6 -> 0: reading 0 -> 10.
+        service(rolls(3, 6)).endWeek(save);
+
+        assertEquals(1, save.economyIndex());
+        assertEquals(10, save.economyReading());
     }
 }

@@ -9,7 +9,11 @@ import type { PanelProps } from './types';
 
 export function MonolithBurgersPanel({ saveId, player, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
-  const foodQuery = useQuery({ queryKey: ['food'], queryFn: getFoodCatalog, staleTime: Infinity });
+  const foodQuery = useQuery({
+    queryKey: ['food', saveId],
+    queryFn: () => getFoodCatalog(saveId),
+    staleTime: Infinity,
+  });
 
   const mutation = useMutation({
     mutationFn: (item: string) => eat(saveId, item),

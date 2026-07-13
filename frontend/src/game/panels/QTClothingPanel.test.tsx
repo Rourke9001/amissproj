@@ -72,6 +72,7 @@ describe('QTClothingPanel', () => {
   it('renders the stock with level details', async () => {
     renderPanel(playerFixture({ clothing: 0 }));
 
+    expect(getClothesCatalogMock).toHaveBeenCalledWith(42);
     expect(await screen.findByText('Casual Clothes')).toBeInTheDocument();
     expect(screen.getByText('R20')).toBeInTheDocument();
     expect(screen.getByText('Level 1')).toBeInTheDocument();

@@ -1,6 +1,7 @@
 package amiss.api.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -19,6 +20,7 @@ import amiss.api.web.dto.GoalsDto;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.SaveStateDto;
 import amiss.application.service.save.EatOutcome;
+import amiss.application.service.save.EconomyService;
 import amiss.application.service.save.PurchaseOutcome;
 import amiss.application.service.save.SaveGameServices;
 import amiss.application.service.save.ShopService;
@@ -55,7 +57,7 @@ class FoodControllerTest {
 
     private static SaveState save() {
         return new SaveState(7L, "bob", "My Save", 1, 4, 3960, 3, 70, 0, 0, 0, 0, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0);
     }
 
     private static SaveStateDto dto() {
@@ -80,35 +82,62 @@ class FoodControllerTest {
         return travel;
     }
 
-    // ---- GET /api/food ---------------------------------------------------------
+    /** A reading of +30 makes every adjusted price {@code base + base/2} (floor), never the base. */
+    private static final int READING = 30;
+
+    private void mockEconomyAt(SaveState save) {
+        when(scope.require(eq(7L), any())).thenReturn(save);
+        EconomyService economy = mock(EconomyService.class);
+        when(services.economy()).thenReturn(economy);
+        when(economy.price(anyInt(), eq(save))).thenAnswer(invocation -> {
+            int base = invocation.getArgument(0);
+            return base + Math.floorDiv(base * READING, 60);
+        });
+    }
+
+    // ---- GET /api/saves/{id}/food ----------------------------------------------
 
     @Test
-    void catalog_returnsTheMenuAndPacks() throws Exception {
-        mvc.perform(get("/api/food").with(jwt()))
+    void catalog_returnsTheMenuAndPacksAtEconomyPrices() throws Exception {
+        mockEconomyAt(save());
+
+        mvc.perform(get("/api/saves/7/food").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.menu.length()").value(6))
                 .andExpect(jsonPath("$.menu[0].id").value("BURGER"))
                 .andExpect(jsonPath("$.menu[0].name").value("Burger"))
-                .andExpect(jsonPath("$.menu[0].price").value(32))
+                .andExpect(jsonPath("$.menu[0].price").value(48))   // base 32 + 16
+                .andExpect(jsonPath("$.menu[3].id").value("MILKSHAKE"))
+                .andExpect(jsonPath("$.menu[3].price").value(33))   // base 22 + 11
+                .andExpect(jsonPath("$.menu[5].id").value("FAMILY_MEAL"))
+                .andExpect(jsonPath("$.menu[5].price").value(75))   // base 50 + 25
                 .andExpect(jsonPath("$.packs.length()").value(4))
                 .andExpect(jsonPath("$.packs[0].id").value("ONE_WEEK"))
-                .andExpect(jsonPath("$.packs[0].price").value(25))
-                .andExpect(jsonPath("$.packs[0].weeks").value(1));
+                .andExpect(jsonPath("$.packs[0].price").value(37))  // base 25 + 12 (floor)
+                .andExpect(jsonPath("$.packs[0].weeks").value(1))
+                .andExpect(jsonPath("$.packs[3].id").value("EIGHT_WEEKS"))
+                .andExpect(jsonPath("$.packs[3].price").value(210)) // base 140 + 70
+                .andExpect(jsonPath("$.packs[3].weeks").value(8));
     }
 
-    // ---- GET /api/clothes ------------------------------------------------------
+    // ---- GET /api/saves/{id}/clothes -------------------------------------------
 
     @Test
-    void clothesCatalog_returnsTheStock() throws Exception {
-        mvc.perform(get("/api/clothes").with(jwt()))
+    void clothesCatalog_returnsTheStockAtEconomyPrices() throws Exception {
+        mockEconomyAt(save());
+
+        mvc.perform(get("/api/saves/7/clothes").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(3))
                 .andExpect(jsonPath("$[0].id").value("CASUAL"))
                 .andExpect(jsonPath("$[0].name").value("Casual Clothes"))
-                .andExpect(jsonPath("$[0].price").value(20))
+                .andExpect(jsonPath("$[0].price").value(30))  // base 20 + 10
                 .andExpect(jsonPath("$[0].level").value(1))
+                .andExpect(jsonPath("$[1].id").value("FORMAL"))
+                .andExpect(jsonPath("$[1].price").value(52))  // base 35 + 17 (floor)
+                .andExpect(jsonPath("$[1].level").value(2))
                 .andExpect(jsonPath("$[2].id").value("SUIT"))
-                .andExpect(jsonPath("$[2].price").value(55))
+                .andExpect(jsonPath("$[2].price").value(82))  // base 55 + 27 (floor)
                 .andExpect(jsonPath("$[2].level").value(3));
     }
 
@@ -223,7 +252,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyGroceries(save, FoodPack.TWO_WEEKS))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.WEEK_OVER, 0, 70));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.WEEK_OVER, 0, 70, 48));
 
         mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
@@ -238,7 +267,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyGroceries(save, FoodPack.TWO_WEEKS))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10, 48));
 
         mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
@@ -253,7 +282,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyGroceries(save, FoodPack.TWO_WEEKS))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, 50, 70));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, 50, 70, 48));
 
         mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
@@ -269,7 +298,7 @@ class FoodControllerTest {
         when(services.shop()).thenReturn(shop);
         when(shop.buyGroceries(save, FoodPack.TWO_WEEKS)).thenAnswer(invocation -> {
             save.setEat(2);
-            return new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 22);
+            return new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 22, 48);
         });
         when(assembler.assemble(services, save)).thenReturn(dto());
 
@@ -309,7 +338,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyClothes(any(), any()))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10, 55));
 
         mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))
                 .andExpect(status().isConflict())
@@ -324,7 +353,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyClothes(any(), any()))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 15));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 15, 55));
         when(assembler.assemble(services, save)).thenReturn(dto());
 
         mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))

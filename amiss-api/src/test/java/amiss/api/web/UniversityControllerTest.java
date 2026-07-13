@@ -51,7 +51,7 @@ class UniversityControllerTest {
 
     private static SaveState save() {
         return new SaveState(7L, "bob", "My Save", 3, 3, 3960, 3, 70, 0, 0, 0, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0);
     }
 
     private static SaveStateDto dto() {
@@ -128,7 +128,7 @@ class UniversityControllerTest {
         CourseService courses = mock(CourseService.class);
         when(services.courses()).thenReturn(courses);
         when(courses.enroll(save, 99)).thenReturn(new CourseService.EnrollResult(
-                CourseService.EnrollResult.Status.UNKNOWN_DEGREE, 70));
+                CourseService.EnrollResult.Status.UNKNOWN_DEGREE, 70, 50));
 
         mvc.perform(post("/api/saves/7/courses/99/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isBadRequest())
@@ -143,7 +143,7 @@ class UniversityControllerTest {
         CourseService courses = mock(CourseService.class);
         when(services.courses()).thenReturn(courses);
         when(courses.enroll(save, 2)).thenReturn(new CourseService.EnrollResult(
-                CourseService.EnrollResult.Status.LOCKED, 70));
+                CourseService.EnrollResult.Status.LOCKED, 70, 50));
 
         mvc.perform(post("/api/saves/7/courses/2/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
@@ -158,7 +158,7 @@ class UniversityControllerTest {
         CourseService courses = mock(CourseService.class);
         when(services.courses()).thenReturn(courses);
         when(courses.enroll(save, 1)).thenReturn(new CourseService.EnrollResult(
-                CourseService.EnrollResult.Status.ALREADY_EARNED, 70));
+                CourseService.EnrollResult.Status.ALREADY_EARNED, 70, 50));
 
         mvc.perform(post("/api/saves/7/courses/1/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
@@ -173,7 +173,7 @@ class UniversityControllerTest {
         CourseService courses = mock(CourseService.class);
         when(services.courses()).thenReturn(courses);
         when(courses.enroll(save, 2)).thenReturn(new CourseService.EnrollResult(
-                CourseService.EnrollResult.Status.ALREADY_ENROLLED, 70));
+                CourseService.EnrollResult.Status.ALREADY_ENROLLED, 70, 50));
 
         mvc.perform(post("/api/saves/7/courses/2/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
@@ -188,7 +188,7 @@ class UniversityControllerTest {
         CourseService courses = mock(CourseService.class);
         when(services.courses()).thenReturn(courses);
         when(courses.enroll(save, 2)).thenReturn(new CourseService.EnrollResult(
-                CourseService.EnrollResult.Status.INSUFFICIENT_CASH, 10));
+                CourseService.EnrollResult.Status.INSUFFICIENT_CASH, 10, 100));
 
         mvc.perform(post("/api/saves/7/courses/2/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
@@ -203,12 +203,12 @@ class UniversityControllerTest {
         CourseService courses = mock(CourseService.class);
         when(services.courses()).thenReturn(courses);
         when(courses.enroll(save, 2)).thenReturn(new CourseService.EnrollResult(
-                CourseService.EnrollResult.Status.OK, 20));
+                CourseService.EnrollResult.Status.OK, 20, 50));
         when(assembler.assemble(services, save)).thenReturn(dto());
 
         mvc.perform(post("/api/saves/7/courses/2/enroll").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.feePaid").value(CourseService.ENROLL_FEE))
+                .andExpect(jsonPath("$.feePaid").value(50))
                 .andExpect(jsonPath("$.state.id").value(7));
     }
 

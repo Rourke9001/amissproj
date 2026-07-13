@@ -28,15 +28,17 @@ public class ShopService {
 
     private final SaveRepository saves;
     private final ActionCosts costs;
+    private final EconomyService economy;
 
-    public ShopService(SaveRepository saves, ActionCosts costs) {
+    public ShopService(SaveRepository saves, ActionCosts costs, EconomyService economy) {
         this.saves = saves;
         this.costs = costs;
+        this.economy = economy;
     }
 
     /** Buys and eats {@code item} at Monolith Burgers. */
     public EatOutcome eat(SaveState save, FastFoodItem item) {
-        int price = item.price();
+        int price = economy.price(item.price(), save);
         int time = save.timeMinutes();
         int remaining = time - costs.eatMinutes();
         if (remaining < 0) {
@@ -59,47 +61,49 @@ public class ShopService {
 
     /** Buys {@code pack} at Black's Market. */
     public PurchaseOutcome buyGroceries(SaveState save, FoodPack pack) {
+        int price = economy.price(pack.price(), save);
         int time = save.timeMinutes();
         int remaining = time - costs.shopMinutes();
         if (remaining < 0) {
-            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, time, save.cash());
+            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, time, save.cash(), price);
         }
         save.setTimeMinutes(remaining);
 
         int cash = save.cash();
-        if (cash < pack.price()) {
+        if (cash < price) {
             saves.update(save);
-            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, remaining, cash);
+            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, remaining, cash, price);
         }
 
-        save.setCash(cash - pack.price());
+        save.setCash(cash - price);
         save.setEat(addFood(save.eat(), pack.weeks()));
         saves.update(save);
-        return new PurchaseOutcome(PurchaseOutcome.Status.OK, remaining, save.cash());
+        return new PurchaseOutcome(PurchaseOutcome.Status.OK, remaining, save.cash(), price);
     }
 
     /** Buys {@code item} at QT Clothing. */
     public PurchaseOutcome buyClothes(SaveState save, ClothingItem item) {
+        int price = economy.price(item.price(), save);
         if (save.weekOver()) {
-            return new PurchaseOutcome(PurchaseOutcome.Status.WEEK_OVER, save.timeMinutes(), save.cash());
+            return new PurchaseOutcome(PurchaseOutcome.Status.WEEK_OVER, save.timeMinutes(), save.cash(), price);
         }
 
         int cash = save.cash();
-        if (cash < item.price()) {
-            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, save.timeMinutes(), cash);
+        if (cash < price) {
+            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, save.timeMinutes(), cash, price);
         }
 
         int time = save.timeMinutes();
         int remaining = time - costs.shopMinutes();
         if (remaining < 0) {
-            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, time, cash);
+            return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, time, cash, price);
         }
 
         save.setTimeMinutes(remaining);
-        save.setCash(cash - item.price());
+        save.setCash(cash - price);
         save.setClothing(item.level());
         saves.update(save);
-        return new PurchaseOutcome(PurchaseOutcome.Status.OK, remaining, save.cash());
+        return new PurchaseOutcome(PurchaseOutcome.Status.OK, remaining, save.cash(), price);
     }
 
     /**

@@ -9,8 +9,8 @@ import type { PanelProps } from './types';
 export function QTClothingPanel({ saveId, player, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
   const clothesQuery = useQuery({
-    queryKey: ['clothes'],
-    queryFn: getClothesCatalog,
+    queryKey: ['clothes', saveId],
+    queryFn: () => getClothesCatalog(saveId),
     staleTime: Infinity,
   });
 

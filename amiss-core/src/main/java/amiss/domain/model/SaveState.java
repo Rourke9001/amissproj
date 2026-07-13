@@ -5,9 +5,10 @@ package amiss.domain.model;
  * retired per-username {@code User}/stats split. Services mutate an instance and hand it
  * back to {@code SaveRepository.update} wholesale.
  *
- * <p>{@code experience} and {@code dependability} are <em>hidden</em> stats: rules read
- * them, but they must never be exposed on a wire DTO (milestone spec). {@code jobId} /
- * {@code currentCourseId} are catalog ids, null when unemployed / not enrolled.
+ * <p>{@code experience}, {@code dependability}, {@code economyIndex}, and {@code economyReading}
+ * are <em>hidden</em> stats: rules read them, but they must never be exposed on a wire DTO
+ * (milestone spec). {@code jobId} / {@code currentCourseId} are catalog ids, null when
+ * unemployed / not enrolled.
  */
 public class SaveState {
 
@@ -35,12 +36,15 @@ public class SaveState {
     private final int goalEducation;
     private final int goalCareer;
     private boolean won;
+    private byte economyIndex;
+    private short economyReading;
 
     public SaveState(long id, String owner, String label, int xpos, int ypos, int timeMinutes,
             int round, int cash, int bank, int debt, int rent, int eat, int clothing,
             Integer jobId, int happiness, int experience, int dependability,
             Integer currentCourseId, int eduprog,
-            int goalWealth, int goalHappiness, int goalEducation, int goalCareer, boolean won) {
+            int goalWealth, int goalHappiness, int goalEducation, int goalCareer, boolean won,
+            byte economyIndex, short economyReading) {
         this.id = id;
         this.owner = owner;
         this.label = label;
@@ -65,6 +69,8 @@ public class SaveState {
         this.goalEducation = goalEducation;
         this.goalCareer = goalCareer;
         this.won = won;
+        this.economyIndex = economyIndex;
+        this.economyReading = economyReading;
     }
 
     public long id() {
@@ -245,5 +251,21 @@ public class SaveState {
 
     public void setWon(boolean won) {
         this.won = won;
+    }
+
+    public byte economyIndex() {
+        return economyIndex;
+    }
+
+    public void setEconomyIndex(byte economyIndex) {
+        this.economyIndex = economyIndex;
+    }
+
+    public short economyReading() {
+        return economyReading;
+    }
+
+    public void setEconomyReading(short economyReading) {
+        this.economyReading = economyReading;
     }
 }

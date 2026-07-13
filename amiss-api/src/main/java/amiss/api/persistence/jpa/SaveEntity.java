@@ -109,6 +109,14 @@ public class SaveEntity {
     @Column(name = "won", nullable = false)
     private int won;
 
+    /** Hidden economy trend, -3..+3 (KAN-48). Never expose on a wire DTO. */
+    @Column(name = "economy_index", nullable = false)
+    private byte economyIndex;
+
+    /** Hidden economy reading, -30..+90 (KAN-48): price = base + base*reading/60. */
+    @Column(name = "economy_reading", nullable = false)
+    private short economyReading;
+
     protected SaveEntity() {
         // JPA
     }
@@ -304,5 +312,21 @@ public class SaveEntity {
 
     public void setWon(int won) {
         this.won = won;
+    }
+
+    public byte getEconomyIndex() {
+        return economyIndex;
+    }
+
+    public void setEconomyIndex(byte economyIndex) {
+        this.economyIndex = economyIndex;
+    }
+
+    public short getEconomyReading() {
+        return economyReading;
+    }
+
+    public void setEconomyReading(short economyReading) {
+        this.economyReading = economyReading;
     }
 }

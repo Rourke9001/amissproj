@@ -8,7 +8,11 @@ import type { PanelProps } from './types';
 
 export function BlacksMarketPanel({ saveId, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
-  const foodQuery = useQuery({ queryKey: ['food'], queryFn: getFoodCatalog, staleTime: Infinity });
+  const foodQuery = useQuery({
+    queryKey: ['food', saveId],
+    queryFn: () => getFoodCatalog(saveId),
+    staleTime: Infinity,
+  });
 
   const mutation = useMutation({
     mutationFn: (pack: string) => buyGroceries(saveId, pack),
