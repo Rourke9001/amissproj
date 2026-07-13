@@ -51,6 +51,7 @@ public class JpaSaveRepository implements SaveRepository {
             entity.setEat(state.eat());
             entity.setClothing(state.clothing());
             entity.setJobId(state.jobId());
+            entity.setWage(state.wage());
             entity.setHappiness(state.happiness());
             entity.setExperience(state.experience());
             entity.setDependability(state.dependability());
@@ -69,7 +70,7 @@ public class JpaSaveRepository implements SaveRepository {
                 e.getEat(), e.getClothing(), e.getJobId(), e.getHappiness(), e.getExperience(),
                 e.getDependability(), e.getCurrentCourseId(), e.getEduprog(),
                 e.getGoalWealth(), e.getGoalHappiness(), e.getGoalEducation(), e.getGoalCareer(),
-                e.getWon() != 0, e.getEconomyIndex(), e.getEconomyReading());
+                e.getWon() != 0, e.getEconomyIndex(), e.getEconomyReading(), e.getWage());
     }
 
     /** Runs {@code call}, translating any persistence failure into {@link PersistenceFailureException}. */

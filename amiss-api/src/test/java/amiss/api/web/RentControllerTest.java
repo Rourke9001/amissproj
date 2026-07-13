@@ -50,7 +50,7 @@ class RentControllerTest {
 
     private static SaveState save() {
         return new SaveState(7L, "bob", "My Save", 0, 1, 4200, 4, 20, 0, 0, 1, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
     }
 
     private static SaveStateDto dto() {

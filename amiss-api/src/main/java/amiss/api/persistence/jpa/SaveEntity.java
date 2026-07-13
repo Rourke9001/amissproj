@@ -76,6 +76,10 @@ public class SaveEntity {
     @Column(name = "job_id")
     private Integer jobId;
 
+    /** Hired-at wage (economy-adjusted), null while unemployed. */
+    @Column(name = "wage")
+    private Integer wage;
+
     @Column(name = "happiness", nullable = false)
     private int happiness;
 
@@ -248,6 +252,14 @@ public class SaveEntity {
 
     public void setJobId(Integer jobId) {
         this.jobId = jobId;
+    }
+
+    public Integer getWage() {
+        return wage;
+    }
+
+    public void setWage(Integer wage) {
+        this.wage = wage;
     }
 
     public int getHappiness() {
