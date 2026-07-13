@@ -1,5 +1,0 @@
-feat: ShopService charges economy-adjusted prices (KAN-48)
-
-Add pricePaid component to PurchaseOutcome record; wire EconomyService into ShopService constructor. All three shop methods (eat, buyGroceries, buyClothes) now compute economy-adjusted price once and use it for cash validation and charge. Existing tests continue to pass since economyReading defaults to 0, making adjusted price equal to base price. Two new economy-pricing tests verify the feature works: 100% inflation (doubles all prices) and -50% deflation (halves all prices).
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>

@@ -20,6 +20,9 @@ frontend/dist/
 *.env
 secrets.properties
 
+# ─── Commit-message scratch files (git commit -F workflow) ───
+.commit_message*
+
 # ─── IDE / editor / OS cruft ───
 .idea/
 # Ignore per-user VSCode state, but track shared project config (recommendations).

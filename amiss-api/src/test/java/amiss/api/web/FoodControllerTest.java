@@ -223,7 +223,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyGroceries(save, FoodPack.TWO_WEEKS))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.WEEK_OVER, 0, 70));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.WEEK_OVER, 0, 70, 48));
 
         mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
@@ -238,7 +238,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyGroceries(save, FoodPack.TWO_WEEKS))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10, 48));
 
         mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
@@ -253,7 +253,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyGroceries(save, FoodPack.TWO_WEEKS))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, 50, 70));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_TIME, 50, 70, 48));
 
         mvc.perform(postBody("/api/saves/7/groceries", "pack", "TWO_WEEKS"))
                 .andExpect(status().isConflict())
@@ -269,7 +269,7 @@ class FoodControllerTest {
         when(services.shop()).thenReturn(shop);
         when(shop.buyGroceries(save, FoodPack.TWO_WEEKS)).thenAnswer(invocation -> {
             save.setEat(2);
-            return new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 22);
+            return new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 22, 48);
         });
         when(assembler.assemble(services, save)).thenReturn(dto());
 
@@ -309,7 +309,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyClothes(any(), any()))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10, 55));
 
         mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))
                 .andExpect(status().isConflict())
@@ -324,7 +324,7 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyClothes(any(), any()))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 15));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 15, 55));
         when(assembler.assemble(services, save)).thenReturn(dto());
 
         mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))
