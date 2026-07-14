@@ -128,6 +128,9 @@ banking roles hire for.*
       `UserRepository`/`UserStatsRepository`/`JobRepository`/`HelpRepository` ports the JDBC
       adapters implemented, so `amiss-core`'s services never noticed the swap; a MySQL 9
       Testcontainers suite proves every adapter against a real, freshly-migrated database.
+      *(The port set was later reshaped by the KAN-54 saves cutover — today's ports are
+      `UserRepository`, `SaveRepository`, `JobCatalog`, `DegreeCatalog`, `SaveDegrees`,
+      `Turndowns`; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).)*
 - [x] **Spring Security** auth (hashed credentials, sessions or JWT) (July 2026) — two stacked
       PRs: KAN-36 mints/verifies stateless HS256 JWTs on register/login, reusing the same
       `PasswordHasher` credential rule (with its transparent legacy-plaintext upgrade) the
@@ -136,7 +139,13 @@ banking roles hire for.*
       `PlayerScopeFilter` so a valid token for one player can't read or write another's state
       (403 IDOR guard, not just a 401), wires CORS for the future SPA, and tightens the
       actuator health probe to status-only.
-- [ ] A **web frontend** consuming the API (Thymeleaf, or a React/TypeScript SPA)
+- [x] A **web frontend** consuming the API (July 2026, KAN-19/KAN-38..45) — React +
+      TypeScript SPA (Vite) in `frontend/`: login/registration, saves & four-goal setup,
+      the 13-stop board with a panel per stop, HUD/week flow, win screen; server state
+      via React Query, no game rules in JS. Includes the KAN-54/45 cutover to
+      save-scoped routes (`/api/saves/{saveId}/…`) with hidden job requirements, and
+      the KAN-48 economy (fluctuating prices/wages, crash/boom events — odds in
+      [`docs/GAMEPLAY.md`](docs/GAMEPLAY.md)).
 - [ ] OpenAPI / Swagger API documentation
 - [ ] **Dockerfile + docker-compose** (app + MySQL) → clone-and-run in one command
 

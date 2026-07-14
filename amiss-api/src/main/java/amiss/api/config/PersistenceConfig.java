@@ -29,11 +29,8 @@ import org.springframework.context.annotation.Configuration;
  * SaveJpaRepository}, {@code JobCatalogJpaRepository}, {@code DegreeJpaRepository}, {@code
  * SaveDegreeJpaRepository}, {@code SaveTurndownJpaRepository} — querying entities validated
  * against the Flyway schema (KAN-33). Services stay port-typed, so a persistence swap is
- * invisible above this class. (The Swing client and the core's JDBC adapters this class once
- * mirrored were retired with KAN-51; the legacy {@code JobRepository}/{@code HelpRepository}
- * beans were retired with KAN-54, and {@code tbluser} shrank to credentials only — {@code
- * UserStatsRepository}/{@code tbluserstats} are gone entirely — {@code tblhelp} the table
- * stays, its code doesn't.)
+ * invisible above this class — proven when the Swing/JDBC side (KAN-51) and the legacy
+ * user-stats/jobs ports (KAN-54) were retired without touching a rule.
  */
 @Configuration
 public class PersistenceConfig {
@@ -70,8 +67,7 @@ public class PersistenceConfig {
 
     /**
      * The save-scoped rules layer's composition root (KAN-53/KAN-54), production-wired
-     * with a real 1–100 roll — the {@code SaveRepository}-backed counterpart of {@code
-     * GameServicesFactory}'s per-username {@code GameServices}.
+     * with a real 1–100 roll; tests inject pinned rolls instead.
      */
     @Bean
     SaveGameServices saveGameServices(SaveRepository saves, JobCatalog jobs, DegreeCatalog degrees,

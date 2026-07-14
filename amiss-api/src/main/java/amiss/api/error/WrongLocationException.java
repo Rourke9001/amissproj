@@ -12,7 +12,7 @@ public class WrongLocationException extends RuntimeException {
 
     /**
      * For guards where the required stop is a free-text value (e.g. a job's
-     * {@code tbljobs.location}) rather than a fixed {@link Location} constant.
+     * {@code tbljob_catalog.location}) rather than a fixed {@link Location} constant.
      */
     public WrongLocationException(String required, Location actual) {
         super("This action requires being at " + required
