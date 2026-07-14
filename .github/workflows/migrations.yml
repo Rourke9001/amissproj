@@ -50,7 +50,7 @@ jobs:
           mysql -h 127.0.0.1 -uroot -pci-root < db/bootstrap.sql
           mysql -h 127.0.0.1 -uroot -pci-root <<'SQL'
           CREATE USER 'amiss'@'%' IDENTIFIED BY 'amisspw';
-          GRANT SELECT, INSERT, UPDATE ON amissdb.* TO 'amiss'@'%';
+          GRANT SELECT, INSERT, UPDATE, DELETE ON amissdb.* TO 'amiss'@'%';
           CREATE USER 'amiss_migrator'@'%' IDENTIFIED BY 'amissmigratorpw';
           GRANT CREATE, ALTER, DROP, INDEX, REFERENCES,
                 SELECT, INSERT, UPDATE, DELETE
@@ -75,3 +75,25 @@ jobs:
           test "$jobs" -eq 39
           test "$degrees" -eq 11
           test "$topics" -eq 4
+
+      # The app's only DELETE is removing a save slot (KAN-45); the grant
+      # that allows it arrived with KAN-57. Prove it end-to-end: create a
+      # save as amiss, delete it as amiss, and confirm the ON DELETE CASCADE
+      # cleaned the child row.
+      - name: Verify save deletion as the least-privilege runtime user
+        run: |
+          mysql -h 127.0.0.1 -uamiss -pamisspw amissdb <<'SQL'
+          INSERT INTO tbluser (name, password) VALUES ('ci_delete_check', 'x');
+          INSERT INTO tblsave (owner, label, goal_wealth, goal_happiness, goal_education, goal_career)
+              VALUES ('ci_delete_check', 'ci', 10, 10, 10, 10);
+          INSERT INTO tblsave_degrees (save_id, degree_id)
+              SELECT id, 1 FROM tblsave WHERE owner = 'ci_delete_check';
+          SQL
+          save_id=$(mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -N -e "SELECT id FROM tblsave WHERE owner = 'ci_delete_check'")
+          mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -e "DELETE FROM tblsave WHERE id = $save_id"
+          saves=$(mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -N -e "SELECT COUNT(*) FROM tblsave WHERE id = $save_id")
+          leftovers=$(mysql -h 127.0.0.1 -uamiss -pamisspw amissdb -N -e "SELECT COUNT(*) FROM tblsave_degrees WHERE save_id = $save_id")
+          echo "saves left: $saves (want 0); cascaded child rows left: $leftovers (want 0)"
+          test "$saves" -eq 0
+          test "$leftovers" -eq 0
+          mysql -h 127.0.0.1 -uroot -pci-root amissdb -e "DELETE FROM tbluser WHERE name = 'ci_delete_check'"
