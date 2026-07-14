@@ -1,6 +1,9 @@
 package amiss.application.service.save;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import amiss.domain.model.SaveState;
 import java.util.ArrayDeque;
@@ -75,5 +78,135 @@ class EconomyServiceTest {
         new EconomyService(rolls(1, 1)).driftWeekly(save);
         assertEquals(-3, save.economyIndex());
         assertEquals(-30, save.economyReading());
+    }
+
+    private static SaveState eventEligibleSave() {
+        SaveState save = TestSaves.newSave();
+        save.setRound(8);
+        save.setEconomyReading((short) 85);
+        return save;
+    }
+
+    @Test
+    void noEventsBeforeWeekEight() {
+        SaveState save = eventEligibleSave();
+        save.setRound(7);
+        // Would-be triggering rolls queued — they must never be consumed.
+        assertEquals(EconomyEvent.Type.NONE,
+                new EconomyService(rolls()).rollEvent(save).type());
+    }
+
+    @Test
+    void crashNeedsReadingAtLeast80() {
+        SaveState save = eventEligibleSave();
+        save.setEconomyReading((short) 79);
+        // First roll = boom roll (crash ineligible): 2 -> no boom.
+        assertEquals(EconomyEvent.Type.NONE,
+                new EconomyService(rolls(2)).rollEvent(save).type());
+    }
+
+    @Test
+    void minorCrashOnlyDropsPricesAndHappiness() {
+        SaveState save = eventEligibleSave();
+        save.setJobId(TestSaves.COOK.id());
+        save.setWage(5);
+        save.setBank(200);
+
+        // Crash roll 1 -> crash; severity roll 1 -> MINOR.
+        EconomyEvent event = new EconomyService(rolls(1, 1)).rollEvent(save);
+
+        assertEquals(EconomyEvent.Type.CRASH, event.type());
+        assertEquals(EconomyEvent.Severity.MINOR, event.severity());
+        assertEquals(-3, save.economyIndex());
+        assertEquals(82, save.economyReading());   // 85 - 3 (the wiki's flat -5%)
+        assertEquals(Integer.valueOf(5), save.wage());
+        assertEquals(200, save.bank());
+        assertEquals(49, save.happiness());        // 50 - 1
+        assertEquals(1, event.happinessLost());
+    }
+
+    @Test
+    void moderateCrashCanCutPayToEightyPercent() {
+        SaveState save = eventEligibleSave();
+        save.setJobId(TestSaves.COOK.id());
+        save.setWage(10);
+
+        // Crash 1; severity 2 -> MODERATE; fire coin 2 -> pay cut.
+        EconomyEvent event = new EconomyService(rolls(1, 2, 2)).rollEvent(save);
+
+        assertEquals(Integer.valueOf(8), event.wageCutTo());
+        assertEquals(Integer.valueOf(8), save.wage());
+        assertFalse(event.fired());
+        assertEquals(48, save.happiness());        // -2
+    }
+
+    @Test
+    void moderateCrashCanFireInstead() {
+        SaveState save = eventEligibleSave();
+        save.setJobId(TestSaves.COOK.id());
+        save.setWage(10);
+
+        // Crash 1; severity 2; fire coin 1 -> fired.
+        EconomyEvent event = new EconomyService(rolls(1, 2, 1)).rollEvent(save);
+
+        assertTrue(event.fired());
+        assertNull(save.jobId());
+        assertNull(save.wage());
+    }
+
+    @Test
+    void majorCrashFiresAndWipesTheBank() {
+        SaveState save = eventEligibleSave();
+        save.setJobId(TestSaves.COOK.id());
+        save.setWage(10);
+        save.setBank(500);
+
+        // Crash 1; severity 3 -> MAJOR (no fire coin — firing is certain).
+        EconomyEvent event = new EconomyService(rolls(1, 3)).rollEvent(save);
+
+        assertTrue(event.fired());
+        assertTrue(event.bankWiped());
+        assertEquals(0, save.bank());
+        assertNull(save.jobId());
+        assertEquals(76, save.economyReading());   // 85 - 9
+        assertEquals(47, save.happiness());        // -3
+    }
+
+    @Test
+    void moderateCrashWhileUnemployedNeverRollsTheFireCoin() {
+        SaveState save = eventEligibleSave();      // no jobId/wage: unemployed
+
+        // Crash 1; severity 2 -> MODERATE. Nothing else queued: a fire-coin roll would throw.
+        EconomyEvent event = new EconomyService(rolls(1, 2)).rollEvent(save);
+
+        assertEquals(EconomyEvent.Severity.MODERATE, event.severity());
+        assertFalse(event.fired());
+        assertNull(event.wageCutTo());
+    }
+
+    @Test
+    void majorCrashWhileUnemployedStillWipesTheBank() {
+        SaveState save = eventEligibleSave();      // no jobId/wage: unemployed
+        save.setBank(300);
+
+        // Crash 1; severity 3 -> MAJOR.
+        EconomyEvent event = new EconomyService(rolls(1, 3)).rollEvent(save);
+
+        assertTrue(event.bankWiped());
+        assertEquals(0, save.bank());
+        assertFalse(event.fired());
+    }
+
+    @Test
+    void aMissedCrashRollStillAllowsABoomRoll() {
+        SaveState save = eventEligibleSave();      // reading 85: crash-eligible
+
+        // Crash roll 2 -> miss; boom roll 1 -> boom.
+        EconomyEvent event = new EconomyService(rolls(2, 1)).rollEvent(save);
+
+        assertEquals(EconomyEvent.Type.BOOM, event.type());
+        assertEquals(3, save.economyIndex());
+        assertEquals(90, save.economyReading());   // 85 + 6 clamped to 90
+        assertEquals(50, save.happiness());        // no stocks yet: no boom bonus (wiki)
     }
 }

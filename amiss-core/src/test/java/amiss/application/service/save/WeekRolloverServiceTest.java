@@ -37,9 +37,12 @@ class WeekRolloverServiceTest {
         return n -> queue.pop();
     }
 
-    /** Neutral economy: index step 0 (roll 2 on the 1..3 die), noise 0 (roll 6 on 1..11). */
+    /**
+     * Neutral economy: index step 0 (roll 2 on the 1..3 die), noise 0 (roll 6 on
+     * 1..11); on rounds >= 8 the event die (1..31) also rolls 2, which never fires.
+     */
     private static IntUnaryOperator neutralRolls() {
-        return n -> n == 3 ? 2 : 6;
+        return n -> n == 3 ? 2 : n == 31 ? 2 : 6;
     }
 
     private WeekRolloverService service() {
@@ -196,5 +199,34 @@ class WeekRolloverServiceTest {
 
         assertEquals(1, save.economyIndex());
         assertEquals(10, save.economyReading());
+    }
+
+    @Test
+    void crashEffectsLandBeforeTheWinCheck() {
+        // The winningRequiresAllFourGoals fixture, but a MAJOR crash wipes the bank
+        // first: wealth (3000+0)/100 = 30 < 50 -> no win.
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of(1, 2, 3, 4, 5, 6));
+        SaveState save = weekOverSave();
+        save.setRound(8);
+        save.setEconomyReading((short) 85);
+        save.setCash(3000);
+        save.setBank(2000);
+        save.setJobId(TestSaves.CLERK.id());
+        save.setWage(5);
+        save.setDependability(43);
+
+        // Rolls: index 2 (step 0), noise 6 (0), crash 1, severity 3 -> MAJOR.
+        WeekRolloverService.RolloverResult result = service(rolls(2, 6, 1, 3)).endWeek(save);
+
+        assertEquals(EconomyEvent.Type.CRASH, result.economy().type());
+        assertFalse(result.won());                 // bank wiped + fired before the check
+        assertEquals(0, save.bank());
+    }
+
+    @Test
+    void quietWeeksReportNoEconomyEvent() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        assertEquals(EconomyEvent.Type.NONE,
+                service().endWeek(weekOverSave()).economy().type());
     }
 }

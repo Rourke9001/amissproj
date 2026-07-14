@@ -1306,3 +1306,37 @@ branch `feat/frontend-saves-employment` off `develop` post-PR-5). Executed via
 ### Review
 *(fill in once PR #50 merges — will close out the whole "Jones-parity jobs &
 degrees, save slots, wiki win rules" goal spanning PRs 1-6)*
+
+---
+
+## Goal: KAN-48 economy engine — wiki-exact prices, wages, crashes & booms (2026-07-12/13)
+
+Three stacked PRs into develop, executed via subagent-driven development from
+`docs/superpowers/plans/2026-07-12-kan48-economy-engine.md` (ledger:
+`.superpowers/sdd/progress.md`).
+
+### Plan
+- [x] PR 1 `feat/kan48-economy-core` (**#52, merged**) — V7 hidden economy state
+      (Index −3..+3, Reading −30..+90), `EconomyService` single pricing authority
+      (`base + base×reading/60`, integer-only), weekly drift, scaled food/clothes/
+      enroll prices, save-scoped catalogs, frontend panel cutover (Tasks 1-8)
+- [x] PR 2 `feat/kan48-wage-snapshot` (**#53, merged**) — V8 `wage` column, hire
+      snapshots the listed wage, shifts pay from the snapshot, fired clears it,
+      economy-priced job listings end-to-end (Tasks 9-12)
+- [x] PR 3 `feat/kan48-crash-boom` — week-8+ market events: `EconomyEvent` +
+      `rollEvent` (crash needs Reading ≥ 80; MINOR/MODERATE/MAJOR = price drop /
+      pay-cut-or-fired / fired + bank wipe), rolled after drift and **before the
+      win check**, `EconomyEventDto` on the end-week wire (consequences only, never
+      the hidden numbers), SPA end-week modal lines (Tasks 13-15)
+- [ ] PR 3 opened + merged; KAN-48 → Done (transition once Rourke merges)
+
+### Review
+*PR 3 whole-branch review (Fable): plan-exact, correctly ordered, structurally
+sound; two Important findings fixed pre-PR (PR 3's own cv-highlights entry; test
+pinning of the unemployed-crash roll-consumption contract + nullable wire shape,
+commit `0bf27d1`). Deferred with tickets in mind: `@Version` optimistic locking on
+SaveEntity (lost-update race on money ops — file as its own chore before KAN-49),
+NONE-renders-nothing modal assertion and wage-floor-at-zero decision (KAN-49
+territory), plus merged-code polish from PR 1 reviews (drift-constant wiki check,
+SaveGameServices javadoc, shared food cache-key comment). Boom happiness bonus
+deliberately omitted until KAN-49 stocks, per plan.*

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EndWeekModal } from './EndWeekModal';
-import type { SaveStateDto } from '../api/types';
+import type { SaveStateDto, EconomyEventDto } from '../api/types';
 
 function stateFixture(): SaveStateDto {
   return {
@@ -32,6 +32,15 @@ function stateFixture(): SaveStateDto {
   };
 }
 
+const noEvent: EconomyEventDto = {
+  event: 'NONE',
+  severity: null,
+  fired: false,
+  wageCutTo: null,
+  bankWiped: false,
+  happinessLost: 0,
+};
+
 describe('EndWeekModal', () => {
   it('shows the round, fed, debtCharged and rentDue summary lines', () => {
     render(
@@ -42,6 +51,7 @@ describe('EndWeekModal', () => {
           rentDue: true,
           debtCharged: true,
           won: false,
+          economy: noEvent,
           state: stateFixture(),
         }}
         onClose={vi.fn()}
@@ -64,6 +74,7 @@ describe('EndWeekModal', () => {
           rentDue: false,
           debtCharged: false,
           won: false,
+          economy: noEvent,
           state: stateFixture(),
         }}
         onClose={vi.fn()}
@@ -86,6 +97,7 @@ describe('EndWeekModal', () => {
           rentDue: false,
           debtCharged: false,
           won: false,
+          economy: noEvent,
           state: stateFixture(),
         }}
         onClose={onClose}
@@ -94,5 +106,75 @@ describe('EndWeekModal', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('reports a boom', () => {
+    render(
+      <EndWeekModal
+        result={{
+          round: 4,
+          fed: true,
+          rentDue: false,
+          debtCharged: false,
+          won: false,
+          economy: { ...noEvent, event: 'BOOM' },
+          state: stateFixture(),
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Economic boom! Prices and wages have surged.')).toBeInTheDocument();
+  });
+
+  it('reports a major crash with firing and a bank wipe', () => {
+    render(
+      <EndWeekModal
+        result={{
+          round: 4,
+          fed: true,
+          rentDue: false,
+          debtCharged: false,
+          won: false,
+          economy: {
+            event: 'CRASH',
+            severity: 'MAJOR',
+            fired: true,
+            wageCutTo: null,
+            bankWiped: true,
+            happinessLost: 3,
+          },
+          state: stateFixture(),
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('The market crashed! Prices tumble.')).toBeInTheDocument();
+    expect(screen.getByText('You were laid off in the downturn.')).toBeInTheDocument();
+    expect(screen.getByText('Your bank savings were wiped out.')).toBeInTheDocument();
+  });
+
+  it('reports a pay cut', () => {
+    render(
+      <EndWeekModal
+        result={{
+          round: 4,
+          fed: true,
+          rentDue: false,
+          debtCharged: false,
+          won: false,
+          economy: {
+            event: 'CRASH',
+            severity: 'MODERATE',
+            fired: false,
+            wageCutTo: 8,
+            bankWiped: false,
+            happinessLost: 2,
+          },
+          state: stateFixture(),
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Your pay was cut to R8/h.')).toBeInTheDocument();
   });
 });
