@@ -50,8 +50,7 @@ jobs:
           mysql -h 127.0.0.1 -uroot -pci-root < db/bootstrap.sql
           mysql -h 127.0.0.1 -uroot -pci-root <<'SQL'
           CREATE USER 'amiss'@'%' IDENTIFIED BY 'amisspw';
-          GRANT SELECT, INSERT, UPDATE ON amissdb.* TO 'amiss'@'%';
-          GRANT DELETE ON amissdb.tblsave TO 'amiss'@'%';
+          GRANT SELECT, INSERT, UPDATE, DELETE ON amissdb.* TO 'amiss'@'%';
           CREATE USER 'amiss_migrator'@'%' IDENTIFIED BY 'amissmigratorpw';
           GRANT CREATE, ALTER, DROP, INDEX, REFERENCES,
                 SELECT, INSERT, UPDATE, DELETE
@@ -77,10 +76,10 @@ jobs:
           test "$degrees" -eq 11
           test "$topics" -eq 4
 
-      # The app's only DELETE is removing a save slot (KAN-45); the amiss
-      # account holds DELETE on tblsave alone (KAN-57). Prove it end-to-end:
-      # create a save as amiss, delete it as amiss, and confirm the
-      # ON DELETE CASCADE cleaned the child row without child-table grants.
+      # The app's only DELETE is removing a save slot (KAN-45); the grant
+      # that allows it arrived with KAN-57. Prove it end-to-end: create a
+      # save as amiss, delete it as amiss, and confirm the ON DELETE CASCADE
+      # cleaned the child row.
       - name: Verify save deletion as the least-privilege runtime user
         run: |
           mysql -h 127.0.0.1 -uamiss -pamisspw amissdb <<'SQL'

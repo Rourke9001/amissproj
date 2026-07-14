@@ -91,9 +91,9 @@ Enter the root password (`password`) when prompted.
 **Option B — MySQL Workbench:** File ▸ Open SQL Script ▸ `db\bootstrap.sql` ▸ run (⚡).
 
 This creates database `amissdb` plus two accounts: the least-privilege
-**`amiss`@`localhost`** user the game plays as (password `amisspw`; only
-SELECT/INSERT/UPDATE on `amissdb`, plus DELETE on `tblsave` alone — the one
-delete the app issues, removing a save slot) and **`amiss_migrator`@`localhost`**
+**`amiss`@`localhost`** user the game plays as (password `amisspw`; row-level
+SELECT/INSERT/UPDATE/DELETE on `amissdb` only — no DDL, no GRANT; DELETE
+arrived with save-slot removal, KAN-57) and **`amiss_migrator`@`localhost`**
 (password `amissmigratorpw`; DDL + DML on `amissdb`), which is used only while
 the startup migrations run. It is safe to re-run — everything is
 `IF NOT EXISTS`, and saved players are never touched.
