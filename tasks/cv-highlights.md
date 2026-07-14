@@ -471,3 +471,28 @@ piece I like is the roll-queue discipline: because injected rolls throw when
 over-consumed, the tests prove which random draws each branch consumes, not just what
 it returns. That's what makes a probabilistic system auditable — same seed, same
 story, byte for byte."*
+
+## Phase 4 — Showcase & deploy
+
+### Architecture documentation refresh — the map matches the territory (KAN-55)
+- Rewrote `docs/ARCHITECTURE.md` around the shipped full stack: a GitHub-rendered
+  **Mermaid module/layer diagram** (SPA → controllers → services → ports ← JPA
+  adapters, Flyway owning MySQL), a package tour of all four surfaces, and one
+  request traced end-to-end (`POST /api/saves/{id}/work`: JWT filter → ownership
+  guard → core rule → port → adapter → RFC 7807 or DTO → React Query cache).
+- Documented the **persistence strategy as policy**, not trivia: Flyway as sole
+  schema owner (`ddl-auto=validate`), the expand/contract convention with V5→V6 as
+  the worked example, and least-privilege runtime vs migrator DB accounts.
+- Included an honest **known-gaps section** (no `@Version` optimistic locking on
+  saves, no API versioning) sourced from the 2026-07-12 SOLID audit, and swept the
+  last stale `tbljobs`/`UserStatsRepository`/`GameServicesFactory` references the
+  KAN-54 review had deferred — the docs now contain zero references to deleted code.
+- Shipped `docs/GAMEPLAY.md` alongside: the hidden economy explained for players,
+  with the crash/boom odds table verified line-by-line against `EconomyService`.
+
+**Talking point:** *"Architecture docs rot the moment they're written unless they're
+maintained like code — this one was three migrations and a frontend behind. The part
+I'd highlight is the known-gaps section: writing down what's deliberately not solved
+(the optimistic-locking hole, no API versioning) is what makes the rest of the
+document trustworthy, and it turns an audit finding into a planned chore instead of
+a surprise."*
