@@ -22,7 +22,7 @@ and chase your goals across rounds. All game state is persisted in **MySQL**.
 |---|---|
 | Language | Java 21 (backend), TypeScript (frontend) |
 | Modules | Maven reactor: `amiss-core` (rules + migrations), `amiss-api` (REST API), `amiss-coverage` (JaCoCo aggregate); React SPA in `frontend/` |
-| Web frontend | React + TypeScript SPA (Vite) in `frontend/` (Phase 3, in progress — KAN-38 scaffold). Consumes the REST API only (no game rules in JS): typed fetch client, JWT auth plumbing + route guard, TanStack React Query, React Router. Dev server `npm run dev` on `:5173` proxies `/api` → `:8080` |
+| Web frontend | React + TypeScript SPA (Vite) in `frontend/` (Phase 3, complete — KAN-19). Consumes the REST API only (no game rules in JS): typed fetch client, JWT auth plumbing + route guard, TanStack React Query, React Router; saves & goal setup, board, HUD/week flow, a panel per board stop, win flow. Dev server `npm run dev` on `:5173` proxies `/api` → `:8080` |
 | REST API | Spring Boot 3.5 (`amiss-api`) over the same core services — `.\mvnw -f amiss-api spring-boot:run`, health at `/actuator/health`, RFC 7807 error responses. `POST /api/auth/register` and `POST /api/auth/login` are public; every other `/api/**` route requires a `Bearer` JWT (`GET /api/auth/me`), and a save-scoped route (`/api/saves/{saveId}/...`) 403s if the token's user doesn't own that save |
 | Database | MySQL 8.4+ / 9.x (`amissdb`); app runs as least-privilege `amiss` user |
 | Migrations | Flyway 11 — versioned SQL in `amiss-core/src/main/resources/db/migration`, applied automatically at API start (by a dedicated `amiss_migrator` account) |
@@ -126,14 +126,16 @@ pom.xml                       Reactor parent (module list, managed versions, sha
 amiss-core/                   Game rules: domain / application / infrastructure layers,
                               Flyway migrations (src/main/resources/db/migration/),
                               and the whole JUnit 5 test suite (see docs/ARCHITECTURE.md)
-amiss-api/                    Spring Boot REST API over amiss-core (Phase 3, in progress):
-                              actuator health, RFC 7807 error envelope, application.yml,
-                              JPA entities/adapters over the Flyway schema, and JWT auth with
-                              full route lockdown + player-scoping (see Tech stack above)
+amiss-api/                    Spring Boot REST API over amiss-core: actuator health,
+                              RFC 7807 error envelope, application.yml, JPA entities/adapters
+                              over the Flyway schema, and JWT auth with full route lockdown
+                              + save-scoping (see docs/ARCHITECTURE.md)
 amiss-coverage/               Aggregates per-module JaCoCo coverage for CI
-frontend/                     React + TypeScript SPA (Vite) consuming amiss-api (Phase 3,
-                              in progress): typed API client, JWT auth plumbing, route
-                              guard, React Query; `npm run dev` proxies /api to :8080
+frontend/                     React + TypeScript SPA (Vite) consuming amiss-api: typed API
+                              client, JWT auth plumbing, route guard, React Query, a game
+                              panel per board stop; `npm run dev` proxies /api to :8080
+docs/                         ARCHITECTURE.md (module/layer map + diagram + request
+                              walkthrough), GAMEPLAY.md (player-facing economy odds)
 mvnw, mvnw.cmd, .mvn/         Maven Wrapper (pinned Maven; no global install needed)
 .github/workflows/ci.yml      GitHub Actions CI (backend build + tests + coverage badges,
                               frontend lint/typecheck/tests/build, on push/PR)

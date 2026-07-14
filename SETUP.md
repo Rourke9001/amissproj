@@ -198,9 +198,11 @@ Desktop) and `npm test`.
 ## 8. What's next
 
 **Phases 0–2 are done** (revival, backend hardening, Maven, tests, CI, Flyway),
-and **Phase 3 is nearly there**: the Spring Boot REST API with JPA persistence
-and JWT security is live, and the React SPA covers every building on the board.
-See **[ROADMAP.md](ROADMAP.md)** for the full phased plan; in flight is the
-Jones-parity jobs/degrees/saves milestone
+and **Phase 3's headline is shipped**: the Spring Boot REST API with JPA
+persistence and JWT security is live, the React SPA covers every building on
+the board, and the Jones-parity jobs/degrees/saves milestone (multiple saves,
+hidden hiring requirements, the fluctuating economy) is merged. Remaining in
+Phase 3: OpenAPI docs and Docker packaging. See **[ROADMAP.md](ROADMAP.md)**
+for the full phased plan
 (`docs/superpowers/specs/2026-07-07-jobs-degrees-saves-design.md`), then
 OpenAPI docs, Docker and deployment.
