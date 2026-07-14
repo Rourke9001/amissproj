@@ -92,7 +92,8 @@ Enter the root password (`password`) when prompted.
 
 This creates database `amissdb` plus two accounts: the least-privilege
 **`amiss`@`localhost`** user the game plays as (password `amisspw`; only
-SELECT/INSERT/UPDATE on `amissdb`) and **`amiss_migrator`@`localhost`**
+SELECT/INSERT/UPDATE on `amissdb`, plus DELETE on `tblsave` alone — the one
+delete the app issues, removing a save slot) and **`amiss_migrator`@`localhost`**
 (password `amissmigratorpw`; DDL + DML on `amissdb`), which is used only while
 the startup migrations run. It is safe to re-run — everything is
 `IF NOT EXISTS`, and saved players are never touched.
