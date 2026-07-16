@@ -21,6 +21,7 @@ import amiss.api.web.dto.GoalDto;
 import amiss.api.web.dto.GoalsDto;
 import amiss.api.web.dto.LocationDto;
 import amiss.api.web.dto.SaveStateDto;
+import amiss.application.service.save.DoctorVisitOutcome;
 import amiss.application.service.save.EconomyEvent;
 import amiss.application.service.save.MoveResult;
 import amiss.application.service.save.SaveGameServices;
@@ -130,7 +131,8 @@ class PlayerControllerTest {
         WeekRolloverService weeks = mock(WeekRolloverService.class);
         when(services.weeks()).thenReturn(weeks);
         when(weeks.endWeek(save)).thenReturn(new WeekRolloverService.RolloverResult(
-                false, -1, false, -1, false, false, false, EconomyEvent.none()));
+                false, -1, false, -1, false, false, false, EconomyEvent.none(),
+                DoctorVisitOutcome.none()));
 
         mvc.perform(post("/api/saves/7/end-week").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
@@ -145,7 +147,8 @@ class PlayerControllerTest {
         WeekRolloverService weeks = mock(WeekRolloverService.class);
         when(services.weeks()).thenReturn(weeks);
         when(weeks.endWeek(save)).thenReturn(new WeekRolloverService.RolloverResult(
-                true, 4, true, 4320, true, false, false, EconomyEvent.none()));
+                true, 4, true, 4320, true, false, false, EconomyEvent.none(),
+                DoctorVisitOutcome.none()));
         when(assembler.assemble(services, save)).thenReturn(dto());
 
         mvc.perform(post("/api/saves/7/end-week").with(jwt().jwt(j -> j.subject("bob"))))
