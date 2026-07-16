@@ -87,7 +87,9 @@ class WeekRolloverServiceTest {
     }
 
     @Test
-    void aFedWeekConsumesFoodAndGetsTheLongBudget() {
+    void aFedWeekConsumesFoodAndGetsTheBaseBudget() {
+        // TODO(KAN-23 Task 3): the fed-bonus is gone; this pins the interim flat-week
+        // value until the unfed starvation penalty is wired in (see WeekRolloverService).
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
         SaveState save = weekOverSave();
         save.setEat(2);
@@ -95,7 +97,7 @@ class WeekRolloverServiceTest {
         WeekRolloverService.RolloverResult result = service().endWeek(save);
 
         assertTrue(result.fed());
-        assertEquals(4320, save.timeMinutes());
+        assertEquals(3600, save.timeMinutes());
         assertEquals(1, save.eat());
     }
 

@@ -37,6 +37,6 @@ class CostsPropertiesBindingTest {
         assertEquals(d.travelPerStepMinutes(), costs.travelPerStepMinutes());
         assertEquals(d.enterBuildingMinutes(), costs.enterBuildingMinutes());
         assertEquals(d.baseWeekMinutes(), costs.baseWeekMinutes());
-        assertEquals(d.fedWeekMinutes(), costs.fedWeekMinutes());
+        assertEquals(d.starvationPenaltyMinutes(), costs.starvationPenaltyMinutes());
     }
 }

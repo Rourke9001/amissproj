@@ -21,7 +21,7 @@ public record CostsProperties(
         Integer travelPerStepMinutes,
         Integer enterBuildingMinutes,
         Integer baseWeekMinutes,
-        Integer fedWeekMinutes) {
+        Integer starvationPenaltyMinutes) {
 
     /** The bound overrides merged over the built-in defaults. */
     public ActionCosts toActionCosts() {
@@ -37,7 +37,7 @@ public record CostsProperties(
                 orDefault(travelPerStepMinutes, d.travelPerStepMinutes()),
                 orDefault(enterBuildingMinutes, d.enterBuildingMinutes()),
                 orDefault(baseWeekMinutes, d.baseWeekMinutes()),
-                orDefault(fedWeekMinutes, d.fedWeekMinutes()));
+                orDefault(starvationPenaltyMinutes, d.starvationPenaltyMinutes()));
     }
 
     private static int orDefault(Integer value, int defaultValue) {

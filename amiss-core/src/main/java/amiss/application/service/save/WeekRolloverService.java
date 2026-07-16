@@ -58,7 +58,9 @@ public class WeekRolloverService {
         if (fed) {
             save.setEat(save.eat() - 1);
         }
-        save.setTimeMinutes(fed ? costs.fedWeekMinutes() : costs.baseWeekMinutes());
+        // TODO(KAN-23 Task 3): the fed-bonus is gone (flat week below); still needs the
+        // unfed starvation penalty (costs.starvationPenaltyMinutes()) wired in here.
+        save.setTimeMinutes(costs.baseWeekMinutes());
         int[] home = board.cellOf(0);
         save.setPos(home[0], home[1]);
 
