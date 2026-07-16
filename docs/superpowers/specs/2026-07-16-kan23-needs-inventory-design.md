@@ -253,8 +253,8 @@ Each PR ships independently and is playable on its own, same discipline as KAN-4
 ## Out of scope (tracked elsewhere)
 
 Appliances catalog — browsing/break/repair/new-vs-used odds, Z-Mart's cheaper clothes line,
-Computer's passive income event, Hot Tub (**follow-on ticket**, filed alongside this spec's
-approval). Wild Willy apartment robbery (**KAN-24**, needs Durables + Low-Cost-Apartment
+Computer's passive income event, Hot Tub (**KAN-58**, filed 2026-07-16 alongside this
+spec's approval). Wild Willy apartment robbery (**KAN-24**, needs Durables + Low-Cost-Apartment
 state — also **KAN-50** for housing tiers). Apartment/inventory *capacity bounded by housing
 tier* (**KAN-50**) — sidestepped entirely here since Fridge/Freezer themselves grant food
 capacity independent of apartment tier, per the wiki; no forward dependency on KAN-50 exists
