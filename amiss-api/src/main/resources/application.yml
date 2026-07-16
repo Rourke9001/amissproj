@@ -38,7 +38,7 @@ spring:
 #       work-minutes: 300
 #       travel-per-step-minutes: 40
 #       base-week-minutes: 3600
-#       fed-week-minutes: 4320
+#       starvation-penalty-minutes: 1200
 amiss:
   security:
     jwt:
