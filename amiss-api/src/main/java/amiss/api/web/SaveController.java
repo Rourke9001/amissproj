@@ -6,6 +6,7 @@ import amiss.api.persistence.jpa.SaveEntity;
 import amiss.api.persistence.jpa.SaveJpaRepository;
 import amiss.api.web.dto.CreateSaveRequest;
 import amiss.api.web.dto.SaveSummaryDto;
+import amiss.application.config.ActionCosts;
 import amiss.application.port.PersistenceFailureException;
 import java.util.List;
 import java.util.Random;
@@ -35,10 +36,12 @@ public class SaveController {
     private static final int MAX_GOAL = 100;
 
     private final SaveJpaRepository saves;
+    private final ActionCosts costs;
     private final Random random = new Random();
 
-    public SaveController(SaveJpaRepository saves) {
+    public SaveController(SaveJpaRepository saves, ActionCosts costs) {
         this.saves = saves;
+        this.costs = costs;
     }
 
     @GetMapping
@@ -53,7 +56,7 @@ public class SaveController {
     public SaveSummaryDto create(Authentication authentication, @RequestBody CreateSaveRequest request) {
         int[] goals = resolveGoals(request);
         SaveEntity created = saves.save(new SaveEntity(authentication.getName(), request.label(),
-                goals[0], goals[1], goals[2], goals[3]));
+                goals[0], goals[1], goals[2], goals[3], costs.baseWeekMinutes()));
         // Re-fetch: created_at/updated_at are DB-maintained (DEFAULT CURRENT_TIMESTAMP), so the
         // in-memory entity from save() doesn't carry them until a fresh SELECT does.
         SaveEntity fresh = saves.findById(created.getId())

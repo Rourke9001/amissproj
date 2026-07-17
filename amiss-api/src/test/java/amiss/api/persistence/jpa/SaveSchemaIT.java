@@ -114,12 +114,12 @@ class SaveSchemaIT extends MySqlITSupport {
     void persistsASaveWithNewGameDefaults() {
         insertUser("it_save_alice");
 
-        SaveEntity created = saves.saveAndFlush(new SaveEntity("it_save_alice", "First try", 40, 50, 60, 70));
+        SaveEntity created = saves.saveAndFlush(new SaveEntity("it_save_alice", "First try", 40, 50, 60, 70, 3600));
         SaveEntity reloaded = saves.findById(created.getId()).orElseThrow();
 
         assertThat(reloaded.getOwner()).isEqualTo("it_save_alice");
         assertThat(reloaded.getLabel()).isEqualTo("First try");
-        assertThat(reloaded.getTime()).isEqualTo(4320);
+        assertThat(reloaded.getTime()).isEqualTo(3600);   // flat 60h week (KAN-23)
         assertThat(reloaded.getCash()).isEqualTo(100);
         assertThat(reloaded.getExperience()).isEqualTo(10);
         assertThat(reloaded.getDependability()).isEqualTo(20);
@@ -135,8 +135,8 @@ class SaveSchemaIT extends MySqlITSupport {
     void scopesSavesByOwner() {
         insertUser("it_save_alice");
         insertUser("it_save_bob");
-        SaveEntity alices = saves.saveAndFlush(new SaveEntity("it_save_alice", "Save 1", 10, 10, 10, 10));
-        saves.saveAndFlush(new SaveEntity("it_save_bob", "Save 1", 10, 10, 10, 10));
+        SaveEntity alices = saves.saveAndFlush(new SaveEntity("it_save_alice", "Save 1", 10, 10, 10, 10, 3600));
+        saves.saveAndFlush(new SaveEntity("it_save_bob", "Save 1", 10, 10, 10, 10, 3600));
 
         assertThat(saves.findByOwnerOrderByUpdatedAtDesc("it_save_alice"))
                 .extracting(SaveEntity::getId).containsExactly(alices.getId());
@@ -147,7 +147,7 @@ class SaveSchemaIT extends MySqlITSupport {
     @Test
     void persistsEarnedDegreesAndTurndownsAndCascadesOnSaveDelete() {
         insertUser("it_save_alice");
-        SaveEntity save = saves.saveAndFlush(new SaveEntity("it_save_alice", "Save 1", 10, 10, 10, 10));
+        SaveEntity save = saves.saveAndFlush(new SaveEntity("it_save_alice", "Save 1", 10, 10, 10, 10, 3600));
 
         saveDegrees.saveAndFlush(new SaveDegreeEntity(save.getId(), 1));
         saveDegrees.saveAndFlush(new SaveDegreeEntity(save.getId(), 2));

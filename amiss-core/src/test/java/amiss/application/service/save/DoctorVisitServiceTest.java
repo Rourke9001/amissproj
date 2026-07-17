@@ -23,13 +23,13 @@ class DoctorVisitServiceTest {
 
     @Test
     void noTriggerConditionMeansNoVisit() {
-        SaveState save = TestSaves.newSave();   // cash 100, happiness 50, time 4320
+        SaveState save = TestSaves.newSave();   // cash 100, happiness 50, time 3600
         DoctorVisitOutcome outcome = new DoctorVisitService(rolls()).resolve(save, false);
 
         assertFalse(outcome.triggered());
         assertEquals(100, save.cash());
         assertEquals(50, save.happiness());
-        assertEquals(4320, save.timeMinutes());
+        assertEquals(3600, save.timeMinutes());
     }
 
     @Test

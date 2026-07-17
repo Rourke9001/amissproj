@@ -1,5 +1,6 @@
 package amiss.api.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -12,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import amiss.api.config.CostsConfig;
 import amiss.api.persistence.jpa.SaveEntity;
 import amiss.api.persistence.jpa.SaveJpaRepository;
 import amiss.api.security.SecurityConfig;
@@ -19,6 +21,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -28,7 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /** The KAN-54 saves CRUD: list/create/delete, every route owner-scoped. */
 @WebMvcTest(SaveController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class})
+@Import({GlobalExceptionHandler.class, SecurityConfig.class, CostsConfig.class})
 class SaveControllerTest {
 
     @Autowired
@@ -81,6 +84,26 @@ class SaveControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.label").value("New Game"));
+    }
+
+    @Test
+    void create_seedsRoundOneWithAFlatSixtyHourWeek() throws Exception {
+        SaveEntity saved = entity(5, "alice", "New Game", 1, 100, false);
+        when(saves.save(any(SaveEntity.class))).thenReturn(saved);
+        when(saves.findById(5L)).thenReturn(Optional.of(saved));
+
+        mvc.perform(post("/api/saves")
+                        .with(jwt().jwt(j -> j.subject("alice")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"label\":\"New Game\",\"goals\":"
+                                + "{\"wealth\":50,\"happiness\":50,\"education\":50,\"career\":50}}"))
+                .andExpect(status().isCreated());
+
+        // Round 1 is budgeted from the same ActionCosts.baseWeekMinutes() every later week is
+        // set from at rollover — not a second hard-coded copy of "a week is 60h" (KAN-23).
+        ArgumentCaptor<SaveEntity> created = ArgumentCaptor.forClass(SaveEntity.class);
+        verify(saves).save(created.capture());
+        assertThat(created.getValue().getTime()).isEqualTo(3600);
     }
 
     @Test

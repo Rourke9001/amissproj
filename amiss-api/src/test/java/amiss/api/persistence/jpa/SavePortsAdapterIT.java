@@ -230,7 +230,7 @@ class SavePortsAdapterIT extends MySqlITSupport {
     private long insertSave(String owner, int goalWealth, int goalHappiness, int goalEducation, int goalCareer) {
         jdbc.update("INSERT INTO tbluser (name, password) VALUES (?, 'x')", owner);
         SaveEntity entity = saves.saveAndFlush(
-                new SaveEntity(owner, "Save 1", goalWealth, goalHappiness, goalEducation, goalCareer));
+                new SaveEntity(owner, "Save 1", goalWealth, goalHappiness, goalEducation, goalCareer, 3600));
         return entity.getId();
     }
 }

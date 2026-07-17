@@ -56,7 +56,7 @@ class HiringServiceTest {
         HireOutcome outcome = serviceAlwaysLucky().apply(save, 999);
 
         assertEquals(HireOutcome.Status.UNKNOWN_JOB, outcome.status());
-        assertEquals(4320, save.timeMinutes());
+        assertEquals(3600, save.timeMinutes());
     }
 
     @Test
@@ -84,7 +84,7 @@ class HiringServiceTest {
         assertEquals(HireOutcome.Status.HIRED, outcome.status());
         assertEquals(5, outcome.wage());
         assertEquals(240, outcome.minutesCharged());
-        assertEquals(4080, save.timeMinutes());
+        assertEquals(3360, save.timeMinutes());
     }
 
     // ===== requirement checks, in wiki order, all reported =====
@@ -115,7 +115,7 @@ class HiringServiceTest {
         HireOutcome outcome = serviceAlwaysLucky().apply(save, 32);
 
         assertEquals(240, outcome.minutesCharged());
-        assertEquals(4080, save.timeMinutes());
+        assertEquals(3360, save.timeMinutes());
         assertEquals(49, save.happiness());
         verify(saves).update(save);
     }

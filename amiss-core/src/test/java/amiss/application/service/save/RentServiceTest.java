@@ -24,7 +24,7 @@ class RentServiceTest {
 
     /** Rent due: a 4th round with the rent flag still set. */
     private SaveState dueSave() {
-        SaveState save = TestSaves.newSave(); // round 1, rent 1, cash 100, time 4320
+        SaveState save = TestSaves.newSave(); // round 1, rent 1, cash 100, time 3600
         save.setRound(4);
         return save;
     }
@@ -37,7 +37,7 @@ class RentServiceTest {
         RentPayment result = service().payRent(save);
 
         assertEquals(RentPayment.Status.NOT_DUE, result.status());
-        assertEquals(4320, result.remainingMinutes());
+        assertEquals(3600, result.remainingMinutes());
         assertEquals(100, result.cash());
         verifyNoInteractions(saves);
     }
@@ -75,7 +75,7 @@ class RentServiceTest {
         RentPayment result = service().payRent(save);
 
         assertEquals(RentPayment.Status.INSUFFICIENT_CASH, result.status());
-        assertEquals(4320, result.remainingMinutes());
+        assertEquals(3600, result.remainingMinutes());
         assertEquals(50, result.cash());
         assertEquals(1, save.rent());
         verifyNoInteractions(saves);
@@ -103,11 +103,11 @@ class RentServiceTest {
         RentPayment result = service().payRent(save);
 
         assertEquals(RentPayment.Status.OK, result.status());
-        assertEquals(4200, result.remainingMinutes()); // 4320 - 120
+        assertEquals(3480, result.remainingMinutes()); // 3600 - 120
         assertEquals(20, result.cash());                // 100 - 80
         assertEquals(0, save.rent());
         assertEquals(20, save.cash());
-        assertEquals(4200, save.timeMinutes());
+        assertEquals(3480, save.timeMinutes());
         verify(saves).update(save);
     }
 

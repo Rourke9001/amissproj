@@ -176,19 +176,20 @@ No game rule enters the presentation layer; no persistence type enters core.
 
 ## Persistence
 
-One Flyway migration per PR touching schema, continuing the V-numbering from V8
-(`wage_snapshot`):
+One Flyway migration per PR touching schema, continuing the V-numbering from V9
+(`flat_week_seed` — the follow-up to PR 1 that dropped the leftover 4320/72h new-save
+seed; it took V9, so this PR's numbering starts at V10):
 
-- **V9** (PR 2 — food storage): `tblsave` gains fresh-food-weeks and a fast-food-fed-next-turn
+- **V10** (PR 2 — food storage): `tblsave` gains fresh-food-weeks and a fast-food-fed-next-turn
   flag, replacing the ambiguous single `eat` column's meaning; `SaveEntity`'s appliance
   `@ElementCollection` join table is introduced here too (Fridge/Freezer are its first
   members).
-- **V10** (PR 3 — clothes wear): `tblsave.clothing` is dropped and replaced with three
+- **V11** (PR 3 — clothes wear): `tblsave.clothing` is dropped and replaced with three
   `clothing_casual_weeks` / `clothing_dress_weeks` / `clothing_business_weeks` columns
   (defaults 6/0/0) **in the same migration** — an expand+contract combined into one step,
   justified because nothing outside this PR's own code reads the old `clothing` column
   (unlike the V5→V6 production cutover, which needed a live transition window).
-- **V11** (PR 4 — relaxation): `tblsave.relaxation` (default 10).
+- **V12** (PR 4 — relaxation): `tblsave.relaxation` (default 10).
 - Appliance ownership's join table gains the Computer and Book enum values in PR 5 (no new
   migration version needed — it's the same `@ElementCollection`, new enum constants only).
 
@@ -231,7 +232,7 @@ must exist), not the final DDL.
 - `HiringServiceTest`: the newly-wired clothing-gate rejection path.
 - `CourseServiceTest`: lesson-count reduction at 0/1/2 extra-credit sources.
 - Frontend: Vitest/RTL per new/changed panel; `TestSaves.newSave()` gains the new fields.
-- No new Testcontainers IT beyond proving each migration in the V1→V11 chain (existing
+- No new Testcontainers IT beyond proving each migration in the V1→V12 chain (existing
   `SaveSchemaIT` pattern).
 
 ## Delivery — 5 stacked PRs off `develop`
@@ -239,11 +240,11 @@ must exist), not the final DDL.
 1. `feat/kan23-starvation-doctor-visit` — flat 60h week, unfed penalty (using the existing
    `eat` field as the fed/unfed proxy — no migration), new `DoctorVisitService` with the
    starvation trigger wired in.
-2. `feat/kan23-food-storage` — V9, fresh/fast food split, Fridge/Freezer ownership + minimal
+2. `feat/kan23-food-storage` — V10, fresh/fast food split, Fridge/Freezer ownership + minimal
    Socket City panel, spoilage → Doctor Visit's second trigger.
-3. `feat/kan23-clothes-wear` — V10, three-category clothes model, `buyClothes()` rework,
+3. `feat/kan23-clothes-wear` — V11, three-category clothes model, `buyClothes()` rework,
    `HiringService` clothing-gate wiring, QTClothingPanel rework.
-4. `feat/kan23-relaxation` — V11, Relax action, HomePanel rebuild, Doctor Visit's third
+4. `feat/kan23-relaxation` — V12, Relax action, HomePanel rebuild, Doctor Visit's third
    trigger.
 5. `feat/kan23-extra-credit` — Computer added to Socket City, new Z-Mart panel for the 3
    Books, `CourseService.study()` lesson reduction.
