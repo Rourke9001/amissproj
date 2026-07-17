@@ -10,22 +10,26 @@ import amiss.domain.model.SaveState;
  * turn-start rules. In order: refuse while time remains; settle the closed round
  * (every 4th round with rent unpaid charges the R80 late-rent debt); consume one
  * stored food to size the new week; reset clock and board position; advance the
- * round (flagging rent due); decay dependability −3 (floor 0); then the win check —
- * all four goals met at the start of a turn wins, and {@code won} is sticky.
+ * round (flagging rent due); decay dependability −3 (floor 0); apply the unfed
+ * starvation penalty and resolve a possible Doctor Visit; then drift the economy;
+ * then the win check — all four goals met at the start of a turn wins, and
+ * {@code won} is sticky.
  */
 public class WeekRolloverService {
 
     private static final int RENT_ROUND_INTERVAL = 4;
     private static final int LATE_RENT_DEBT = 80;
     private static final int WEEKLY_DEPENDABILITY_DECAY = 3;
+    private static final int STARVATION_HAPPINESS_LOSS = 2;
 
     /** What happened at rollover; {@code rolled} false = the week wasn't over. */
     public record RolloverResult(boolean rolled, int newRound, boolean fed, int weekMinutes,
-            boolean rentDue, boolean debtCharged, boolean won, EconomyEvent economy) {
+            boolean rentDue, boolean debtCharged, boolean won, EconomyEvent economy,
+            DoctorVisitOutcome doctorVisit) {
 
         static RolloverResult weekStillRunning() {
             return new RolloverResult(false, -1, false, -1, false, false, false,
-                    EconomyEvent.none());
+                    EconomyEvent.none(), DoctorVisitOutcome.none());
         }
     }
 
@@ -33,14 +37,16 @@ public class WeekRolloverService {
     private final GoalService goals;
     private final ActionCosts costs;
     private final EconomyService economy;
+    private final DoctorVisitService doctorVisit;
     private final Board board = new Board();
 
     public WeekRolloverService(SaveRepository saves, GoalService goals, ActionCosts costs,
-            EconomyService economy) {
+            EconomyService economy, DoctorVisitService doctorVisit) {
         this.saves = saves;
         this.goals = goals;
         this.costs = costs;
         this.economy = economy;
+        this.doctorVisit = doctorVisit;
     }
 
     public RolloverResult endWeek(SaveState save) {
@@ -58,7 +64,11 @@ public class WeekRolloverService {
         if (fed) {
             save.setEat(save.eat() - 1);
         }
-        save.setTimeMinutes(fed ? costs.fedWeekMinutes() : costs.baseWeekMinutes());
+        save.setTimeMinutes(costs.baseWeekMinutes());
+        if (!fed) {
+            save.spendUpTo(costs.starvationPenaltyMinutes());
+            save.addHappiness(-STARVATION_HAPPINESS_LOSS);
+        }
         int[] home = board.cellOf(0);
         save.setPos(home[0], home[1]);
 
@@ -71,6 +81,8 @@ public class WeekRolloverService {
 
         save.setDependability(Math.max(0, save.dependability() - WEEKLY_DEPENDABILITY_DECAY));
 
+        DoctorVisitOutcome doctorVisitOutcome = doctorVisit.resolve(save, !fed);
+
         economy.driftWeekly(save);
         EconomyEvent economyEvent = economy.rollEvent(save);
 
@@ -79,6 +91,6 @@ public class WeekRolloverService {
 
         saves.update(save);
         return new RolloverResult(true, newRound, fed, save.timeMinutes(), rentDue,
-                debtCharged, wonNow, economyEvent);
+                debtCharged, wonNow, economyEvent, doctorVisitOutcome);
     }
 }

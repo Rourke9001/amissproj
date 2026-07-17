@@ -472,6 +472,43 @@ over-consumed, the tests prove which random draws each branch consumes, not just
 it returns. That's what makes a probabilistic system auditable — same seed, same
 story, byte for byte."*
 
+### Starvation rework & the shared Doctor Visit event (KAN-23 PR 1)
+- **Inverted a mis-modelled game rule** rather than patching it: the week budget was a
+  60h base with a 72h "you ate" upgrade, which modelled eating as a bonus when the
+  reference treats not eating as a punishment. Replaced it with the reference model —
+  a flat **60-hour week, always** (`baseWeekMinutes`), with going unfed charging a
+  **20h Starvation penalty** (−2 happiness) off the top. A deliberate rebalance, not a
+  refactor: fed weeks drop 72h→60h and unfed weeks 60h→40h, so the gap between eating
+  and starving widens from 12h to 20h and lands where the design notes put it.
+- Built `DoctorVisitService` as **one event with three independent triggers** — the
+  25% starvation roll ships here; spoiled fridgeless food (50%) and a floored
+  Relaxation stat (20%) plug into the same resolver in later PRs, which is precisely
+  why the outcome type is "at most one visit per turn" from day one rather than three
+  call sites racing to charge the player. Wiki-exact edge case included: a
+  **$0-cash player bypasses the event entirely** instead of being charged negative.
+- Made a probabilistic event **fully deterministic under test** by injecting the die
+  as an `IntUnaryOperator roll1toN` rather than reaching for `Random`: every branch of
+  the tiered cash cost (bands at $500+/$50+/$31+, and "you pay what you have" below
+  that) is pinned by exact-value tests, boundaries included.
+- Kept **units honest across the layer boundary**: the domain speaks integer minutes
+  (a `== 0` week-over check can't survive floating-point hours), and `DoctorVisitDto`
+  converts to hours exactly once, at the presentation edge — the React modal renders
+  consequences, never internals.
+- Caught a **real arithmetic bug in the plan's own test fixtures** during
+  implementation (a stale 600 where the penalty is 1200), corrected the expectations,
+  re-derived them independently at review, and fixed the plan document so the error
+  couldn't propagate to the four PRs still stacked behind it.
+
+**Talking point:** *"The interesting decision was refusing to add a fourth copy of the
+Doctor Visit logic. Three unrelated conditions in the design can send you to the
+doctor, and the obvious implementation is three call sites — which is also three
+chances to drift apart, and a turn where you get charged twice. Modelling it as one
+resolver that takes the conditions and returns at most one outcome meant PRs 2 and 4
+each wire in a trigger instead of re-implementing an event. The other thing I'd raise
+is that the plan I was executing had a wrong number in its test expectations. Tests
+that encode a spec are only worth anything if you re-derive the spec — I'd rather find
+that in review than ship a suite that's green and wrong."*
+
 ## Phase 4 — Showcase & deploy
 
 ### Architecture documentation refresh — the map matches the territory (KAN-55)

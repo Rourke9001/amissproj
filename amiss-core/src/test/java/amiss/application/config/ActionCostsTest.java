@@ -23,6 +23,6 @@ class ActionCostsTest {
         assertEquals(40, d.travelPerStepMinutes());    // cross-town (6 steps) = 4h
         assertEquals(120, d.enterBuildingMinutes());   // 2h
         assertEquals(3600, d.baseWeekMinutes());       // 60h
-        assertEquals(4320, d.fedWeekMinutes());        // 72h
+        assertEquals(1200, d.starvationPenaltyMinutes()); // 20h
     }
 }

@@ -22,6 +22,7 @@ public class SaveGameServices {
 
     private final SaveRepository saves;
     private final EconomyService economy;
+    private final DoctorVisitService doctorVisit;
     private final HiringService hiring;
     private final ShiftService shifts;
     private final CourseService courses;
@@ -37,11 +38,12 @@ public class SaveGameServices {
             IntSupplier roll1to100, IntUnaryOperator roll1toN) {
         this.saves = saves;
         this.economy = new EconomyService(roll1toN);
+        this.doctorVisit = new DoctorVisitService(roll1toN);
         this.goals = new GoalService(saveDegrees);
         this.hiring = new HiringService(saves, jobs, saveDegrees, turndowns, costs, roll1to100, economy);
         this.shifts = new ShiftService(saves, jobs, saveDegrees, costs);
         this.courses = new CourseService(saves, degreeCatalog, saveDegrees, costs, economy);
-        this.weeks = new WeekRolloverService(saves, goals, costs, economy);
+        this.weeks = new WeekRolloverService(saves, goals, costs, economy, doctorVisit);
         this.travel = new TravelService(saves, costs);
         this.bank = new BankService(saves);
         this.rent = new RentService(saves, costs);
@@ -99,5 +101,9 @@ public class SaveGameServices {
 
     public EconomyService economy() {
         return economy;
+    }
+
+    public DoctorVisitService doctorVisit() {
+        return doctorVisit;
     }
 }

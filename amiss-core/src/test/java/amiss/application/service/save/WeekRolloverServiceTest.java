@@ -51,7 +51,7 @@ class WeekRolloverServiceTest {
 
     private WeekRolloverService service(IntUnaryOperator rolls) {
         return new WeekRolloverService(saves, new GoalService(degrees), ActionCosts.defaults(),
-                new EconomyService(rolls));
+                new EconomyService(rolls), new DoctorVisitService(rolls));
     }
 
     /** A save with the clock run out, ready to roll over. */
@@ -81,13 +81,15 @@ class WeekRolloverServiceTest {
         assertTrue(result.rolled());
         assertEquals(2, result.newRound());
         assertFalse(result.fed());
-        assertEquals(3600, save.timeMinutes());
+        assertEquals(2400, save.timeMinutes());   // 3600 - 1200 (20h starvation penalty)
         assertEquals(17, save.dependability());   // 20 - 3
         verify(saves).update(save);
     }
 
     @Test
-    void aFedWeekConsumesFoodAndGetsTheLongBudget() {
+    void aFedWeekConsumesFoodAndGetsTheBaseBudget() {
+        // Fed weeks always get the flat 60h budget; only unfed weeks take the
+        // starvation penalty (see the dedicated fed/unfed tests below).
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
         SaveState save = weekOverSave();
         save.setEat(2);
@@ -95,7 +97,7 @@ class WeekRolloverServiceTest {
         WeekRolloverService.RolloverResult result = service().endWeek(save);
 
         assertTrue(result.fed());
-        assertEquals(4320, save.timeMinutes());
+        assertEquals(3600, save.timeMinutes());
         assertEquals(1, save.eat());
     }
 
@@ -144,6 +146,7 @@ class WeekRolloverServiceTest {
         // career 1.25*40=50 >= 50 while employed.
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of(1, 2, 3, 4, 5, 6));
         SaveState save = weekOverSave();
+        save.setEat(1);   // fed: keeps happiness at 50 (the starvation penalty is unrelated to this test)
         save.setCash(3000);
         save.setBank(2000);
         save.setJobId(TestSaves.CLERK.id());
@@ -193,6 +196,7 @@ class WeekRolloverServiceTest {
     void rolloverDriftsTheEconomy() {
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
         SaveState save = weekOverSave();
+        save.setEat(1);   // fed: keeps the Doctor Visit starvation check from consuming a roll
 
         // Index roll 3 -> +1; noise roll 6 -> 0: reading 0 -> 10.
         service(rolls(3, 6)).endWeek(save);
@@ -207,6 +211,7 @@ class WeekRolloverServiceTest {
         // first: wealth (3000+0)/100 = 30 < 50 -> no win.
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of(1, 2, 3, 4, 5, 6));
         SaveState save = weekOverSave();
+        save.setEat(1);   // fed: keeps the Doctor Visit starvation check from consuming a roll
         save.setRound(8);
         save.setEconomyReading((short) 85);
         save.setCash(3000);
@@ -228,5 +233,55 @@ class WeekRolloverServiceTest {
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
         assertEquals(EconomyEvent.Type.NONE,
                 service().endWeek(weekOverSave()).economy().type());
+    }
+
+    @Test
+    void unfedRollsTheFlatWeekAndTwentyHourStarvationPenalty() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setEat(0);
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertFalse(result.fed());
+        assertEquals(2400, save.timeMinutes());   // 3600 - 1200 (20h starvation penalty)
+        assertEquals(48, save.happiness());       // 50 - 2 (starvation happiness loss)
+    }
+
+    @Test
+    void fedSkipsTheStarvationPenaltyAndKeepsTheFlatWeek() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setEat(2);
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertTrue(result.fed());
+        assertEquals(1, save.eat());              // one week consumed
+        assertEquals(3600, save.timeMinutes());   // flat 60h, no bonus
+        assertEquals(50, save.happiness());       // unchanged
+    }
+
+    @Test
+    void unfedCanTriggerADoctorVisit() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setEat(0);
+        save.setCash(100);
+
+        // The implementation (Step 3) calls doctorVisit.resolve(...) BEFORE
+        // economy.driftWeekly(...), so Doctor Visit's rolls are consumed first:
+        // starvation hit (1-in-4, value 1) then cost roll (21-wide for the
+        // $50-499 tier, value 1 -> 30). The two trailing values (3, 6) are the
+        // neutral economy drift rolls (index roll on a 1..3 die, noise roll on
+        // a 1..11 die) so the queue doesn't run dry — round 1 is below
+        // EVENT_MIN_ROUND (8), so rollEvent() itself consumes no rolls.
+        WeekRolloverService.RolloverResult result = service(rolls(1, 1, 3, 6)).endWeek(save);
+
+        assertTrue(result.doctorVisit().triggered());
+        assertEquals(30, result.doctorVisit().cashLost());
+        assertEquals(70, save.cash());
+        assertEquals(1800, save.timeMinutes());   // 3600 - 1200 (starvation) - 600 (doctor)
+        assertEquals(44, save.happiness());       // 50 - 2 (starvation) - 4 (doctor)
     }
 }

@@ -10,11 +10,13 @@ package amiss.application.config;
  * the Swing client via {@code Config} (env {@code AMISS_COSTS_*} &gt; application.properties),
  * the REST API via Spring {@code @ConfigurationProperties(prefix = "amiss.costs")}.
  *
- * <p>Reference values (from the Jones-in-the-Fast-Lane design notes): a 60-hour week
- * (72 if fed), 2h to enter a building, 40 min per ring step so the longest walk
- * (6 steps) is 4h — "cross-town ≈ 4h". Purchases cost no time in the reference —
- * "some actions (like purchasing Items) cost none" — so eating and shopping both
- * default to 0; a player out of hours can still buy and eat inside a building.
+ * <p>Reference values (from the Jones-in-the-Fast-Lane design notes): a 60-hour week,
+ * always; going unfed costs 20 hours immediately (wiki Starvation event) rather than
+ * being fed granting a bonus. 2h to enter a building, 40 min per ring step so the
+ * longest walk (6 steps) is 4h — "cross-town ≈ 4h". Purchases cost no time in the
+ * reference — "some actions (like purchasing Items) cost none" — so eating and
+ * shopping both default to 0; a player out of hours can still buy and eat inside a
+ * building.
  */
 public record ActionCosts(
         int workMinutes,
@@ -27,10 +29,10 @@ public record ActionCosts(
         int travelPerStepMinutes,
         int enterBuildingMinutes,
         int baseWeekMinutes,
-        int fedWeekMinutes) {
+        int starvationPenaltyMinutes) {
 
     /** The built-in cost table; used wherever no configuration override is supplied. */
     public static ActionCosts defaults() {
-        return new ActionCosts(360, 360, 360, 240, 120, 0, 0, 40, 120, 3600, 4320);
+        return new ActionCosts(360, 360, 360, 240, 120, 0, 0, 40, 120, 3600, 1200);
     }
 }
