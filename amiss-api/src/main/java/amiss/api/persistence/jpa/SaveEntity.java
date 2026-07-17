@@ -125,15 +125,21 @@ public class SaveEntity {
         // JPA
     }
 
+    /**
+     * @param timeMinutes round 1's budget. Comes from {@code ActionCosts.baseWeekMinutes()} —
+     *     the same source every later week is set from at rollover — so a deployment that
+     *     overrides {@code amiss.costs.base-week-minutes} cannot end up with a first week of
+     *     a different length to the rest (KAN-23).
+     */
     public SaveEntity(String owner, String label,
-            int goalWealth, int goalHappiness, int goalEducation, int goalCareer) {
+            int goalWealth, int goalHappiness, int goalEducation, int goalCareer, int timeMinutes) {
         this.owner = owner;
         this.label = label;
         this.goalWealth = goalWealth;
         this.goalHappiness = goalHappiness;
         this.goalEducation = goalEducation;
         this.goalCareer = goalCareer;
-        this.time = 4320;
+        this.time = timeMinutes;
         this.round = 1;
         this.cash = 100;
         this.rent = 1;
