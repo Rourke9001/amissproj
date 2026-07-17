@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import amiss.application.config.ActionCosts;
 import amiss.application.port.SaveDegrees;
 import amiss.application.port.SaveRepository;
+import amiss.domain.model.ApplianceItem;
 import amiss.domain.model.SaveState;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -89,9 +90,12 @@ class WeekRolloverServiceTest {
     @Test
     void aFedWeekConsumesFoodAndGetsTheBaseBudget() {
         // Fed weeks always get the flat 60h budget; only unfed weeks take the
-        // starvation penalty (see the dedicated fed/unfed tests below).
+        // starvation penalty (see the dedicated fed/unfed tests below). A Fridge
+        // is granted so stored food decays by one as intended, rather than
+        // spoiling to zero (see the dedicated spoilage tests below).
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
         SaveState save = weekOverSave();
+        save.grantAppliance(ApplianceItem.FRIDGE);
         save.setEat(2);
 
         WeekRolloverService.RolloverResult result = service().endWeek(save);
@@ -196,7 +200,10 @@ class WeekRolloverServiceTest {
     void rolloverDriftsTheEconomy() {
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
         SaveState save = weekOverSave();
-        save.setEat(1);   // fed: keeps the Doctor Visit starvation check from consuming a roll
+        // Fed via a Fridge-owned stock: keeps both Doctor Visit checks (starvation
+        // and spoilage) from consuming a roll, so the queue below is economy-only.
+        save.grantAppliance(ApplianceItem.FRIDGE);
+        save.setEat(1);
 
         // Index roll 3 -> +1; noise roll 6 -> 0: reading 0 -> 10.
         service(rolls(3, 6)).endWeek(save);
@@ -211,7 +218,10 @@ class WeekRolloverServiceTest {
         // first: wealth (3000+0)/100 = 30 < 50 -> no win.
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of(1, 2, 3, 4, 5, 6));
         SaveState save = weekOverSave();
-        save.setEat(1);   // fed: keeps the Doctor Visit starvation check from consuming a roll
+        // Fed via a Fridge-owned stock: keeps both Doctor Visit checks (starvation
+        // and spoilage) from consuming a roll, so the queue below is economy-only.
+        save.grantAppliance(ApplianceItem.FRIDGE);
+        save.setEat(1);
         save.setRound(8);
         save.setEconomyReading((short) 85);
         save.setCash(3000);
@@ -252,6 +262,9 @@ class WeekRolloverServiceTest {
     void fedSkipsTheStarvationPenaltyAndKeepsTheFlatWeek() {
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
         SaveState save = weekOverSave();
+        // A Fridge is granted so stored food decays by one as intended, rather
+        // than spoiling to zero (see the dedicated spoilage tests below).
+        save.grantAppliance(ApplianceItem.FRIDGE);
         save.setEat(2);
 
         WeekRolloverService.RolloverResult result = service().endWeek(save);
@@ -283,5 +296,37 @@ class WeekRolloverServiceTest {
         assertEquals(70, save.cash());
         assertEquals(1800, save.timeMinutes());   // 3600 - 1200 (starvation) - 600 (doctor)
         assertEquals(44, save.happiness());       // 50 - 2 (starvation) - 4 (doctor)
+    }
+
+    @Test
+    void fridgelessStoredFreshFoodSpoilsAndCanTriggerADoctorVisit() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setEat(3);              // fridgeless leftover from a prior purchase
+        save.setCash(100);
+
+        // hadFreshFood=true -> fed=true -> starved=false (no roll consumed for it).
+        // Doctor Visit rolls first: spoilage roll (1-in-2, value 1 = hit), cost
+        // roll (21-wide for the $50-499 tier, value 1 -> 30); then the two
+        // neutral economy drift rolls (3, 6) so the queue doesn't run dry.
+        WeekRolloverService.RolloverResult result = service(rolls(1, 1, 3, 6)).endWeek(save);
+
+        assertTrue(result.fed());     // had food this turn...
+        assertEquals(0, save.eat());  // ...but it all spoils
+        assertTrue(result.doctorVisit().triggered());
+        assertEquals(70, save.cash());
+    }
+
+    @Test
+    void fridgeOwnersNeverSpoilTheirStoredFood() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.grantAppliance(ApplianceItem.FRIDGE);
+        save.setEat(3);
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertEquals(2, save.eat());   // normal -1 decay, no spoilage
+        assertFalse(result.doctorVisit().triggered());
     }
 }

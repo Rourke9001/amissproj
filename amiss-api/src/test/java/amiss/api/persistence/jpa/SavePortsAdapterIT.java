@@ -8,11 +8,13 @@ import amiss.application.port.JobCatalog;
 import amiss.application.port.SaveDegrees;
 import amiss.application.port.SaveRepository;
 import amiss.application.port.Turndowns;
+import amiss.domain.model.ApplianceItem;
 import amiss.domain.model.DegreeSpec;
 import amiss.domain.model.JobSpec;
 import amiss.domain.model.SaveState;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,6 +97,8 @@ class SavePortsAdapterIT extends MySqlITSupport {
         loaded.setEconomyIndex((byte) 2);
         loaded.setEconomyReading((short) 45);
         loaded.setWage(12);
+        loaded.setAteFastFoodLastTurn(true);
+        loaded.grantAppliance(ApplianceItem.FRIDGE);
 
         saveRepository.update(loaded);
 
@@ -120,6 +124,8 @@ class SavePortsAdapterIT extends MySqlITSupport {
         assertThat(reloaded.economyIndex()).isEqualTo((byte) 2);
         assertThat(reloaded.economyReading()).isEqualTo((short) 45);
         assertThat(reloaded.wage()).isEqualTo(Integer.valueOf(12));
+        assertThat(reloaded.ateFastFoodLastTurn()).isTrue();
+        assertThat(reloaded.ownedAppliances()).isEqualTo(Set.of(ApplianceItem.FRIDGE));
         // goals are immutable on SaveState and untouched by update()
         assertThat(reloaded.goalWealth()).isEqualTo(40);
 
@@ -127,12 +133,19 @@ class SavePortsAdapterIT extends MySqlITSupport {
         reloaded.setJobId(null);
         reloaded.setCurrentCourseId(null);
         reloaded.setWon(false);
+        reloaded.setAteFastFoodLastTurn(false);
+        reloaded.grantAppliance(ApplianceItem.FREEZER);
         saveRepository.update(reloaded);
 
         SaveState finalState = saveRepository.find(saveId).orElseThrow();
         assertThat(finalState.jobId()).isNull();
         assertThat(finalState.currentCourseId()).isNull();
         assertThat(finalState.won()).isFalse();
+        assertThat(finalState.ateFastFoodLastTurn()).isFalse();
+        // update() replaces the join-table rows rather than accumulating them: the second
+        // update must leave exactly both appliances, not a duplicate Fridge row.
+        assertThat(finalState.ownedAppliances())
+                .isEqualTo(Set.of(ApplianceItem.FRIDGE, ApplianceItem.FREEZER));
     }
 
     @Test

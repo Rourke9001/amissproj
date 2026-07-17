@@ -33,6 +33,7 @@ import amiss.domain.model.JobSpec;
 import amiss.domain.model.SaveState;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -62,13 +63,14 @@ class EmploymentControllerTest {
 
     private static SaveState save(Integer jobId) {
         return new SaveState(7L, "bob", "My Save", 3, 3, 3960, 3, 70, 0, 0, 0, 1, 1,
-                jobId, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
+                jobId, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
+                false, Set.of());
     }
 
     private static SaveStateDto dto() {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 3, 3960, "66h", false, 70, 0, 0, false,
-                1, 1, null, new LocationDto("EMPLOYMENT_OFFICE", "Employment Office", 7, 3, 3),
+                1, false, 1, null, new LocationDto("EMPLOYMENT_OFFICE", "Employment Office", 7, 3, 3),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 

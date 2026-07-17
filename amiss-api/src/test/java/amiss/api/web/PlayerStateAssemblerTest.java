@@ -63,12 +63,14 @@ class PlayerStateAssemblerTest {
     private static SaveState save(Integer jobId, Integer currentCourseId, int eduprog) {
         return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, 3960, 3, 120, 50, 0, 0, 1, 1,
                 jobId, 60, 30, 40, currentCourseId, eduprog, 200, 100, 30, 50, false, (byte) 0, (short) 0,
-                jobId != null ? 6 : null);  // wage snapshot when employed
+                jobId != null ? 6 : null,  // wage snapshot when employed
+                false, Set.of());
     }
 
     private static SaveState save(int timeMinutes) {
         return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, timeMinutes, 3, 120, 50, 0, 0, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
+                false, Set.of());
     }
 
     @Test
@@ -104,6 +106,7 @@ class PlayerStateAssemblerTest {
         SaveStateDto dto = assembler.assemble(services(), save(null, null, 0));
 
         assertEquals(1, dto.foodWeeks());
+        assertEquals(false, dto.ateFastFoodLastTurn());
         assertEquals(1, dto.clothing());
         assertEquals(50, dto.bank());
         assertEquals(List.of("Junior College"), dto.degreesEarned());
@@ -117,6 +120,19 @@ class PlayerStateAssemblerTest {
         assertEquals(30, dto.goals().education().target());
         assertEquals(0, dto.goals().career().current());
         assertEquals(50, dto.goals().career().target());
+    }
+
+    @Test
+    void assemble_ateFastFoodLastTurnIsThreadedThroughFromSaveState() {
+        when(degreeCatalog.all()).thenReturn(List.of());
+        when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
+        SaveState save = new SaveState(SAVE_ID, "bob", "My Save", 0, 2, 3960, 3, 120, 50, 0, 0, 1, 1,
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
+                true, Set.of());
+
+        SaveStateDto dto = assembler.assemble(services(), save);
+
+        assertEquals(true, dto.ateFastFoodLastTurn());
     }
 
     @Test
@@ -139,7 +155,8 @@ class PlayerStateAssemblerTest {
         when(degreeCatalog.all()).thenReturn(List.of());
         when(saveDegrees.earned(SAVE_ID)).thenReturn(Set.of());
         SaveState stale = new SaveState(SAVE_ID, "bob", "My Save", 9, 9, 3960, 3, 120, 50, 0, 0, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
+                false, Set.of());
 
         SaveStateDto dto = assembler.assemble(services(), stale);
 

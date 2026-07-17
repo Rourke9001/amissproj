@@ -17,6 +17,7 @@ function stateFixture(): SaveStateDto {
     debt: 0,
     rentDue: true,
     foodWeeks: 1,
+    ateFastFoodLastTurn: false,
     clothing: 1,
     job: { name: 'Unemployed', hourlyWage: null, location: null },
     degreesEarned: [],

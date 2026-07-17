@@ -40,6 +40,7 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     debt: 0,
     rentDue: false,
     foodWeeks: 2,
+    ateFastFoodLastTurn: false,
     clothing: 1,
     job: { name: 'Unemployed', hourlyWage: null, location: null },
     degreesEarned: [],
@@ -98,6 +99,14 @@ describe('MonolithBurgersPanel', () => {
 
     expect(
       await screen.findByText('No food stored — eat or buy groceries before the week ends.'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the fed status line when the player ate fast food even with no food stored', async () => {
+    renderPanel(playerFixture({ foodWeeks: 0, ateFastFoodLastTurn: true }));
+
+    expect(
+      await screen.findByText('You have food stored for the coming week.'),
     ).toBeInTheDocument();
   });
 

@@ -3,17 +3,20 @@ package amiss.application.service.save;
 import amiss.application.config.ActionCosts;
 import amiss.application.port.SaveRepository;
 import amiss.domain.board.Board;
+import amiss.domain.model.ApplianceItem;
 import amiss.domain.model.SaveState;
 
 /**
  * The week rollover for a save (KAN-53) — the new-layer TurnService, plus the wiki's
  * turn-start rules. In order: refuse while time remains; settle the closed round
- * (every 4th round with rent unpaid charges the R80 late-rent debt); consume one
- * stored food to size the new week; reset clock and board position; advance the
- * round (flagging rent due); decay dependability −3 (floor 0); apply the unfed
- * starvation penalty and resolve a possible Doctor Visit; then drift the economy;
- * then the win check — all four goals met at the start of a turn wins, and
- * {@code won} is sticky.
+ * (every 4th round with rent unpaid charges the R80 late-rent debt); size the new
+ * week's food — stored fresh food feeds it (fast food only ever feeds the turn just
+ * spent, and is cleared here), fridgeless fresh food then spoils to zero while a
+ * Fridge owner's stock decays by one instead; reset clock and board position; advance
+ * the round (flagging rent due); decay dependability −3 (floor 0); apply the unfed
+ * starvation penalty and resolve a possible Doctor Visit (starvation or spoilage can
+ * each trigger it, at most one visit per turn); then drift the economy; then the win
+ * check — all four goals met at the start of a turn wins, and {@code won} is sticky.
  */
 public class WeekRolloverService {
 
@@ -60,10 +63,15 @@ public class WeekRolloverService {
             save.setDebt(save.debt() + LATE_RENT_DEBT);
         }
 
-        boolean fed = save.eat() > 0;
-        if (fed) {
+        boolean hadFreshFood = save.eat() > 0;
+        boolean fed = save.ateFastFoodLastTurn() || hadFreshFood;
+        boolean spoiledFreshFood = !save.owns(ApplianceItem.FRIDGE) && hadFreshFood;
+        if (spoiledFreshFood) {
+            save.setEat(0);
+        } else if (hadFreshFood) {
             save.setEat(save.eat() - 1);
         }
+        save.setAteFastFoodLastTurn(false);
         save.setTimeMinutes(costs.baseWeekMinutes());
         if (!fed) {
             save.spendUpTo(costs.starvationPenaltyMinutes());
@@ -81,7 +89,7 @@ public class WeekRolloverService {
 
         save.setDependability(Math.max(0, save.dependability() - WEEKLY_DEPENDABILITY_DECAY));
 
-        DoctorVisitOutcome doctorVisitOutcome = doctorVisit.resolve(save, !fed);
+        DoctorVisitOutcome doctorVisitOutcome = doctorVisit.resolve(save, !fed, spoiledFreshFood);
 
         economy.driftWeekly(save);
         EconomyEvent economyEvent = economy.rollEvent(save);

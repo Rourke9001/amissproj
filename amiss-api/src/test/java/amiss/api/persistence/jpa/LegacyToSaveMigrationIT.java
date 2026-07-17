@@ -130,8 +130,14 @@ class LegacyToSaveMigrationIT {
                 assertThat(rs.getInt("bank")).isEqualTo(300);
                 assertThat(rs.getInt("debt")).isEqualTo(50);
                 assertThat(rs.getInt("rent")).isEqualTo(0);
-                assertThat(rs.getInt("eat")).isEqualTo(3);
                 assertThat(rs.getInt("clothing")).isEqualTo(2);
+                // eat is the exception to "verbatim": V5 carries the legacy 3 across, then V10
+                // clamps it to 1. The legacy account owns no Fridge (nothing could, before V10),
+                // and the fridgeless rule caps storage at one week — so 3 is unreachable state
+                // under the model this chain ends in. Clamping is also kinder than the
+                // alternative: left at 3, the first rollover would read it as spoiled fresh
+                // food, wipe it to 0 and roll a Doctor Visit (KAN-23).
+                assertThat(rs.getInt("eat")).isEqualTo(1);
                 assertThat(rs.getInt("happiness")).isEqualTo(68);
                 // reset rather than carried over (spec: career/education don't map onto the
                 // real catalog, V5's migration note):

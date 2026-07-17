@@ -9,6 +9,7 @@ import amiss.api.error.SaveNotFoundException;
 import amiss.application.port.SaveRepository;
 import amiss.domain.model.SaveState;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -21,7 +22,8 @@ class SaveScopeTest {
 
     private static SaveState save(long id, String owner) {
         return new SaveState(id, owner, "My Save", 0, 2, 4320, 1, 100, 0, 0, 1, 0, 1,
-                null, 0, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0, null);
+                null, 0, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0, null,
+                false, Set.of());
     }
 
     private static Authentication authenticationFor(String name) {

@@ -26,6 +26,7 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     debt: 0,
     rentDue: true,
     foodWeeks: 2,
+    ateFastFoodLastTurn: false,
     clothing: 1,
     job: { name: 'Unemployed', hourlyWage: null, location: null },
     degreesEarned: [],

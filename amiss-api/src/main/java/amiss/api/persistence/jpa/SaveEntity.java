@@ -1,12 +1,21 @@
 package amiss.api.persistence.jpa;
 
+import amiss.domain.model.ApplianceItem;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * JPA mapping of {@code tblsave} — one saved game (KAN-52). An account
@@ -120,6 +129,16 @@ public class SaveEntity {
     /** Hidden economy reading, -30..+90 (KAN-48): price = base + base*reading/60. */
     @Column(name = "economy_reading", nullable = false)
     private short economyReading;
+
+    /** 1 = Fast Food bought last turn (feeds this turn only, never banked). */
+    @Column(name = "ate_fast_food_last_turn", nullable = false)
+    private int ateFastFoodLastTurn;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "tblsave_appliance", joinColumns = @JoinColumn(name = "save_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "appliance", nullable = false, length = 20)
+    private Set<ApplianceItem> ownedAppliances = new HashSet<>();
 
     protected SaveEntity() {
         // JPA
@@ -346,5 +365,17 @@ public class SaveEntity {
 
     public void setEconomyReading(short economyReading) {
         this.economyReading = economyReading;
+    }
+
+    public boolean isAteFastFoodLastTurn() {
+        return ateFastFoodLastTurn != 0;
+    }
+
+    public void setAteFastFoodLastTurn(boolean ateFastFoodLastTurn) {
+        this.ateFastFoodLastTurn = ateFastFoodLastTurn ? 1 : 0;
+    }
+
+    public Set<ApplianceItem> getOwnedAppliances() {
+        return ownedAppliances;
     }
 }

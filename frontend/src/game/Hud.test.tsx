@@ -17,6 +17,7 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     debt: 0,
     rentDue: false,
     foodWeeks: 2,
+    ateFastFoodLastTurn: false,
     clothing: 1,
     job: { name: 'Unemployed', hourlyWage: null, location: null },
     degreesEarned: [],
@@ -46,6 +47,17 @@ describe('Hud', () => {
     expect(screen.getByText('50 / 100')).toBeInTheDocument();
     expect(screen.getByText('0 / 10')).toBeInTheDocument();
     expect(screen.getByText('0 / 100')).toBeInTheDocument();
+  });
+
+  it('shows the fast food suffix alongside the week count when ateFastFoodLastTurn is true', () => {
+    render(
+      <Hud
+        player={playerFixture({ foodWeeks: 2, ateFastFoodLastTurn: true })}
+        onEndWeek={vi.fn()}
+        endWeekPending={false}
+      />,
+    );
+    expect(screen.getByText('2 wk + fast food')).toBeInTheDocument();
   });
 
   it('shows Unemployed when there is no job', () => {

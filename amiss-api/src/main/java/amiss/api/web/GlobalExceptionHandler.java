@@ -1,6 +1,7 @@
 package amiss.api.web;
 
 import amiss.api.error.AlreadyEnrolledException;
+import amiss.api.error.ApplianceAlreadyOwnedException;
 import amiss.api.error.DegreeAlreadyEarnedException;
 import amiss.api.error.DegreeLockedException;
 import amiss.api.error.EducationCompleteException;
@@ -131,6 +132,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         problem.setTitle("Unknown job");
         problem.setType(URI.create("urn:amiss:unknown-job"));
+        return problem;
+    }
+
+    @ExceptionHandler(ApplianceAlreadyOwnedException.class)
+    ProblemDetail applianceAlreadyOwned(ApplianceAlreadyOwnedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Appliance already owned");
+        problem.setType(URI.create("urn:amiss:appliance-already-owned"));
         return problem;
     }
 

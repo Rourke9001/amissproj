@@ -58,7 +58,7 @@ export function MonolithBurgersPanel({ saveId, player, onNotify }: PanelProps) {
   }));
 
   const statusLine =
-    player.foodWeeks > 0
+    player.foodWeeks > 0 || player.ateFastFoodLastTurn
       ? 'You have food stored for the coming week.'
       : 'No food stored — eat or buy groceries before the week ends.';
 

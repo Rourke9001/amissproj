@@ -78,6 +78,7 @@ export interface SaveStateDto {
   debt: number;
   rentDue: boolean;
   foodWeeks: number;
+  ateFastFoodLastTurn: boolean;
   clothing: number;
   job: JobDto;
   location: LocationDto;
@@ -246,5 +247,18 @@ export interface ClothesResponse {
   item: string;
   price: number;
   clothingLevel: number;
+  state: SaveStateDto;
+}
+
+export interface ApplianceDto {
+  id: string;
+  price: number;
+  store: string;
+  owned: boolean;
+}
+
+export interface ApplianceResponse {
+  item: string;
+  price: number;
   state: SaveStateDto;
 }

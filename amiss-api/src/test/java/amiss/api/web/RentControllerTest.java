@@ -24,6 +24,7 @@ import amiss.application.service.save.TravelService;
 import amiss.domain.board.Location;
 import amiss.domain.model.SaveState;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -50,13 +51,14 @@ class RentControllerTest {
 
     private static SaveState save() {
         return new SaveState(7L, "bob", "My Save", 0, 1, 4200, 4, 20, 0, 0, 1, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
+                false, Set.of());
     }
 
     private static SaveStateDto dto() {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 4, 4200, "70h", false, 20, 0, 0, false,
-                1, 1, null, new LocationDto("RENT_OFFICE", "Rent Office", 12, 0, 1),
+                1, false, 1, null, new LocationDto("RENT_OFFICE", "Rent Office", 12, 0, 1),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 

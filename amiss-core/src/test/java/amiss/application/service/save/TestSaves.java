@@ -2,6 +2,7 @@ package amiss.application.service.save;
 
 import amiss.domain.model.JobSpec;
 import amiss.domain.model.SaveState;
+import java.util.Set;
 
 /** Shared fixtures: a fresh save with new-game defaults, and catalog rows used across tests. */
 final class TestSaves {
@@ -26,6 +27,7 @@ final class TestSaves {
      */
     static SaveState newSave() {
         return new SaveState(SAVE_ID, "tester", "Save 1", 0, 0, 3600, 1, 100, 0, 0, 1, 0, 1,
-                null, 50, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0, null);
+                null, 50, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0, null,
+                false, Set.of());
     }
 }

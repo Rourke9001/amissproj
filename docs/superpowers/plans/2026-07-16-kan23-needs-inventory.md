@@ -211,13 +211,13 @@ class DoctorVisitServiceTest {
 
     @Test
     void noTriggerConditionMeansNoVisit() {
-        SaveState save = TestSaves.newSave();   // cash 100, happiness 50, time 4320
+        SaveState save = TestSaves.newSave();   // cash 100, happiness 50, time 3600
         DoctorVisitOutcome outcome = new DoctorVisitService(rolls()).resolve(save, false);
 
         assertFalse(outcome.triggered());
         assertEquals(100, save.cash());
         assertEquals(50, save.happiness());
-        assertEquals(4320, save.timeMinutes());
+        assertEquals(3600, save.timeMinutes());
     }
 
     @Test
@@ -965,7 +965,7 @@ Run: `.\mvnw -B -pl amiss-core -pl amiss-api compile` and `rg -n "new SaveState\
 
 ```java
     static SaveState newSave() {
-        return new SaveState(SAVE_ID, "tester", "Save 1", 0, 0, 4320, 1, 100, 0, 0, 1, 0, 1,
+        return new SaveState(SAVE_ID, "tester", "Save 1", 0, 0, 3600, 1, 100, 0, 0, 1, 0, 1,
                 null, 50, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0, null,
                 false, Set.of());
     }
@@ -1213,9 +1213,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The minimal appliance/book catalog (KAN-23): Fridge/Freezer/Computer at Socket City,
- * the three Books at Z-Mart (per {@link ApplianceItem#store()}) — no browsing beyond a
- * flat list, no break/repair (KAN-58). Buying requires standing at the item's store.
+ * The minimal appliance catalog (KAN-23): Fridge and Freezer, both at Socket City (per
+ * {@link ApplianceItem#store()}) — no browsing beyond a flat list, no break/repair
+ * (KAN-58). Buying requires standing at the item's store. PR 5 extends the same enum
+ * and these same routes with the Computer and the three Books; this catalog is
+ * whatever {@code ApplianceItem.values()} holds, so it needs no change to carry them.
  */
 @RestController
 public class ApplianceController {
@@ -1910,7 +1912,7 @@ function playerFixture(): SaveStateDto {
     id: 42,
     label: 'Save 42',
     round: 3,
-    timeMinutes: 4320,
+    timeMinutes: 3600,
     timeDisplay: '72h',
     weekOver: false,
     cash: 2000,
@@ -2260,7 +2262,7 @@ Run: `.\mvnw -B -pl amiss-core -pl amiss-api compile` and `rg -n "new SaveState\
 
 ```java
     static SaveState newSave() {
-        return new SaveState(SAVE_ID, "tester", "Save 1", 0, 0, 4320, 1, 100, 0, 0, 1, 0,
+        return new SaveState(SAVE_ID, "tester", "Save 1", 0, 0, 3600, 1, 100, 0, 0, 1, 0,
                 6, 0, 0,
                 null, 50, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0, null,
                 false, Set.of());
@@ -2785,7 +2787,7 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     id: 42,
     label: 'Save 42',
     round: 3,
-    timeMinutes: 4320,
+    timeMinutes: 3600,
     timeDisplay: '72h',
     weekOver: false,
     cash: 500,
@@ -3067,7 +3069,7 @@ Run `rg -n "new SaveState\(" --glob "*.java"` and append `, 10, false` at every 
 
 ```java
     static SaveState newSave() {
-        return new SaveState(SAVE_ID, "tester", "Save 1", 0, 0, 4320, 1, 100, 0, 0, 1, 0,
+        return new SaveState(SAVE_ID, "tester", "Save 1", 0, 0, 3600, 1, 100, 0, 0, 1, 0,
                 6, 0, 0,
                 null, 50, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0, null,
                 false, Set.of(), 10, false);
@@ -3134,21 +3136,21 @@ class RelaxServiceTest {
 
     @Test
     void firstRelaxThisTurnGrantsTheStatAndHappinessBonus() {
-        SaveState save = TestSaves.newSave();   // relaxation 10, happiness 50, time 4320
+        SaveState save = TestSaves.newSave();   // relaxation 10, happiness 50, time 3600
 
         RelaxService.RelaxOutcome outcome = service().relax(save);
 
         assertEquals(RelaxService.RelaxOutcome.Status.OK, outcome.status());
         assertEquals(13, save.relaxation());
         assertEquals(52, save.happiness());
-        assertEquals(4320 - ActionCosts.defaults().relaxMinutes(), save.timeMinutes());
+        assertEquals(3600 - ActionCosts.defaults().relaxMinutes(), save.timeMinutes());
         verify(saves).update(save);
     }
 
     @Test
     void secondRelaxSameTurnRaisesTheStatButGrantsNoMoreHappiness() {
         SaveState save = TestSaves.newSave();
-        save.setTimeMinutes(4320);
+        save.setTimeMinutes(3600);
         service().relax(save);
         int happinessAfterFirst = save.happiness();
 
@@ -3596,7 +3598,7 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     id: 42,
     label: 'Save 42',
     round: 3,
-    timeMinutes: 4320,
+    timeMinutes: 3600,
     timeDisplay: '72h',
     weekOver: false,
     cash: 500,

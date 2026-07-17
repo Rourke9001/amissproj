@@ -5,8 +5,8 @@ import java.util.function.IntUnaryOperator;
 
 /**
  * The shared Doctor Visit event (KAN-23, wiki Doctor Visit page). Three independent
- * conditions can trigger it — Starvation (25%), spoiled fridgeless fresh food (50%,
- * PR 2), a Relaxation stat at its floor (20%, PR 4) — each rolled separately when its
+ * conditions can trigger it — Starvation (25%), spoiled fridgeless fresh food (50%),
+ * a Relaxation stat at its floor (20%, PR 4) — each rolled separately when its
  * condition is true; only one visit resolves per turn even if more than one condition
  * fires. Effect: +10h, -4 happiness, and a cash cost tiered by cash on hand. The event
  * is bypassed entirely if the player has $0 cash (wiki-exact). Rolls come through the
@@ -14,7 +14,8 @@ import java.util.function.IntUnaryOperator;
  */
 public class DoctorVisitService {
 
-    private static final int STARVATION_CHANCE = 4;   // 1-in-4 = 25%
+    private static final int STARVATION_CHANCE = 4;    // 1-in-4 = 25%
+    private static final int SPOILAGE_CHANCE = 2;       // 1-in-2 = 50%
     private static final int MINUTES_LOST = 600;       // 10h
     private static final int HAPPINESS_LOST = 4;
     private static final int HIGH_CASH_THRESHOLD = 500;
@@ -30,12 +31,14 @@ public class DoctorVisitService {
         this.roll1toN = roll1toN;
     }
 
-    public DoctorVisitOutcome resolve(SaveState save, boolean starved) {
+    public DoctorVisitOutcome resolve(SaveState save, boolean starved, boolean spoiledFreshFood) {
         if (save.cash() <= 0) {
             return DoctorVisitOutcome.none();
         }
         boolean starvationHit = starved && roll1toN.applyAsInt(STARVATION_CHANCE) == 1;
-        if (!starvationHit) {
+        boolean spoilageHit = spoiledFreshFood && roll1toN.applyAsInt(SPOILAGE_CHANCE) == 1;
+        boolean triggered = starvationHit || spoilageHit;
+        if (!triggered) {
             return DoctorVisitOutcome.none();
         }
         int cost = cost(save.cash());
