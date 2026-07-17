@@ -64,7 +64,9 @@ export function Hud({ player, onEndWeek, endWeekPending }: HudProps) {
         </div>
         <div className="hud-stat">
           <dt>Food</dt>
-          <dd>{player.foodWeeks} wk</dd>
+          <dd>
+            {player.foodWeeks} wk{player.ateFastFoodLastTurn ? ' + fast food' : ''}
+          </dd>
         </div>
         <div className="hud-stat">
           <dt>Happiness</dt>

@@ -21,6 +21,7 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     debt: 0,
     rentDue: false,
     foodWeeks: 0,
+    ateFastFoodLastTurn: false,
     clothing: 1,
     job: { name: 'Unemployed', hourlyWage: null, location: null },
     location: { id: 'EMPLOYMENT_OFFICE', name: 'Employment Office', ringIndex: 7, row: 3, col: 1 },
