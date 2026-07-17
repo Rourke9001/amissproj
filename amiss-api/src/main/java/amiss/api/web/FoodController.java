@@ -109,6 +109,7 @@ public class FoodController {
         FoodPack pack = parseFoodPack(request.pack());
         SaveState save = scope.require(saveId, authentication);
         LocationGuard.requireAt(services.travel(), save, Location.BLACKS_MARKET);
+        int freshFoodWeeksBefore = save.eat();
 
         PurchaseOutcome outcome = services.shop().buyGroceries(save, pack);
         switch (outcome.status()) {
@@ -119,8 +120,8 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(saveId);
             default:
-                return new GroceriesResponse(pack.name(), outcome.pricePaid(), pack.weeks(), save.eat(),
-                        assembler.assemble(services, save));
+                return new GroceriesResponse(pack.name(), outcome.pricePaid(),
+                        save.eat() - freshFoodWeeksBefore, save.eat(), assembler.assemble(services, save));
         }
     }
 

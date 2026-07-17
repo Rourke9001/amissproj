@@ -25,6 +25,7 @@ public record SaveStateDto(
         int debt,
         boolean rentDue,
         int foodWeeks,
+        boolean ateFastFoodLastTurn,
         int clothing,
         JobDto job,
         LocationDto location,

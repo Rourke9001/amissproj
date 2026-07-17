@@ -58,7 +58,7 @@ class RentControllerTest {
     private static SaveStateDto dto() {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 4, 4200, "70h", false, 20, 0, 0, false,
-                1, 1, null, new LocationDto("RENT_OFFICE", "Rent Office", 12, 0, 1),
+                1, false, 1, null, new LocationDto("RENT_OFFICE", "Rent Office", 12, 0, 1),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 

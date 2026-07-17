@@ -69,6 +69,7 @@ public class PlayerStateAssembler {
                 save.debt(),
                 save.rent() == 1,
                 save.eat(),
+                save.ateFastFoodLastTurn(),
                 save.clothing(),
                 jobFor(save),
                 new LocationDto(location.name(), location.displayName(), board.ringIndex(row, col), row, col),

@@ -63,9 +63,14 @@ class FoodControllerTest {
     }
 
     private static SaveStateDto dto() {
+        return dto(1, false);
+    }
+
+    private static SaveStateDto dto(int foodWeeks, boolean ateFastFoodLastTurn) {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 3, 3960, "66h", false, 70, 0, 0, false,
-                1, 1, null, new LocationDto("MONOLITH_BURGERS", "Monolith Burgers", 3, 1, 4),
+                foodWeeks, ateFastFoodLastTurn, 1, null,
+                new LocationDto("MONOLITH_BURGERS", "Monolith Burgers", 3, 1, 4),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 
@@ -217,14 +222,15 @@ class FoodControllerTest {
         when(services.shop()).thenReturn(shop);
         when(shop.eat(save, FastFoodItem.BURGER))
                 .thenReturn(new EatOutcome(EatOutcome.Status.OK, 3900, 38, 32));
-        when(assembler.assemble(services, save)).thenReturn(dto());
+        when(assembler.assemble(services, save)).thenReturn(dto(1, true));
 
         mvc.perform(postBody("/api/saves/7/eat", "item", "BURGER"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ate").value(true))
                 .andExpect(jsonPath("$.reason").doesNotExist())
                 .andExpect(jsonPath("$.minutesCharged").value(0))
-                .andExpect(jsonPath("$.state.id").value(7));
+                .andExpect(jsonPath("$.state.id").value(7))
+                .andExpect(jsonPath("$.state.ateFastFoodLastTurn").value(true));
     }
 
     // ---- POST /api/saves/{id}/groceries -----------------------------------------
@@ -311,6 +317,32 @@ class FoodControllerTest {
                 .andExpect(jsonPath("$.weeksAdded").value(2))
                 .andExpect(jsonPath("$.foodWeeks").value(2))
                 .andExpect(jsonPath("$.state.id").value(7));
+    }
+
+    /**
+     * KAN-23: storage is capped by fridge/freezer ownership, so {@code weeksAdded} must
+     * report the real before/after delta, not the pack's nominal {@code weeks()} size — here
+     * an EIGHT_WEEKS pack (nominal 8) only nets +1 because the save is already at 5 and the
+     * service clamps the post-purchase total to 6 (a Fridge-owner's cap).
+     */
+    @Test
+    void groceries_weeksAddedIsTheCappedDeltaNotThePackNominalSize() throws Exception {
+        SaveState save = save();
+        save.setEat(5);
+        mockTravelAt(save, Location.BLACKS_MARKET);
+        ShopService shop = mock(ShopService.class);
+        when(services.shop()).thenReturn(shop);
+        when(shop.buyGroceries(save, FoodPack.EIGHT_WEEKS)).thenAnswer(invocation -> {
+            save.setEat(6);
+            return new PurchaseOutcome(PurchaseOutcome.Status.OK, 3760, 22, 140);
+        });
+        when(assembler.assemble(services, save)).thenReturn(dto(6, false));
+
+        mvc.perform(postBody("/api/saves/7/groceries", "pack", "EIGHT_WEEKS"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pack").value("EIGHT_WEEKS"))
+                .andExpect(jsonPath("$.weeksAdded").value(1))
+                .andExpect(jsonPath("$.foodWeeks").value(6));
     }
 
     // ---- POST /api/saves/{id}/clothes -------------------------------------------
