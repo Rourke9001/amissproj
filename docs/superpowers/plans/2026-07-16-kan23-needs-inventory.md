@@ -404,7 +404,7 @@ git commit -F commit.txt
         WeekRolloverService.RolloverResult result = service().endWeek(save);
 
         assertFalse(result.fed());
-        assertEquals(3000, save.timeMinutes());   // 3600 - 600 (20h)
+        assertEquals(2400, save.timeMinutes());   // 3600 - 1200 (20h starvation penalty)
         assertEquals(48, save.happiness());       // 50 - 2 (starvation happiness loss)
     }
 
@@ -441,7 +441,7 @@ git commit -F commit.txt
         assertTrue(result.doctorVisit().triggered());
         assertEquals(30, result.doctorVisit().cashLost());
         assertEquals(70, save.cash());
-        assertEquals(2400, save.timeMinutes());   // 3600 - 600 (starvation) - 600 (doctor)
+        assertEquals(1800, save.timeMinutes());   // 3600 - 1200 (starvation) - 600 (doctor)
         assertEquals(44, save.happiness());       // 50 - 2 (starvation) - 4 (doctor)
     }
 ```
