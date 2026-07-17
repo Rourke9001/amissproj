@@ -164,6 +164,21 @@ class ApplianceControllerTest {
     }
 
     @Test
+    void buy_alreadyOwnedIsA409Problem() throws Exception {
+        SaveState save = save();
+        mockTravelAt(save, Location.SOCKET_CITY);
+        ApplianceService appliances = mock(ApplianceService.class);
+        when(services.appliances()).thenReturn(appliances);
+        when(appliances.buy(save, ApplianceItem.FRIDGE))
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.ALREADY_OWNED, 3900, 3900, 876));
+
+        mvc.perform(postBody("/api/saves/7/appliances", "item", "FRIDGE"))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:amiss:appliance-already-owned"));
+    }
+
+    @Test
     void buy_okReturnsItemPricePaidAndFreshState() throws Exception {
         SaveState save = save();
         mockTravelAt(save, Location.SOCKET_CITY);

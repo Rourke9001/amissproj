@@ -29,12 +29,15 @@ public class ApplianceService {
         if (cash < price) {
             return new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, save.timeMinutes(), cash, price);
         }
-        boolean firstOwned = !save.owns(item);
+        // Ownership is a repeat-purchase guard, not an affordability one — check it after cash so an
+        // owner who's also broke still sees ALREADY_OWNED (the more specific, and correct, reason),
+        // and before any charge so re-buying an owned item costs nothing and grants no state change.
+        if (save.owns(item)) {
+            return new PurchaseOutcome(PurchaseOutcome.Status.ALREADY_OWNED, save.timeMinutes(), cash, price);
+        }
         save.setCash(cash - price);
         save.grantAppliance(item);
-        if (firstOwned) {
-            save.addHappiness(item.firstOwnedHappiness());
-        }
+        save.addHappiness(item.firstOwnedHappiness());
         saves.update(save);
         return new PurchaseOutcome(PurchaseOutcome.Status.OK, save.timeMinutes(), save.cash(), price);
     }

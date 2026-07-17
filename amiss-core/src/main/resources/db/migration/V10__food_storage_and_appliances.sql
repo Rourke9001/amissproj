@@ -14,3 +14,13 @@ CREATE TABLE tblsave_appliance (
     PRIMARY KEY (save_id, appliance),
     CONSTRAINT fk_tblsave_appliance_save FOREIGN KEY (save_id) REFERENCES tblsave(id) ON DELETE CASCADE
 );
+
+-- Backfill: pre-V10, nobody could own a Fridge and buyGroceries added packs outright, so a
+-- row can legitimately hold `eat` up to 8 with no appliance ownership. From this migration
+-- forward the fridgeless capacity rule caps storage at 1 week, making `eat > 1` with an empty
+-- appliance set an unreachable state — and since the appliance table above is brand new,
+-- every existing row is fridgeless right now, so an unconditional clamp is correct with no
+-- join needed. Left uncapped, the first post-deploy rollover would read `eat = 8` as spoiled
+-- fresh food, wipe it, and roll a Doctor Visit out of nowhere for a save that never bought a
+-- Fridge. Mirrors the V9 clamp on `time > 3600`.
+UPDATE tblsave SET eat = 1 WHERE eat > 1;

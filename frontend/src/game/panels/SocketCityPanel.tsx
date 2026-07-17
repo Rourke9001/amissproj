@@ -52,6 +52,7 @@ export function SocketCityPanel({ saveId, onNotify }: PanelProps) {
     price: item.price,
     detail: item.owned ? 'Owned' : undefined,
     actionLabel: 'Buy',
+    disabled: item.owned,
   }));
 
   return (

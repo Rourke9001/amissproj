@@ -84,6 +84,16 @@ describe('SocketCityPanel', () => {
     expect(within(freezerRow).getByText('Owned')).toBeInTheDocument();
   });
 
+  it('disables the Buy button on an owned item, leaving an unowned item clickable', async () => {
+    renderPanel();
+
+    const freezerRow = (await screen.findByText('Freezer')).closest('li') as HTMLElement;
+    expect(within(freezerRow).getByRole('button', { name: 'Buy' })).toBeDisabled();
+
+    const fridgeRow = (await screen.findByText('Refrigerator')).closest('li') as HTMLElement;
+    expect(within(fridgeRow).getByRole('button', { name: 'Buy' })).toBeEnabled();
+  });
+
   it('buys successfully and updates the save-query cache', async () => {
     buyApplianceMock.mockResolvedValue({
       item: 'FRIDGE',

@@ -2,6 +2,7 @@ package amiss.application.service.save;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import amiss.application.port.SaveRepository;
@@ -38,15 +39,19 @@ class ApplianceServiceTest {
     }
 
     @Test
-    void repeatPurchaseOfAnOwnedApplianceGrantsNoFurtherHappiness() {
+    void repeatPurchaseOfAnOwnedApplianceChargesNothingAndGrantsNoFurtherHappiness() {
         SaveState save = TestSaves.newSave();
         save.setCash(2000);
         save.grantAppliance(ApplianceItem.FRIDGE);
         int happinessBefore = save.happiness();
 
-        service().buy(save, ApplianceItem.FRIDGE);
+        PurchaseOutcome outcome = service().buy(save, ApplianceItem.FRIDGE);
 
+        assertEquals(PurchaseOutcome.Status.ALREADY_OWNED, outcome.status());
+        assertEquals(2000, outcome.cash());
+        assertEquals(2000, save.cash());
         assertEquals(happinessBefore, save.happiness());
+        verify(saves, never()).update(save);
     }
 
     @Test

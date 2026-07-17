@@ -23,6 +23,11 @@ public record PurchaseOutcome(Status status, int remainingMinutes, int cash, int
          */
         INSUFFICIENT_CASH,
         /** Buying would push the clock below zero; nothing was charged. */
-        INSUFFICIENT_TIME
+        INSUFFICIENT_TIME,
+        /**
+         * The save already owns the item (appliances/books only — a one-time purchase, unlike
+         * groceries or clothes). Checked before any spend, so nothing was charged.
+         */
+        ALREADY_OWNED
     }
 }

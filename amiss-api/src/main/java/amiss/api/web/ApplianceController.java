@@ -1,5 +1,6 @@
 package amiss.api.web;
 
+import amiss.api.error.ApplianceAlreadyOwnedException;
 import amiss.api.error.InsufficientFundsException;
 import amiss.api.error.InsufficientTimeException;
 import amiss.api.error.UnknownItemException;
@@ -69,6 +70,8 @@ public class ApplianceController {
                 throw new InsufficientFundsException(saveId);
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(saveId);
+            case ALREADY_OWNED:
+                throw new ApplianceAlreadyOwnedException(item.name());
             default:
                 return new ApplianceResponse(item.name(), outcome.pricePaid(), assembler.assemble(services, save));
         }
