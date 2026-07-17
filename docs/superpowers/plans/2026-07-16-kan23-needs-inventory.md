@@ -773,14 +773,14 @@ Body: summary of the flat-60h week, unfed penalty, new `DoctorVisitService`; not
 
 ---
 
-# PR 2 — `feat/kan23-food-storage` (V9, fresh/fast food split, Fridge/Freezer, minimal Socket City)
+# PR 2 — `feat/kan23-food-storage` (V10, fresh/fast food split, Fridge/Freezer, minimal Socket City)
 
 Branch: `git checkout -b feat/kan23-food-storage` off `feat/kan23-starvation-doctor-visit`.
 
-### Task 6: V9 migration + `ApplianceItem` + domain/entity plumbing
+### Task 6: V10 migration + `ApplianceItem` + domain/entity plumbing
 
 **Files:**
-- Create: `amiss-core/src/main/resources/db/migration/V9__food_storage_and_appliances.sql`
+- Create: `amiss-core/src/main/resources/db/migration/V10__food_storage_and_appliances.sql`
 - Create: `amiss-core/src/main/java/amiss/domain/model/ApplianceItem.java`
 - Modify: `amiss-core/src/main/java/amiss/domain/model/SaveState.java`
 - Modify: `amiss-api/src/main/java/amiss/api/persistence/jpa/SaveEntity.java`
@@ -793,7 +793,7 @@ Branch: `git checkout -b feat/kan23-food-storage` off `feat/kan23-starvation-doc
 - [ ] **Step 1: Write the migration**
 
 ```sql
--- V9: food-storage split (KAN-23, PR 2). `eat` becomes specifically "weeks of
+-- V10: food-storage split (KAN-23, PR 2). `eat` becomes specifically "weeks of
 -- Fresh Food stored" (fast food's 1-turn effect is the new boolean flag below,
 -- never banked); appliance ownership (Fridge/Freezer here; Computer/Books
 -- follow in a later PR with zero schema change) is a generic join table, the
@@ -980,11 +980,11 @@ Expected: BUILD SUCCESS, all existing tests green (no behaviour changed yet — 
 
 ```powershell
 Set-Content -Encoding ascii commit.txt @"
-feat: V9 appliance ownership + fast-food flag on SaveState (KAN-23)
+feat: V10 appliance ownership + fast-food flag on SaveState (KAN-23)
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 "@
-git add amiss-core/src/main/resources/db/migration/V9__food_storage_and_appliances.sql amiss-core/src/main/java/amiss/domain/model/ApplianceItem.java amiss-core/src/main/java/amiss/domain/model/SaveState.java amiss-api/src/main/java/amiss/api/persistence/jpa/SaveEntity.java amiss-api/src/main/java/amiss/api/persistence/jpa/JpaSaveRepository.java
+git add amiss-core/src/main/resources/db/migration/V10__food_storage_and_appliances.sql amiss-core/src/main/java/amiss/domain/model/ApplianceItem.java amiss-core/src/main/java/amiss/domain/model/SaveState.java amiss-api/src/main/java/amiss/api/persistence/jpa/SaveEntity.java amiss-api/src/main/java/amiss/api/persistence/jpa/JpaSaveRepository.java
 git add -u
 git commit -F commit.txt
 ```
@@ -2023,7 +2023,7 @@ git add frontend/src/api/appliances.ts frontend/src/api/types.ts frontend/src/ga
 git commit -F commit.txt
 ```
 
-### Task 12: V9 IT, full verify, live check, CV highlights, push, PR
+### Task 12: V10 IT, full verify, live check, CV highlights, push, PR
 
 **Files:**
 - Modify: whichever `amiss-api` Testcontainers IT round-trips a `SaveState` mutation (grep `rg -l "SaveState" amiss-api/src/test/java/amiss/api/persistence/jpa`)
@@ -2061,18 +2061,18 @@ git push -u origin feat/kan23-food-storage
 gh pr create --base develop --title "feat: fresh/fast food split + Fridge/Freezer capacity (KAN-23)" --body-file <bodyfile>
 ```
 
-Body: summary of V9, `ApplianceService`, the fridgeless-1-week rule, Doctor Visit's second trigger; note merge order after PR 1, and that Computer/Books extend the same `ApplianceItem` enum in PR 5 with no new migration.
+Body: summary of V10, `ApplianceService`, the fridgeless-1-week rule, Doctor Visit's second trigger; note merge order after PR 1, and that Computer/Books extend the same `ApplianceItem` enum in PR 5 with no new migration.
 
 ---
 
-# PR 3 — `feat/kan23-clothes-wear` (V10, three independent clothing categories, hiring gate)
+# PR 3 — `feat/kan23-clothes-wear` (V11, three independent clothing categories, hiring gate)
 
 Branch: `git checkout -b feat/kan23-clothes-wear` off `feat/kan23-food-storage`.
 
-### Task 13: V10 migration + `ClothingItem` rework + `SaveState`/`SaveEntity` three-category fields
+### Task 13: V11 migration + `ClothingItem` rework + `SaveState`/`SaveEntity` three-category fields
 
 **Files:**
-- Create: `amiss-core/src/main/resources/db/migration/V10__clothing_categories.sql`
+- Create: `amiss-core/src/main/resources/db/migration/V11__clothing_categories.sql`
 - Modify: `amiss-core/src/main/java/amiss/domain/model/ClothingItem.java`
 - Modify: `amiss-core/src/main/java/amiss/domain/model/SaveState.java`
 - Modify: `amiss-api/src/main/java/amiss/api/persistence/jpa/SaveEntity.java`
@@ -2085,7 +2085,7 @@ Branch: `git checkout -b feat/kan23-clothes-wear` off `feat/kan23-food-storage`.
 - [ ] **Step 1: Write the migration**
 
 ```sql
--- V10: three independent clothing-category tracks (KAN-23, PR 3), replacing
+-- V11: three independent clothing-category tracks (KAN-23, PR 3), replacing
 -- the single non-decaying `clothing` level. Wiki-exact: Casual/Dress/Business
 -- each count down in weeks and decay independently; a purchase adds to its
 -- category rather than overwriting it. New-game seed matches the wiki
@@ -2276,11 +2276,11 @@ Expected: some pre-existing tests that asserted `save.clothing()` or constructed
 
 ```powershell
 Set-Content -Encoding ascii commit.txt @"
-feat: V10 three independent clothing categories (KAN-23)
+feat: V11 three independent clothing categories (KAN-23)
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 "@
-git add amiss-core/src/main/resources/db/migration/V10__clothing_categories.sql amiss-core/src/main/java/amiss/domain/model/ClothingItem.java amiss-core/src/main/java/amiss/domain/model/SaveState.java amiss-api/src/main/java/amiss/api/persistence/jpa/SaveEntity.java amiss-api/src/main/java/amiss/api/persistence/jpa/JpaSaveRepository.java
+git add amiss-core/src/main/resources/db/migration/V11__clothing_categories.sql amiss-core/src/main/java/amiss/domain/model/ClothingItem.java amiss-core/src/main/java/amiss/domain/model/SaveState.java amiss-api/src/main/java/amiss/api/persistence/jpa/SaveEntity.java amiss-api/src/main/java/amiss/api/persistence/jpa/JpaSaveRepository.java
 git add -u
 git commit -F commit.txt
 ```
@@ -2913,7 +2913,7 @@ git add frontend/src/api/types.ts frontend/src/game/panels/QTClothingPanel.tsx f
 git commit -F commit.txt
 ```
 
-### Task 19: V10 IT, full verify, live check, CV highlights, push, PR
+### Task 19: V11 IT, full verify, live check, CV highlights, push, PR
 
 **Files:**
 - Modify: the same `amiss-api` Testcontainers IT touched in PR 2's Task 12
@@ -2951,18 +2951,18 @@ git push -u origin feat/kan23-clothes-wear
 gh pr create --base develop --title "feat: three-category clothing wear + hiring gate (KAN-23)" --body-file <bodyfile>
 ```
 
-Body: summary of V10, the category model, the `HiringService` gate; note merge order after PR 1→2.
+Body: summary of V11, the category model, the `HiringService` gate; note merge order after PR 1→2.
 
 ---
 
-# PR 4 — `feat/kan23-relaxation` (V11, Relax action, Doctor Visit's 3rd trigger)
+# PR 4 — `feat/kan23-relaxation` (V12, Relax action, Doctor Visit's 3rd trigger)
 
 Branch: `git checkout -b feat/kan23-relaxation` off `feat/kan23-clothes-wear`.
 
-### Task 20: V11 migration + `relaxation`/`relaxedThisTurn` on `SaveState`/`SaveEntity`
+### Task 20: V12 migration + `relaxation`/`relaxedThisTurn` on `SaveState`/`SaveEntity`
 
 **Files:**
-- Create: `amiss-core/src/main/resources/db/migration/V11__relaxation.sql`
+- Create: `amiss-core/src/main/resources/db/migration/V12__relaxation.sql`
 - Modify: `amiss-core/src/main/java/amiss/domain/model/SaveState.java`
 - Modify: `amiss-api/src/main/java/amiss/api/persistence/jpa/SaveEntity.java`
 - Modify: `amiss-api/src/main/java/amiss/api/persistence/jpa/JpaSaveRepository.java`
@@ -2974,7 +2974,7 @@ Branch: `git checkout -b feat/kan23-relaxation` off `feat/kan23-clothes-wear`.
 - [ ] **Step 1: Write the migration**
 
 ```sql
--- V11: Relaxation stat (KAN-23, PR 4). Starts at 10 (the wiki floor), rises to
+-- V12: Relaxation stat (KAN-23, PR 4). Starts at 10 (the wiki floor), rises to
 -- a max of 50 via the Relax action, decays -1/turn (never below 10).
 -- relaxed_this_turn tracks whether this turn's first-Relax happiness bonus
 -- has already been paid out (wiki: only the first Relax each turn grants +2
@@ -3083,11 +3083,11 @@ Expected: BUILD SUCCESS, all green (no behaviour changed yet).
 
 ```powershell
 Set-Content -Encoding ascii commit.txt @"
-feat: V11 relaxation stat on SaveState (KAN-23)
+feat: V12 relaxation stat on SaveState (KAN-23)
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 "@
-git add amiss-core/src/main/resources/db/migration/V11__relaxation.sql amiss-core/src/main/java/amiss/domain/model/SaveState.java amiss-api/src/main/java/amiss/api/persistence/jpa/SaveEntity.java amiss-api/src/main/java/amiss/api/persistence/jpa/JpaSaveRepository.java
+git add amiss-core/src/main/resources/db/migration/V12__relaxation.sql amiss-core/src/main/java/amiss/domain/model/SaveState.java amiss-api/src/main/java/amiss/api/persistence/jpa/SaveEntity.java amiss-api/src/main/java/amiss/api/persistence/jpa/JpaSaveRepository.java
 git add -u
 git commit -F commit.txt
 ```
@@ -3716,7 +3716,7 @@ git add frontend/src/api/home.ts frontend/src/api/types.ts frontend/src/game/pan
 git commit -F commit.txt
 ```
 
-### Task 24: V11 IT, full verify, live check, CV highlights, push, PR
+### Task 24: V12 IT, full verify, live check, CV highlights, push, PR
 
 **Files:**
 - Modify: the same `amiss-api` Testcontainers IT touched in PR 2/3's equivalent tasks
@@ -3752,7 +3752,7 @@ git push -u origin feat/kan23-relaxation
 gh pr create --base develop --title "feat: Relaxation stat + Relax action (KAN-23)" --body-file <bodyfile>
 ```
 
-Body: summary of V11, `RelaxService`, Doctor Visit's third trigger; note merge order after PR 1→2→3.
+Body: summary of V12, `RelaxService`, Doctor Visit's third trigger; note merge order after PR 1→2→3.
 
 ---
 
@@ -4070,7 +4070,7 @@ git commit -F commit.txt
 - [ ] **Step 1: Full verify**
 
 Run: `.\mvnw -B clean verify` (Docker running)
-Expected: BUILD SUCCESS — no new migration this PR, so the existing V1→V11 IT chain is the only proof needed; no IT changes required.
+Expected: BUILD SUCCESS — no new migration this PR, so the existing V1→V12 IT chain is the only proof needed; no IT changes required.
 
 - [ ] **Step 2: Live check**
 
