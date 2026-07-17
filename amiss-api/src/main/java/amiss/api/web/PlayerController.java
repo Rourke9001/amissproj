@@ -4,6 +4,7 @@ import amiss.api.error.InsufficientTimeException;
 import amiss.api.error.UnknownLocationException;
 import amiss.api.error.WeekNotOverException;
 import amiss.api.error.WeekOverException;
+import amiss.api.web.dto.DoctorVisitDto;
 import amiss.api.web.dto.EconomyEventDto;
 import amiss.api.web.dto.EndWeekResponse;
 import amiss.api.web.dto.MoveRequest;
@@ -58,7 +59,7 @@ public class PlayerController {
         }
         return new EndWeekResponse(result.newRound(), result.fed(), result.rentDue(),
                 result.debtCharged(), result.won(), EconomyEventDto.from(result.economy()),
-                assembler.assemble(services, save));
+                DoctorVisitDto.from(result.doctorVisit()), assembler.assemble(services, save));
     }
 
     @PostMapping("/move")

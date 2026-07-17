@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EndWeekModal } from './EndWeekModal';
-import type { SaveStateDto, EconomyEventDto } from '../api/types';
+import type { SaveStateDto, EconomyEventDto, DoctorVisitDto } from '../api/types';
 
 function stateFixture(): SaveStateDto {
   return {
@@ -41,6 +41,13 @@ const noEvent: EconomyEventDto = {
   happinessLost: 0,
 };
 
+const noDoctorVisit: DoctorVisitDto = {
+  triggered: false,
+  hoursLost: 0,
+  happinessLost: 0,
+  cashLost: 0,
+};
+
 describe('EndWeekModal', () => {
   it('shows the round, fed, debtCharged and rentDue summary lines', () => {
     render(
@@ -52,6 +59,7 @@ describe('EndWeekModal', () => {
           debtCharged: true,
           won: false,
           economy: noEvent,
+          doctorVisit: noDoctorVisit,
           state: stateFixture(),
         }}
         onClose={vi.fn()}
@@ -75,6 +83,7 @@ describe('EndWeekModal', () => {
           debtCharged: false,
           won: false,
           economy: noEvent,
+          doctorVisit: noDoctorVisit,
           state: stateFixture(),
         }}
         onClose={vi.fn()}
@@ -98,6 +107,7 @@ describe('EndWeekModal', () => {
           debtCharged: false,
           won: false,
           economy: noEvent,
+          doctorVisit: noDoctorVisit,
           state: stateFixture(),
         }}
         onClose={onClose}
@@ -118,6 +128,7 @@ describe('EndWeekModal', () => {
           debtCharged: false,
           won: false,
           economy: { ...noEvent, event: 'BOOM' },
+          doctorVisit: noDoctorVisit,
           state: stateFixture(),
         }}
         onClose={vi.fn()}
@@ -143,6 +154,7 @@ describe('EndWeekModal', () => {
             bankWiped: true,
             happinessLost: 3,
           },
+          doctorVisit: noDoctorVisit,
           state: stateFixture(),
         }}
         onClose={vi.fn()}
@@ -170,11 +182,50 @@ describe('EndWeekModal', () => {
             bankWiped: false,
             happinessLost: 2,
           },
+          doctorVisit: noDoctorVisit,
           state: stateFixture(),
         }}
         onClose={vi.fn()}
       />,
     );
     expect(screen.getByText('Your pay was cut to R8/h.')).toBeInTheDocument();
+  });
+
+  it('renders nothing extra when no Doctor Visit fired', () => {
+    render(
+      <EndWeekModal
+        result={{
+          round: 4,
+          fed: true,
+          rentDue: false,
+          debtCharged: false,
+          won: false,
+          economy: noEvent,
+          doctorVisit: noDoctorVisit,
+          state: stateFixture(),
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/visit the Doctor/)).not.toBeInTheDocument();
+  });
+
+  it('renders the Doctor Visit line when triggered', () => {
+    render(
+      <EndWeekModal
+        result={{
+          round: 4,
+          fed: true,
+          rentDue: false,
+          debtCharged: false,
+          won: false,
+          economy: noEvent,
+          doctorVisit: { triggered: true, hoursLost: 10, happinessLost: 4, cashLost: 30 },
+          state: stateFixture(),
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/lost 10h and R30/)).toBeInTheDocument();
   });
 });

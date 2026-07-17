@@ -126,6 +126,13 @@ export interface EconomyEventDto {
   happinessLost: number;
 }
 
+export interface DoctorVisitDto {
+  triggered: boolean;
+  hoursLost: number;
+  happinessLost: number;
+  cashLost: number;
+}
+
 export interface EndWeekResponse {
   round: number;
   fed: boolean;
@@ -133,6 +140,7 @@ export interface EndWeekResponse {
   debtCharged: boolean;
   won: boolean;
   economy: EconomyEventDto;
+  doctorVisit: DoctorVisitDto;
   state: SaveStateDto;
 }
 

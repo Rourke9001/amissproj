@@ -14,5 +14,6 @@ public record EndWeekResponse(
         boolean debtCharged,
         boolean won,
         EconomyEventDto economy,
+        DoctorVisitDto doctorVisit,
         SaveStateDto state) {
 }

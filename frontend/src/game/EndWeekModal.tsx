@@ -20,6 +20,12 @@ export function EndWeekModal({ result, onClose }: EndWeekModalProps) {
           <p>Your pay was cut to R{result.economy.wageCutTo}/h.</p>
         )}
         {result.economy.bankWiped && <p>Your bank savings were wiped out.</p>}
+        {result.doctorVisit.triggered && (
+          <p>
+            You had to visit the Doctor — lost {result.doctorVisit.hoursLost}h and R
+            {result.doctorVisit.cashLost}.
+          </p>
+        )}
         <button type="button" onClick={onClose}>
           Close
         </button>

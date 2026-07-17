@@ -371,6 +371,7 @@ describe('BoardScreen', () => {
         bankWiped: false,
         happinessLost: 0,
       },
+      doctorVisit: { triggered: false, hoursLost: 0, happinessLost: 0, cashLost: 0 },
       state: playerFixture({ weekOver: false, round: 4, timeDisplay: '72h' }),
     });
     const user = userEvent.setup();
