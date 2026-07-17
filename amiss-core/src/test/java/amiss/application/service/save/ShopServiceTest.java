@@ -183,6 +183,29 @@ class ShopServiceTest {
     }
 
     @Test
+    void groceriesWithAFreezerButNoFridgeBehavesExactlyFridgeless() {
+        SaveState save = TestSaves.newSave();
+        save.setCash(1000);
+        save.grantAppliance(ApplianceItem.FREEZER); // no Fridge
+
+        service().buyGroceries(save, FoodPack.FOUR_WEEKS);
+
+        assertEquals(1, save.eat());   // a Freezer alone does nothing; not 4, not 12
+    }
+
+    @Test
+    void groceriesWithAFridgeProveAdditiveStackingNotJustClamping() {
+        SaveState save = TestSaves.newSave();
+        save.setCash(1000);
+        save.grantAppliance(ApplianceItem.FRIDGE);
+        save.setEat(1);
+
+        service().buyGroceries(save, FoodPack.ONE_WEEK);
+
+        assertEquals(2, save.eat());   // 1 + 1, well under the 6-week cap - proves it's not just "return cap"
+    }
+
+    @Test
     void groceriesInsufficientCashRejectsThePurchaseButHasAlreadyChargedTime() {
         SaveState save = TestSaves.newSave();
         save.setCash(10); // < 25
