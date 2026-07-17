@@ -30,6 +30,7 @@ import amiss.application.service.save.WeekRolloverService;
 import amiss.domain.board.Location;
 import amiss.domain.model.SaveState;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -59,7 +60,8 @@ class PlayerControllerTest {
 
     private static SaveState save() {
         return new SaveState(7L, "bob", "My Save", 0, 2, 3960, 3, 120, 50, 0, 0, 1, 1,
-                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
+                null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
+                false, Set.of());
     }
 
     private static SaveStateDto dto() {

@@ -1,5 +1,9 @@
 package amiss.domain.model;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * The full mutable state of one saved game (KAN-53) — the new-layer counterpart of the
  * retired per-username {@code User}/stats split. Services mutate an instance and hand it
@@ -9,6 +13,9 @@ package amiss.domain.model;
  * are <em>hidden</em> stats: rules read them, but they must never be exposed on a wire DTO
  * (milestone spec). {@code jobId} / {@code currentCourseId} are catalog ids, null when
  * unemployed / not enrolled.
+ *
+ * <p>{@code eat} (KAN-23) specifically means weeks of Fresh Food stored — it is distinct
+ * from {@code ateFastFoodLastTurn}, which feeds exactly one turn and is never banked.
  */
 public class SaveState {
 
@@ -39,13 +46,16 @@ public class SaveState {
     private byte economyIndex;
     private short economyReading;
     private Integer wage;
+    private boolean ateFastFoodLastTurn;
+    private final Set<ApplianceItem> ownedAppliances;
 
     public SaveState(long id, String owner, String label, int xpos, int ypos, int timeMinutes,
             int round, int cash, int bank, int debt, int rent, int eat, int clothing,
             Integer jobId, int happiness, int experience, int dependability,
             Integer currentCourseId, int eduprog,
             int goalWealth, int goalHappiness, int goalEducation, int goalCareer, boolean won,
-            byte economyIndex, short economyReading, Integer wage) {
+            byte economyIndex, short economyReading, Integer wage,
+            boolean ateFastFoodLastTurn, Set<ApplianceItem> ownedAppliances) {
         this.id = id;
         this.owner = owner;
         this.label = label;
@@ -73,6 +83,8 @@ public class SaveState {
         this.economyIndex = economyIndex;
         this.economyReading = economyReading;
         this.wage = wage;
+        this.ateFastFoodLastTurn = ateFastFoodLastTurn;
+        this.ownedAppliances = new HashSet<>(ownedAppliances);
     }
 
     public long id() {
@@ -278,5 +290,26 @@ public class SaveState {
 
     public void setWage(Integer wage) {
         this.wage = wage;
+    }
+
+    /** True if Fast Food was bought last turn — feeds exactly this turn, never banked. */
+    public boolean ateFastFoodLastTurn() {
+        return ateFastFoodLastTurn;
+    }
+
+    public void setAteFastFoodLastTurn(boolean ateFastFoodLastTurn) {
+        this.ateFastFoodLastTurn = ateFastFoodLastTurn;
+    }
+
+    public Set<ApplianceItem> ownedAppliances() {
+        return Collections.unmodifiableSet(ownedAppliances);
+    }
+
+    public boolean owns(ApplianceItem item) {
+        return ownedAppliances.contains(item);
+    }
+
+    public void grantAppliance(ApplianceItem item) {
+        ownedAppliances.add(item);
     }
 }

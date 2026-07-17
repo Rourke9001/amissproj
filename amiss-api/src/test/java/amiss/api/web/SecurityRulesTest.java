@@ -22,6 +22,7 @@ import amiss.api.web.dto.SaveStateDto;
 import amiss.application.service.save.SaveGameServices;
 import amiss.domain.model.SaveState;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -109,7 +110,8 @@ class SecurityRulesTest {
     @Test
     void authenticatedAsAlice_readingOwnSave_is200() throws Exception {
         SaveState save = new SaveState(7L, "alice", "My Save", 0, 2, 3600, 1, 120, 0, 0, 1, 1, 1,
-                null, 0, 10, 20, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null);
+                null, 0, 10, 20, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
+                false, Set.of());
         when(scope.require(eq(7L), any())).thenReturn(save);
         when(assembler.assemble(services, save)).thenReturn(dto());
 
