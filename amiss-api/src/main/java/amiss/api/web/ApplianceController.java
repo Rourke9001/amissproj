@@ -23,9 +23,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The minimal appliance/book catalog (KAN-23): Fridge/Freezer/Computer at Socket City,
- * the three Books at Z-Mart (per {@link ApplianceItem#store()}) — no browsing beyond a
- * flat list, no break/repair (KAN-58). Buying requires standing at the item's store.
+ * The minimal appliance catalog (KAN-23): Fridge and Freezer, both at Socket City (per
+ * {@link ApplianceItem#store()}) — no browsing beyond a flat list, no break/repair
+ * (KAN-58). Buying requires standing at the item's store. PR 5 extends the same enum
+ * and these same routes with the Computer and the three Books; this catalog is
+ * whatever {@code ApplianceItem.values()} holds, so it needs no change to carry them.
  */
 @RestController
 public class ApplianceController {
