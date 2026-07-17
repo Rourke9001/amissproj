@@ -35,7 +35,7 @@ class ShopServiceTest {
         EatOutcome result = service().eat(save, FastFoodItem.BURGER); // price 32
 
         assertEquals(EatOutcome.Status.OK, result.status());
-        assertEquals(4320, result.remainingMinutes()); // eating is free by default
+        assertEquals(3600, result.remainingMinutes()); // eating is free by default
         assertEquals(68, result.cash());
         assertEquals(68, save.cash());
         assertEquals(1, save.eat());                   // had none -> topped to 1
@@ -69,7 +69,7 @@ class ShopServiceTest {
 
     @Test
     void eatingRejectsWhenConfiguredEatCostExceedsTheClock() {
-        ActionCosts costed = new ActionCosts(360, 360, 360, 240, 120, 60, 0, 40, 120, 3600, 4320);
+        ActionCosts costed = new ActionCosts(360, 360, 360, 240, 120, 60, 0, 40, 120, 3600, 1200);
         SaveState save = TestSaves.newSave();
         save.setTimeMinutes(50); // 50 - 60 < 0
 
@@ -133,7 +133,7 @@ class ShopServiceTest {
 
     @Test
     void groceriesInsufficientTimeRejectsAndPersistsNothing() {
-        ActionCosts costed = new ActionCosts(360, 360, 360, 240, 120, 60, 100, 40, 120, 3600, 4320);
+        ActionCosts costed = new ActionCosts(360, 360, 360, 240, 120, 60, 100, 40, 120, 3600, 1200);
         SaveState save = TestSaves.newSave();
         save.setTimeMinutes(50); // < 100
 
@@ -188,7 +188,7 @@ class ShopServiceTest {
 
     @Test
     void insufficientTimeRejectsAndDoesNotGiveFreeClothes() {
-        ActionCosts costed = new ActionCosts(360, 360, 360, 240, 120, 60, 100, 40, 120, 3600, 4320);
+        ActionCosts costed = new ActionCosts(360, 360, 360, 240, 120, 60, 100, 40, 120, 3600, 1200);
         SaveState save = TestSaves.newSave();
         save.setTimeMinutes(50); // clock read (0-cost) OK, then 50 - 100 < 0
 

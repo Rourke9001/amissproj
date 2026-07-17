@@ -59,7 +59,7 @@ class ShiftServiceTest {
         ShiftOutcome outcome = service().work(save);   // clothing 1 < Business (3)
 
         assertEquals(ShiftOutcome.Status.UNDERDRESSED, outcome.status());
-        assertEquals(4320, save.timeMinutes());
+        assertEquals(3600, save.timeMinutes());
     }
 
     @Test
@@ -74,7 +74,7 @@ class ShiftServiceTest {
         assertEquals(56, outcome.netPaid());
         assertEquals(156, save.cash());
         assertEquals(360, outcome.minutesCharged());
-        assertEquals(3960, save.timeMinutes());
+        assertEquals(3240, save.timeMinutes());
         assertEquals(11, save.experience());          // +1 under cap (30)
         assertEquals(31, save.dependability());       // +1 under cap (50)
         assertFalse(outcome.warning());
@@ -131,7 +131,7 @@ class ShiftServiceTest {
         assertEquals(ShiftOutcome.Status.FIRED, outcome.status());
         assertNull(save.jobId());
         assertEquals(47, save.happiness());            // -3
-        assertEquals(4320, save.timeMinutes());        // no time charged
+        assertEquals(3600, save.timeMinutes());        // no time charged
         verify(saves).update(save);
     }
 

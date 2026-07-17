@@ -119,7 +119,7 @@ class CourseServiceTest {
 
         assertEquals(CourseService.StudyResult.Status.OK, result.status());
         assertEquals(1, result.studiesDone());
-        assertEquals(3960, save.timeMinutes());
+        assertEquals(3240, save.timeMinutes());
     }
 
     @Test

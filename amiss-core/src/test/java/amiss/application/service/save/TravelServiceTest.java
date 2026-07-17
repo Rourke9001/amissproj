@@ -49,8 +49,8 @@ class TravelServiceTest {
         assertEquals(MoveResult.Status.OK, result.status());
         assertEquals(0, result.steps());
         assertEquals(120, result.minutesCharged());       // enter-building only
-        assertEquals(4200, result.remainingMinutes());
-        assertEquals(4200, save.timeMinutes());
+        assertEquals(3480, result.remainingMinutes());
+        assertEquals(3480, save.timeMinutes());
         assertEquals(0, save.xpos());
         assertEquals(0, save.ypos());
         verify(saves).update(save);
@@ -66,8 +66,8 @@ class TravelServiceTest {
         assertEquals(MoveResult.Status.OK, result.status());
         assertEquals(2, result.steps());
         assertEquals(200, result.minutesCharged());        // 2*40 + 120
-        assertEquals(4120, result.remainingMinutes());
-        assertEquals(4120, save.timeMinutes());
+        assertEquals(3400, result.remainingMinutes());
+        assertEquals(3400, save.timeMinutes());
         assertEquals(0, save.xpos());
         assertEquals(2, save.ypos());
         verify(saves).update(save);
