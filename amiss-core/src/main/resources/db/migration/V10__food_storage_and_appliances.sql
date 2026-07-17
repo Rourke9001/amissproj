@@ -3,7 +3,10 @@
 -- never banked); appliance ownership (Fridge/Freezer here; Computer/Books
 -- follow in a later PR with zero schema change) is a generic join table, the
 -- same @ElementCollection shape as tbljob_degrees.
-ALTER TABLE tblsave ADD COLUMN ate_fast_food_last_turn TINYINT NOT NULL DEFAULT 0 AFTER eat;
+-- INT, not TINYINT: SaveEntity maps this as an int-as-boolean (0/1) exactly like `won`
+-- and `rent`, and Hibernate's ddl-auto=validate rejects a TINYINT column behind an int
+-- field ("found [tinyint], but expecting [integer]") — the app would not start.
+ALTER TABLE tblsave ADD COLUMN ate_fast_food_last_turn INT NOT NULL DEFAULT 0 AFTER eat;
 
 CREATE TABLE tblsave_appliance (
     save_id   BIGINT      NOT NULL,
