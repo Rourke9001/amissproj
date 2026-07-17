@@ -102,6 +102,14 @@ describe('MonolithBurgersPanel', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows the fed status line when the player ate fast food even with no food stored', async () => {
+    renderPanel(playerFixture({ foodWeeks: 0, ateFastFoodLastTurn: true }));
+
+    expect(
+      await screen.findByText('You have food stored for the coming week.'),
+    ).toBeInTheDocument();
+  });
+
   it('eats successfully, calls the api with the item id, notifies without a time cost, and updates the cache', async () => {
     eatMock.mockResolvedValue({
       item: 'BURGER',

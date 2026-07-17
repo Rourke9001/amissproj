@@ -49,6 +49,17 @@ describe('Hud', () => {
     expect(screen.getByText('0 / 100')).toBeInTheDocument();
   });
 
+  it('shows the fast food suffix alongside the week count when ateFastFoodLastTurn is true', () => {
+    render(
+      <Hud
+        player={playerFixture({ foodWeeks: 2, ateFastFoodLastTurn: true })}
+        onEndWeek={vi.fn()}
+        endWeekPending={false}
+      />,
+    );
+    expect(screen.getByText('2 wk + fast food')).toBeInTheDocument();
+  });
+
   it('shows Unemployed when there is no job', () => {
     render(
       <Hud
