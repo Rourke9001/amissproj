@@ -509,6 +509,37 @@ is that the plan I was executing had a wrong number in its test expectations. Te
 that encode a spec are only worth anything if you re-derive the spec — I'd rather find
 that in review than ship a suite that's green and wrong."*
 
+### Closing the flat-week loop — the seed, not just the rule (KAN-23 follow-up)
+- **Caught by driving the app, not by the suite**: every test passed and CI was green, but
+  a brand-new save still seeded a 72-hour first week — the deleted fed-week constant,
+  surviving in `SaveEntity`'s new-game defaults and a V5 column default. The rework had
+  changed the rule that runs *every week except the first*, and no test asserted the seed.
+- **Fixed the class, not the instance.** The seed now comes from the same
+  `ActionCosts.baseWeekMinutes()` that rollover sets every later week from, rather than a
+  second hard-coded 3600 — because `amiss.costs.base-week-minutes` is a supported
+  deployment override, and a hard-coded copy would silently reintroduce the same
+  divergence. Proved it end-to-end: booting with `base-week-minutes=3000` yields a round-1
+  save of exactly 3000 minutes, not 3600.
+- Shipped **V9** to correct the column default and backfill in-flight weeks
+  (`WHERE time > 3600`), clamping rather than subtracting a fixed 720 — the rows in the
+  wild held arbitrary remainders, and one legacy save carried **33000 minutes (550h)**, a
+  fossil of V3's `time * 60` hours→minutes conversion that V5 had copied forward untouched.
+  Diagnosed that provenance from the migration history before letting the backfill rewrite it.
+- Swept the fixtures the bug had colonised: `TestSaves.newSave()` still advertised itself as
+  "a brand-new save: 4320 min", and — found while sweeping — three `ShopServiceTest` cost
+  tables were passing `4320` into what the rename had turned into
+  `starvationPenaltyMinutes`, quietly declaring a **72-hour starvation penalty** that only
+  passed because those tests never starve.
+
+**Talking point:** *"This one is my argument for driving the app instead of trusting a
+green suite. The tests were green and correct — they just all started from a fixture, and
+nobody had asked what a real new save looks like. The rule was right for every week except
+the one week no rule had run yet. What I'd defend hardest, though, is refusing to fix it
+with `time = 3600`: that's the same bug one line down, because the week length is
+configurable and the seed would drift from it the moment anyone overrode it. Wiring the
+seed to the same source rollover reads made the inconsistency unrepresentable, and I proved
+it by running the app with an override instead of asserting it in a mock."*
+
 ## Phase 4 — Showcase & deploy
 
 ### Architecture documentation refresh — the map matches the territory (KAN-55)
