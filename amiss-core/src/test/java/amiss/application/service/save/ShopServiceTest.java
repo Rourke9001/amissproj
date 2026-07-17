@@ -1,11 +1,13 @@
 package amiss.application.service.save;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import amiss.application.config.ActionCosts;
 import amiss.application.port.SaveRepository;
+import amiss.domain.model.ApplianceItem;
 import amiss.domain.model.ClothingItem;
 import amiss.domain.model.FastFoodItem;
 import amiss.domain.model.FoodPack;
@@ -29,7 +31,7 @@ class ShopServiceTest {
     // ---- eat -----------------------------------------------------------------
 
     @Test
-    void eatingBuysTheMealAndToPsFoodAndHappiness() {
+    void eatingBuysTheMealAndSetsHappinessAndTheFastFoodFlag() {
         SaveState save = TestSaves.newSave(); // cash 100, eat 0, happiness 50
 
         EatOutcome result = service().eat(save, FastFoodItem.BURGER); // price 32
@@ -38,19 +40,32 @@ class ShopServiceTest {
         assertEquals(3600, result.remainingMinutes()); // eating is free by default
         assertEquals(68, result.cash());
         assertEquals(68, save.cash());
-        assertEquals(1, save.eat());                   // had none -> topped to 1
+        assertEquals(0, save.eat());                   // fast food is its own track, never banked
+        assertTrue(save.ateFastFoodLastTurn());
         assertEquals(51, save.happiness());
         verify(saves).update(save);
     }
 
     @Test
-    void eatingWithFoodAlreadyStoredLeavesTheStockUntouched() {
+    void eatingWithFreshFoodAlreadyStoredLeavesTheStockUntouched() {
         SaveState save = TestSaves.newSave();
         save.setEat(3);
 
         service().eat(save, FastFoodItem.BURGER);
 
-        assertEquals(3, save.eat()); // legacy setFood(0) branch: unchanged, not decremented
+        assertEquals(3, save.eat()); // fast food never touches stored fresh food
+    }
+
+    @Test
+    void eatingFastFoodSetsTheFlagButNeverTouchesStoredFreshFood() {
+        SaveState save = TestSaves.newSave();
+        save.setEat(3);
+
+        EatOutcome outcome = service().eat(save, FastFoodItem.BURGER);
+
+        assertEquals(EatOutcome.Status.OK, outcome.status());
+        assertTrue(save.ateFastFoodLastTurn());
+        assertEquals(3, save.eat());   // untouched — fast food is its own track
     }
 
     @Test
@@ -86,7 +101,7 @@ class ShopServiceTest {
     // ---- buyGroceries ----------------------------------------------------------
 
     @Test
-    void groceriesToTheStockToExactlyOneWeekWhenStockIsLow() {
+    void groceriesWithoutAFridgeResultInExactlyOneWeekWhenStockIsLow() {
         SaveState save = TestSaves.newSave(); // eat 0, cash 100
 
         PurchaseOutcome result = service().buyGroceries(save, FoodPack.ONE_WEEK); // price 25, weeks 1
@@ -98,23 +113,73 @@ class ShopServiceTest {
     }
 
     @Test
-    void aOneWeekPackAddsInsteadOfToppingWhenStockIsAlreadyTwoOrMore() {
+    void groceriesWithoutAFridgeAlwaysResultInExactlyOneWeekRegardlessOfPackSize() {
         SaveState save = TestSaves.newSave();
-        save.setEat(3);
+        save.setCash(1000);
+        save.setEat(0);
 
-        service().buyGroceries(save, FoodPack.ONE_WEEK);
+        service().buyGroceries(save, FoodPack.EIGHT_WEEKS);
 
-        assertEquals(4, save.eat()); // 3 + 1, not topped
+        assertEquals(1, save.eat());
     }
 
     @Test
-    void aMultiWeekPackAlwaysAddsOutright() {
+    void groceriesWithoutAFridgeDoNotStackOnExistingFridgelessFood() {
         SaveState save = TestSaves.newSave();
-        save.setEat(0);
+        save.setCash(1000);
+        save.setEat(1);   // leftover from a prior fridgeless purchase
 
-        service().buyGroceries(save, FoodPack.FOUR_WEEKS); // weeks 4
+        service().buyGroceries(save, FoodPack.ONE_WEEK);
 
-        assertEquals(4, save.eat());
+        assertEquals(1, save.eat());   // still exactly 1, not 2
+    }
+
+    @Test
+    void groceriesWithoutAFridgeClampBackDownToOneWeekEvenWithLeftoverStock() {
+        SaveState save = TestSaves.newSave();
+        save.setCash(1000);
+        save.setEat(3); // fridgeless food should never have reached 3, but prove the clamp anyway
+
+        service().buyGroceries(save, FoodPack.ONE_WEEK);
+
+        assertEquals(1, save.eat()); // fridgeless: always exactly 1, never additive
+    }
+
+    @Test
+    void groceriesWithAFridgeBankUpToSixWeeks() {
+        SaveState save = TestSaves.newSave();
+        save.setCash(1000);
+        save.grantAppliance(ApplianceItem.FRIDGE);
+        save.setEat(2);
+
+        service().buyGroceries(save, FoodPack.FOUR_WEEKS);
+
+        assertEquals(6, save.eat());   // 2 + 4, under the 6-week cap
+    }
+
+    @Test
+    void groceriesWithAFridgeClampAtSixWeeksWithoutAFreezer() {
+        SaveState save = TestSaves.newSave();
+        save.setCash(1000);
+        save.grantAppliance(ApplianceItem.FRIDGE);
+        save.setEat(5);
+
+        service().buyGroceries(save, FoodPack.FOUR_WEEKS);
+
+        assertEquals(6, save.eat());   // 5 + 4 = 9, clamped to 6
+    }
+
+    @Test
+    void groceriesWithFridgeAndFreezerBankUpToTwelveWeeks() {
+        SaveState save = TestSaves.newSave();
+        save.setCash(1000);
+        save.grantAppliance(ApplianceItem.FRIDGE);
+        save.grantAppliance(ApplianceItem.FREEZER);
+        save.setEat(10);
+
+        service().buyGroceries(save, FoodPack.FOUR_WEEKS);
+
+        assertEquals(12, save.eat());   // 10 + 4 = 14, clamped to 12
     }
 
     @Test
