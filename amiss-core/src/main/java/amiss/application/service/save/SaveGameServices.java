@@ -32,6 +32,7 @@ public class SaveGameServices {
     private final BankService bank;
     private final RentService rent;
     private final ShopService shop;
+    private final ApplianceService appliances;
 
     public SaveGameServices(SaveRepository saves, JobCatalog jobs, DegreeCatalog degreeCatalog,
             SaveDegrees saveDegrees, Turndowns turndowns, ActionCosts costs,
@@ -48,6 +49,7 @@ public class SaveGameServices {
         this.bank = new BankService(saves);
         this.rent = new RentService(saves, costs);
         this.shop = new ShopService(saves, costs, economy);
+        this.appliances = new ApplianceService(saves, economy);
     }
 
     /** Production wiring: uniform rolls off one shared PRNG. */
@@ -97,6 +99,10 @@ public class SaveGameServices {
 
     public ShopService shop() {
         return shop;
+    }
+
+    public ApplianceService appliances() {
+        return appliances;
     }
 
     public EconomyService economy() {
