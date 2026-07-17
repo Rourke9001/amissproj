@@ -540,6 +540,41 @@ configurable and the seed would drift from it the moment anyone overrode it. Wir
 seed to the same source rollover reads made the inconsistency unrepresentable, and I proved
 it by running the app with an override instead of asserting it in a mock."*
 
+### Food storage — two tracks, one event, and the bug only a real database could see (KAN-23 PR 2)
+- Split a single overloaded `eat` counter into the two things the design actually has: **stored
+  Fresh Food** (a weeks bank) and **Fast Food** (a one-turn flag, never banked). Kept the column
+  and accessor names and re-documented their meaning rather than renaming — a rename would have
+  been a migration and a diff across the codebase to buy nothing.
+- Made storage capacity a **property of what you own**: fridgeless, any purchase leaves exactly
+  1 week and never stacks (an 8-week pack buys you one week — the wiki's rule, and a real
+  economic decision for the player); a Fridge banks 6; a Fridge **and** Freezer bank 12; a
+  Freezer alone does nothing, because the fridge check gates the freezer one.
+- **Fixed an API that had quietly started lying.** `weeksAdded` used to echo the pack's nominal
+  size, which was true only while every purchase added its full amount. Under capping it became
+  a lie, so it now reports the real delta — a player at the 6-week cap buying an 8-week pack is
+  told `weeksAdded: 0`, not `8`.
+- Wired **spoilage into the existing Doctor Visit resolver as its second trigger** — no second
+  code path, no second event. This is where PR 1's "one event, three independent triggers, at
+  most one visit per turn" design paid off: the trigger was ~10 lines and a parameter. Roll
+  consumption is part of the contract and pinned by tests (a false condition consumes no roll;
+  both conditions true consume both rolls but still resolve one visit).
+- **The IT suite caught a startup bug that every unit test was blind to**: V10 declared the flag
+  column `TINYINT` while the entity mapped it as an int-as-boolean, so Hibernate's
+  `ddl-auto=validate` rejected the schema — *the app would not have booted against a migrated
+  database*. Eleven tasks of `mvn package` (no DB) stayed green; the first `mvn verify` against
+  a real MySQL container failed 27 ITs at context startup. Both halves of the mismatch came
+  from the plan I was executing.
+
+**Talking point:** *"Two things I'd raise here. The first is `weeksAdded` — it wasn't wrong when
+it was written, it became wrong when capping landed, and it would still have been 'passing'
+because the test bought a pack that fit. That's the failure mode I actually watch for: not code
+that breaks, but code that silently stops meaning what it says. The second is the TINYINT bug.
+Every unit test was green across eleven tasks because none of them touch a database — the
+mismatch only exists between the migration and the ORM mapping, so only a real Postgres or MySQL
+can see it. That's the entire argument for Testcontainers over an in-memory H2 that would have
+happily accepted both. And it's why I check the skipped count, not just BUILD SUCCESS —
+Testcontainers skips silently when Docker is down, which reads exactly like passing."*
+
 ## Phase 4 — Showcase & deploy
 
 ### Architecture documentation refresh — the map matches the territory (KAN-55)
