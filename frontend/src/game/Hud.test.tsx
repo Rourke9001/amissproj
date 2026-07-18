@@ -21,6 +21,7 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     clothingCasualWeeks: 1,
     clothingDressWeeks: 0,
     clothingBusinessWeeks: 0,
+    relaxation: 10,
     job: { name: 'Unemployed', hourlyWage: null, location: null },
     degreesEarned: [],
     currentCourse: null,
@@ -64,6 +65,13 @@ describe('Hud', () => {
       />,
     );
     expect(screen.getByText('Casual 4wk / Dress 7wk / Business 11wk')).toBeInTheDocument();
+  });
+
+  it('shows the relaxation stat distinctly from every other numeric stat', () => {
+    render(
+      <Hud player={playerFixture({ relaxation: 37 })} onEndWeek={vi.fn()} endWeekPending={false} />,
+    );
+    expect(screen.getByText('37 / 50')).toBeInTheDocument();
   });
 
   it('shows the fast food suffix alongside the week count when ateFastFoodLastTurn is true', () => {

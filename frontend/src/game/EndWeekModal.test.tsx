@@ -21,6 +21,7 @@ function stateFixture(): SaveStateDto {
     clothingCasualWeeks: 1,
     clothingDressWeeks: 0,
     clothingBusinessWeeks: 0,
+    relaxation: 10,
     job: { name: 'Unemployed', hourlyWage: null, location: null },
     degreesEarned: [],
     currentCourse: null,
