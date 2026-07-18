@@ -2313,6 +2313,7 @@ git commit -F commit.txt
     @Test
     void buyingDressClothesAddsToItsOwnCategoryAndGrantsHappiness() {
         SaveState save = TestSaves.newSave();
+        save.setCash(300); // fixture cash 100 < DRESS price 125 — would hit INSUFFICIENT_CASH
         int happinessBefore = save.happiness();
 
         service().buyClothes(save, ClothingItem.DRESS);
