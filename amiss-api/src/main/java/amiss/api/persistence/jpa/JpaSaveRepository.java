@@ -49,7 +49,9 @@ public class JpaSaveRepository implements SaveRepository {
             entity.setDebt(state.debt());
             entity.setRent(state.rent());
             entity.setEat(state.eat());
-            entity.setClothing(state.clothing());
+            entity.setCasualWeeks(state.casualWeeks());
+            entity.setDressWeeks(state.dressWeeks());
+            entity.setBusinessWeeks(state.businessWeeks());
             entity.setJobId(state.jobId());
             entity.setWage(state.wage());
             entity.setHappiness(state.happiness());
@@ -70,7 +72,8 @@ public class JpaSaveRepository implements SaveRepository {
     private static SaveState toDomain(SaveEntity e) {
         return new SaveState(e.getId(), e.getOwner(), e.getLabel(), e.getXpos(), e.getYpos(),
                 e.getTime(), e.getRound(), e.getCash(), e.getBank(), e.getDebt(), e.getRent(),
-                e.getEat(), e.getClothing(), e.getJobId(), e.getHappiness(), e.getExperience(),
+                e.getEat(), e.getCasualWeeks(), e.getDressWeeks(), e.getBusinessWeeks(),
+                e.getJobId(), e.getHappiness(), e.getExperience(),
                 e.getDependability(), e.getCurrentCourseId(), e.getEduprog(),
                 e.getGoalWealth(), e.getGoalHappiness(), e.getGoalEducation(), e.getGoalCareer(),
                 e.getWon() != 0, e.getEconomyIndex(), e.getEconomyReading(), e.getWage(),

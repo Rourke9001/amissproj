@@ -16,7 +16,7 @@ public record HireOutcome(Status status, List<Reason> reasons, int minutesCharge
 
     /** What the officer says; dependability shortfalls in weeks 1–4 surface as NO_OPENINGS. */
     public enum Reason {
-        NOT_ENOUGH_EDUCATION, NOT_ENOUGH_EXPERIENCE, POOR_WORK_HISTORY, NO_OPENINGS
+        NOT_ENOUGH_EDUCATION, NOT_ENOUGH_EXPERIENCE, POOR_WORK_HISTORY, NO_OPENINGS, NOT_ENOUGH_CLOTHING
     }
 
     static HireOutcome hired(int minutesCharged, int remaining, String jobName, int wage) {

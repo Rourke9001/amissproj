@@ -89,6 +89,10 @@ public class WeekRolloverService {
 
         save.setDependability(Math.max(0, save.dependability() - WEEKLY_DEPENDABILITY_DECAY));
 
+        save.setCasualWeeks(Math.max(0, save.casualWeeks() - 1));
+        save.setDressWeeks(Math.max(0, save.dressWeeks() - 1));
+        save.setBusinessWeeks(Math.max(0, save.businessWeeks() - 1));
+
         DoctorVisitOutcome doctorVisitOutcome = doctorVisit.resolve(save, !fed, spoiledFreshFood);
 
         economy.driftWeekly(save);

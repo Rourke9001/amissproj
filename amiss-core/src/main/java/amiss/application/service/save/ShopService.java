@@ -120,8 +120,17 @@ public class ShopService {
 
         save.setTimeMinutes(remaining);
         save.setCash(cash - price);
-        save.setClothing(item.level());
+        addClothingWeeks(save, item);
+        save.addHappiness(item.happinessPerPurchase());
         saves.update(save);
         return new PurchaseOutcome(PurchaseOutcome.Status.OK, remaining, save.cash(), price);
+    }
+
+    private static void addClothingWeeks(SaveState save, ClothingItem item) {
+        switch (item) {
+            case CASUAL -> save.setCasualWeeks(save.casualWeeks() + item.weeks());
+            case DRESS -> save.setDressWeeks(save.dressWeeks() + item.weeks());
+            case BUSINESS -> save.setBusinessWeeks(save.businessWeeks() + item.weeks());
+        }
     }
 }

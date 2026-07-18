@@ -51,7 +51,8 @@ class UniversityControllerTest {
     private PlayerStateAssembler assembler;
 
     private static SaveState save() {
-        return new SaveState(7L, "bob", "My Save", 3, 3, 3960, 3, 70, 0, 0, 0, 1, 1,
+        return new SaveState(7L, "bob", "My Save", 3, 3, 3960, 3, 70, 0, 0, 0, 1,
+                1, 0, 0,
                 null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
                 false, Set.of());
     }
@@ -59,7 +60,7 @@ class UniversityControllerTest {
     private static SaveStateDto dto() {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 3, 3960, "66h", false, 70, 0, 0, false,
-                1, false, 1, null, new LocationDto("HI_TECH_U", "Hi-Tech U", 6, 0, 4),
+                1, false, 1, 0, 0, null, new LocationDto("HI_TECH_U", "Hi-Tech U", 6, 0, 4),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 

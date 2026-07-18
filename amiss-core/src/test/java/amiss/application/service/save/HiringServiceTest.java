@@ -96,6 +96,7 @@ class HiringServiceTest {
         when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of(3));
         SaveState save = TestSaves.newSave();
         save.setRound(9); // past the weeks-1-4 suppression
+        save.setBusinessWeeks(13);  // grant BROKER's level-3 business clothing requirement
 
         HireOutcome outcome = serviceAlwaysLucky().apply(save, 32);
 
@@ -117,6 +118,7 @@ class HiringServiceTest {
         assertEquals(240, outcome.minutesCharged());
         assertEquals(3360, save.timeMinutes());
         assertEquals(49, save.happiness());
+        assertTrue(outcome.reasons().contains(HireOutcome.Reason.NOT_ENOUGH_CLOTHING));
         verify(saves).update(save);
     }
 
@@ -229,5 +231,39 @@ class HiringServiceTest {
         assertEquals(HireOutcome.Status.HIRED, outcome.status());
         assertEquals(10, outcome.wage());          // base 5 doubled
         assertEquals(10, save.wage());
+    }
+
+    // ===== clothing requirement =====
+
+    @Test
+    void insufficientClothingIsNamedAlongsideOtherShortfalls() {
+        when(jobs.byId(TestSaves.BROKER.id())).thenReturn(Optional.of(TestSaves.BROKER));
+        when(jobs.requiredDegrees(TestSaves.BROKER.id())).thenReturn(Set.of());
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = TestSaves.newSave();   // casualWeeks 6, dressWeeks 0, businessWeeks 0
+        save.setExperience(70);
+        save.setDependability(70);
+
+        HireOutcome outcome = serviceAlwaysLucky().apply(save, TestSaves.BROKER.id());
+
+        assertEquals(List.of(HireOutcome.Reason.NOT_ENOUGH_CLOTHING), outcome.reasons());
+    }
+
+    @Test
+    void businessClothingSatisfiesACasualRequirement() {
+        // Not COOK: Cook's alwaysHired() bypasses every check, including clothing, so it
+        // can't prove the gate. CLERK (Z-Mart, reqClothing 1) does not bypass anything.
+        when(jobs.byId(TestSaves.CLERK.id())).thenReturn(Optional.of(TestSaves.CLERK));
+        when(jobs.requiredDegrees(TestSaves.CLERK.id())).thenReturn(Set.of());
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = TestSaves.newSave();
+        save.setExperience(10);        // meets CLERK's reqExperience
+        save.setDependability(10);     // meets CLERK's reqDependability
+        save.setCasualWeeks(0);
+        save.setBusinessWeeks(13);
+
+        HireOutcome outcome = serviceAlwaysLucky().apply(save, TestSaves.CLERK.id());
+
+        assertEquals(HireOutcome.Status.HIRED, outcome.status());
     }
 }

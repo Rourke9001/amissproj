@@ -79,7 +79,9 @@ export interface SaveStateDto {
   rentDue: boolean;
   foodWeeks: number;
   ateFastFoodLastTurn: boolean;
-  clothing: number;
+  clothingCasualWeeks: number;
+  clothingDressWeeks: number;
+  clothingBusinessWeeks: number;
   job: JobDto;
   location: LocationDto;
   degreesEarned: string[];
@@ -241,12 +243,12 @@ export interface ClothingItemDto {
   name: string;
   price: number;
   level: number;
+  weeks: number;
 }
 
 export interface ClothesResponse {
   item: string;
   price: number;
-  clothingLevel: number;
   state: SaveStateDto;
 }
 

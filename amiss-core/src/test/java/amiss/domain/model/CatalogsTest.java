@@ -43,13 +43,19 @@ class CatalogsTest {
     @Test
     void clothingItem_matchesQtClothingStock() {
         assertEquals("Casual Clothes", ClothingItem.CASUAL.displayName());
-        assertEquals(20, ClothingItem.CASUAL.price());
+        assertEquals(73, ClothingItem.CASUAL.price());
         assertEquals(1, ClothingItem.CASUAL.level());
-        assertEquals("Formal Clothes", ClothingItem.FORMAL.displayName());
-        assertEquals(35, ClothingItem.FORMAL.price());
-        assertEquals(2, ClothingItem.FORMAL.level());
-        assertEquals("Suit", ClothingItem.SUIT.displayName());
-        assertEquals(55, ClothingItem.SUIT.price());
-        assertEquals(3, ClothingItem.SUIT.level());
+        assertEquals(11, ClothingItem.CASUAL.weeks());
+        assertEquals(0, ClothingItem.CASUAL.happinessPerPurchase());
+        assertEquals("Dress Clothes", ClothingItem.DRESS.displayName());
+        assertEquals(125, ClothingItem.DRESS.price());
+        assertEquals(2, ClothingItem.DRESS.level());
+        assertEquals(13, ClothingItem.DRESS.weeks());
+        assertEquals(1, ClothingItem.DRESS.happinessPerPurchase());
+        assertEquals("Business Suit", ClothingItem.BUSINESS.displayName());
+        assertEquals(295, ClothingItem.BUSINESS.price());
+        assertEquals(3, ClothingItem.BUSINESS.level());
+        assertEquals(13, ClothingItem.BUSINESS.weeks());
+        assertEquals(2, ClothingItem.BUSINESS.happinessPerPurchase());
     }
 }

@@ -78,8 +78,14 @@ public class SaveEntity {
     @Column(name = "eat", nullable = false)
     private int eat;
 
-    @Column(name = "clothing", nullable = false)
-    private int clothing;
+    @Column(name = "clothing_casual_weeks", nullable = false)
+    private int casualWeeks;
+
+    @Column(name = "clothing_dress_weeks", nullable = false)
+    private int dressWeeks;
+
+    @Column(name = "clothing_business_weeks", nullable = false)
+    private int businessWeeks;
 
     /** Catalog id of the held job; null = unemployed. */
     @Column(name = "job_id")
@@ -162,7 +168,7 @@ public class SaveEntity {
         this.round = 1;
         this.cash = 100;
         this.rent = 1;
-        this.clothing = 1;
+        this.casualWeeks = 6;
         this.experience = 10;
         this.dependability = 20;
     }
@@ -263,12 +269,28 @@ public class SaveEntity {
         this.eat = eat;
     }
 
-    public int getClothing() {
-        return clothing;
+    public int getCasualWeeks() {
+        return casualWeeks;
     }
 
-    public void setClothing(int clothing) {
-        this.clothing = clothing;
+    public void setCasualWeeks(int casualWeeks) {
+        this.casualWeeks = casualWeeks;
+    }
+
+    public int getDressWeeks() {
+        return dressWeeks;
+    }
+
+    public void setDressWeeks(int dressWeeks) {
+        this.dressWeeks = dressWeeks;
+    }
+
+    public int getBusinessWeeks() {
+        return businessWeeks;
+    }
+
+    public void setBusinessWeeks(int businessWeeks) {
+        this.businessWeeks = businessWeeks;
     }
 
     public Integer getJobId() {

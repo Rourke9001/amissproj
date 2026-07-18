@@ -18,7 +18,9 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     rentDue: false,
     foodWeeks: 2,
     ateFastFoodLastTurn: false,
-    clothing: 1,
+    clothingCasualWeeks: 1,
+    clothingDressWeeks: 0,
+    clothingBusinessWeeks: 0,
     job: { name: 'Unemployed', hourlyWage: null, location: null },
     degreesEarned: [],
     currentCourse: null,
@@ -47,6 +49,21 @@ describe('Hud', () => {
     expect(screen.getByText('50 / 100')).toBeInTheDocument();
     expect(screen.getByText('0 / 10')).toBeInTheDocument();
     expect(screen.getByText('0 / 100')).toBeInTheDocument();
+  });
+
+  it('shows each clothing category weeks-remaining independently', () => {
+    render(
+      <Hud
+        player={playerFixture({
+          clothingCasualWeeks: 4,
+          clothingDressWeeks: 7,
+          clothingBusinessWeeks: 11,
+        })}
+        onEndWeek={vi.fn()}
+        endWeekPending={false}
+      />,
+    );
+    expect(screen.getByText('Casual 4wk / Dress 7wk / Business 11wk')).toBeInTheDocument();
   });
 
   it('shows the fast food suffix alongside the week count when ateFastFoodLastTurn is true', () => {

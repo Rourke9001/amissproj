@@ -329,4 +329,19 @@ class WeekRolloverServiceTest {
         assertEquals(2, save.eat());   // normal -1 decay, no spoilage
         assertFalse(result.doctorVisit().triggered());
     }
+
+    @Test
+    void clothingCategoriesDecayIndependentlyAndFloorAtZero() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setCasualWeeks(1);
+        save.setDressWeeks(0);
+        save.setBusinessWeeks(5);
+
+        service().endWeek(save);
+
+        assertEquals(0, save.casualWeeks());
+        assertEquals(0, save.dressWeeks());   // floors, does not go negative
+        assertEquals(4, save.businessWeeks());
+    }
 }

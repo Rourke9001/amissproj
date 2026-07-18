@@ -57,7 +57,8 @@ class FoodControllerTest {
     private PlayerStateAssembler assembler;
 
     private static SaveState save() {
-        return new SaveState(7L, "bob", "My Save", 1, 4, 3960, 3, 70, 0, 0, 0, 0, 1,
+        return new SaveState(7L, "bob", "My Save", 1, 4, 3960, 3, 70, 0, 0, 0, 0,
+                1, 0, 0,
                 null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
                 false, Set.of());
     }
@@ -69,7 +70,7 @@ class FoodControllerTest {
     private static SaveStateDto dto(int foodWeeks, boolean ateFastFoodLastTurn) {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 3, 3960, "66h", false, 70, 0, 0, false,
-                foodWeeks, ateFastFoodLastTurn, 1, null,
+                foodWeeks, ateFastFoodLastTurn, 1, 0, 0, null,
                 new LocationDto("MONOLITH_BURGERS", "Monolith Burgers", 3, 1, 4),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
@@ -138,14 +139,17 @@ class FoodControllerTest {
                 .andExpect(jsonPath("$.length()").value(3))
                 .andExpect(jsonPath("$[0].id").value("CASUAL"))
                 .andExpect(jsonPath("$[0].name").value("Casual Clothes"))
-                .andExpect(jsonPath("$[0].price").value(30))  // base 20 + 10
+                .andExpect(jsonPath("$[0].price").value(109))  // base 73 + 36 (floor)
                 .andExpect(jsonPath("$[0].level").value(1))
-                .andExpect(jsonPath("$[1].id").value("FORMAL"))
-                .andExpect(jsonPath("$[1].price").value(52))  // base 35 + 17 (floor)
+                .andExpect(jsonPath("$[0].weeks").value(11))
+                .andExpect(jsonPath("$[1].id").value("DRESS"))
+                .andExpect(jsonPath("$[1].price").value(187))  // base 125 + 62 (floor)
                 .andExpect(jsonPath("$[1].level").value(2))
-                .andExpect(jsonPath("$[2].id").value("SUIT"))
-                .andExpect(jsonPath("$[2].price").value(82))  // base 55 + 27 (floor)
-                .andExpect(jsonPath("$[2].level").value(3));
+                .andExpect(jsonPath("$[1].weeks").value(13))
+                .andExpect(jsonPath("$[2].id").value("BUSINESS"))
+                .andExpect(jsonPath("$[2].price").value(442))  // base 295 + 147 (floor)
+                .andExpect(jsonPath("$[2].level").value(3))
+                .andExpect(jsonPath("$[2].weeks").value(13));
     }
 
     // ---- POST /api/saves/{id}/eat -----------------------------------------------
@@ -359,7 +363,7 @@ class FoodControllerTest {
     void clothes_wrongLocationIsA409Problem() throws Exception {
         mockTravelAt(save(), Location.PAWN_SHOP);
 
-        mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))
+        mvc.perform(postBody("/api/saves/7/clothes", "item", "BUSINESS"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:wrong-location"));
@@ -372,29 +376,28 @@ class FoodControllerTest {
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyClothes(any(), any()))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10, 55));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.INSUFFICIENT_CASH, 3900, 10, 295));
 
-        mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))
+        mvc.perform(postBody("/api/saves/7/clothes", "item", "BUSINESS"))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:insufficient-funds"));
     }
 
     @Test
-    void clothes_okReturnsClothingLevelAndFreshState() throws Exception {
+    void clothes_okReturnsItemPriceAndFreshState() throws Exception {
         SaveState save = save();
         mockTravelAt(save, Location.QT_CLOTHING);
         ShopService shop = mock(ShopService.class);
         when(services.shop()).thenReturn(shop);
         when(shop.buyClothes(any(), any()))
-                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 15, 55));
+                .thenReturn(new PurchaseOutcome(PurchaseOutcome.Status.OK, 3900, 15, 295));
         when(assembler.assemble(services, save)).thenReturn(dto());
 
-        mvc.perform(postBody("/api/saves/7/clothes", "item", "SUIT"))
+        mvc.perform(postBody("/api/saves/7/clothes", "item", "BUSINESS"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.item").value("SUIT"))
-                .andExpect(jsonPath("$.price").value(55))
-                .andExpect(jsonPath("$.clothingLevel").value(3))
+                .andExpect(jsonPath("$.item").value("BUSINESS"))
+                .andExpect(jsonPath("$.price").value(295))
                 .andExpect(jsonPath("$.state.id").value(7));
     }
 }

@@ -60,7 +60,10 @@ export function Hud({ player, onEndWeek, endWeekPending }: HudProps) {
         </div>
         <div className="hud-stat">
           <dt>Clothing</dt>
-          <dd>Level {player.clothing}</dd>
+          <dd>
+            Casual {player.clothingCasualWeeks}wk / Dress {player.clothingDressWeeks}wk / Business{' '}
+            {player.clothingBusinessWeeks}wk
+          </dd>
         </div>
         <div className="hud-stat">
           <dt>Food</dt>

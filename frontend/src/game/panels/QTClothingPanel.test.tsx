@@ -16,9 +16,9 @@ const getClothesCatalogMock = vi.mocked(getClothesCatalog);
 const buyClothesMock = vi.mocked(buyClothes);
 
 const CATALOG_FIXTURE: ClothingItemDto[] = [
-  { id: 'CASUAL', name: 'Casual Clothes', price: 20, level: 1 },
-  { id: 'FORMAL', name: 'Formal Clothes', price: 35, level: 2 },
-  { id: 'SUIT', name: 'Suit', price: 55, level: 3 },
+  { id: 'CASUAL', name: 'Casual Clothes', price: 73, level: 1, weeks: 11 },
+  { id: 'DRESS', name: 'Dress Clothes', price: 125, level: 2, weeks: 13 },
+  { id: 'BUSINESS', name: 'Business Suit', price: 295, level: 3, weeks: 13 },
 ];
 
 function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
@@ -26,7 +26,7 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     id: 42,
     label: 'Save 42',
     round: 3,
-    timeMinutes: 4320,
+    timeMinutes: 3600,
     timeDisplay: '72h',
     weekOver: false,
     cash: 500,
@@ -35,7 +35,9 @@ function playerFixture(overrides: Partial<SaveStateDto> = {}): SaveStateDto {
     rentDue: false,
     foodWeeks: 2,
     ateFastFoodLastTurn: false,
-    clothing: 1,
+    clothingCasualWeeks: 3,
+    clothingDressWeeks: 0,
+    clothingBusinessWeeks: 0,
     job: { name: 'Unemployed', hourlyWage: null, location: null },
     degreesEarned: [],
     currentCourse: null,
@@ -70,59 +72,52 @@ describe('QTClothingPanel', () => {
     getClothesCatalogMock.mockResolvedValue(CATALOG_FIXTURE);
   });
 
-  it('renders the stock with level details', async () => {
-    renderPanel(playerFixture({ clothing: 0 }));
-
-    expect(getClothesCatalogMock).toHaveBeenCalledWith(42);
-    expect(await screen.findByText('Casual Clothes')).toBeInTheDocument();
-    expect(screen.getByText('R20')).toBeInTheDocument();
-    expect(screen.getByText('Level 1')).toBeInTheDocument();
-    expect(screen.getByText('Formal Clothes')).toBeInTheDocument();
-    expect(screen.getByText('Level 2')).toBeInTheDocument();
-    expect(screen.getByText('Suit')).toBeInTheDocument();
-    expect(screen.getByText('Level 3')).toBeInTheDocument();
-  });
-
-  it('marks the current level as (current) and disables it', async () => {
-    renderPanel(playerFixture({ clothing: 2 }));
-
-    const formalRow = (await screen.findByText('Formal Clothes')).closest('li') as HTMLElement;
-    expect(within(formalRow).getByText('Level 2 (current)')).toBeInTheDocument();
-    expect(within(formalRow).getByRole('button', { name: 'Buy' })).toBeDisabled();
-  });
-
-  it('disables a level lower than the current level', async () => {
-    renderPanel(playerFixture({ clothing: 2 }));
+  it('shows weeks-remaining per category and keeps every Buy button enabled', async () => {
+    renderPanel(playerFixture());
 
     const casualRow = (await screen.findByText('Casual Clothes')).closest('li') as HTMLElement;
-    expect(within(casualRow).getByRole('button', { name: 'Buy' })).toBeDisabled();
+    expect(within(casualRow).getByText('3 wk left, +11 wk on purchase')).toBeInTheDocument();
+    expect(within(casualRow).getByRole('button', { name: 'Buy' })).not.toBeDisabled();
+
+    const dressRow = screen.getByText('Dress Clothes').closest('li') as HTMLElement;
+    expect(within(dressRow).getByText('0 wk left, +13 wk on purchase')).toBeInTheDocument();
+    expect(within(dressRow).getByRole('button', { name: 'Buy' })).not.toBeDisabled();
   });
 
-  it('leaves a higher level enabled', async () => {
-    renderPanel(playerFixture({ clothing: 1 }));
+  it('shows distinct weeks-remaining for each clothing category independently', async () => {
+    renderPanel(
+      playerFixture({
+        clothingCasualWeeks: 4,
+        clothingDressWeeks: 7,
+        clothingBusinessWeeks: 11,
+      }),
+    );
 
-    const suitRow = (await screen.findByText('Suit')).closest('li') as HTMLElement;
-    expect(within(suitRow).getByRole('button', { name: 'Buy' })).not.toBeDisabled();
+    const casualRow = (await screen.findByText('Casual Clothes')).closest('li') as HTMLElement;
+    expect(within(casualRow).getByText('4 wk left, +11 wk on purchase')).toBeInTheDocument();
+
+    const dressRow = screen.getByText('Dress Clothes').closest('li') as HTMLElement;
+    expect(within(dressRow).getByText('7 wk left, +13 wk on purchase')).toBeInTheDocument();
+
+    const businessRow = screen.getByText('Business Suit').closest('li') as HTMLElement;
+    expect(within(businessRow).getByText('11 wk left, +13 wk on purchase')).toBeInTheDocument();
   });
 
-  it('buys clothes successfully, calls the api with the item id, and notifies with the new level', async () => {
+  it('buys clothes successfully and notifies without a level number', async () => {
     buyClothesMock.mockResolvedValue({
-      item: 'FORMAL',
-      price: 35,
-      clothingLevel: 2,
-      state: playerFixture({ cash: 465, clothing: 2 }),
+      item: 'DRESS',
+      price: 125,
+      state: playerFixture({ cash: 375, clothingDressWeeks: 13 }),
     });
     const user = userEvent.setup();
-    const { onNotify, queryClient } = renderPanel(playerFixture({ clothing: 1 }));
+    const { onNotify, queryClient } = renderPanel(playerFixture());
 
-    const formalRow = (await screen.findByText('Formal Clothes')).closest('li') as HTMLElement;
-    await user.click(within(formalRow).getByRole('button', { name: 'Buy' }));
+    const dressRow = (await screen.findByText('Dress Clothes')).closest('li') as HTMLElement;
+    await user.click(within(dressRow).getByRole('button', { name: 'Buy' }));
 
-    expect(buyClothesMock).toHaveBeenCalledWith(42, 'FORMAL');
-    await waitFor(() =>
-      expect(onNotify).toHaveBeenCalledWith('Bought Formal Clothes (R35) — clothing level 2'),
-    );
-    expect(queryClient.getQueryData(['save', 42])).toMatchObject({ cash: 465 });
+    expect(buyClothesMock).toHaveBeenCalledWith(42, 'DRESS');
+    await waitFor(() => expect(onNotify).toHaveBeenCalledWith('Bought Dress Clothes (R125)'));
+    expect(queryClient.getQueryData(['save', 42])).toMatchObject({ cash: 375 });
   });
 
   it('renders the problem detail inline on an ApiError and invalidates the player query', async () => {
@@ -135,9 +130,9 @@ describe('QTClothingPanel', () => {
       }),
     );
     const user = userEvent.setup();
-    const { onNotify, invalidateSpy } = renderPanel(playerFixture({ clothing: 1 }));
+    const { onNotify, invalidateSpy } = renderPanel(playerFixture());
 
-    const suitRow = (await screen.findByText('Suit')).closest('li') as HTMLElement;
+    const suitRow = (await screen.findByText('Business Suit')).closest('li') as HTMLElement;
     await user.click(within(suitRow).getByRole('button', { name: 'Buy' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Must be at QT Clothing.');

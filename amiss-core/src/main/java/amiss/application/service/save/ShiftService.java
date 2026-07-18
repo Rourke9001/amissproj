@@ -45,7 +45,7 @@ public class ShiftService {
         JobSpec job = jobs.byId(save.jobId()).orElseThrow(
                 () -> new IllegalStateException("Held job " + save.jobId() + " missing from catalog"));
 
-        if (save.clothing() < job.reqClothing()) {
+        if (!save.hasClothingLevel(job.reqClothing())) {
             return new ShiftOutcome(ShiftOutcome.Status.UNDERDRESSED, false, -1, -1, 0, 0,
                     save.timeMinutes(), job.name());
         }
