@@ -98,7 +98,7 @@ public class WeekRolloverService {
 
         save.setRelaxedThisTurn(false);
         save.addRelaxation(-1);
-        boolean relaxationAtFloor = save.relaxation() == RELAXATION_FLOOR;
+        boolean relaxationAtFloor = save.relaxation() <= RELAXATION_FLOOR;
 
         DoctorVisitOutcome doctorVisitOutcome = doctorVisit.resolve(save, !fed, spoiledFreshFood, relaxationAtFloor);
 

@@ -105,6 +105,7 @@ class HomeControllerTest {
     void relax_wrongLocationIsA409Problem() throws Exception {
         mockTravelAt(save(), Location.PAWN_SHOP);
 
+        // LocationGuard throws before services.relax() is ever reached, so it stays unstubbed.
         mvc.perform(post("/api/saves/7/relax").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))

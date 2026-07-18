@@ -16,7 +16,7 @@ public class DoctorVisitService {
 
     private static final int STARVATION_CHANCE = 4;    // 1-in-4 = 25%
     private static final int SPOILAGE_CHANCE = 2;       // 1-in-2 = 50%
-    private static final int RELAXATION_CHANCE = 5;   // 1-in-5 = 20%
+    private static final int RELAXATION_CHANCE = 5;    // 1-in-5 = 20%
     private static final int MINUTES_LOST = 600;       // 10h
     private static final int HAPPINESS_LOST = 4;
     private static final int HIGH_CASH_THRESHOLD = 500;
