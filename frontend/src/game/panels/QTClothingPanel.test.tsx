@@ -84,6 +84,25 @@ describe('QTClothingPanel', () => {
     expect(within(dressRow).getByRole('button', { name: 'Buy' })).not.toBeDisabled();
   });
 
+  it('shows distinct weeks-remaining for each clothing category independently', async () => {
+    renderPanel(
+      playerFixture({
+        clothingCasualWeeks: 4,
+        clothingDressWeeks: 7,
+        clothingBusinessWeeks: 11,
+      }),
+    );
+
+    const casualRow = (await screen.findByText('Casual Clothes')).closest('li') as HTMLElement;
+    expect(within(casualRow).getByText('4 wk left, +11 wk on purchase')).toBeInTheDocument();
+
+    const dressRow = screen.getByText('Dress Clothes').closest('li') as HTMLElement;
+    expect(within(dressRow).getByText('7 wk left, +13 wk on purchase')).toBeInTheDocument();
+
+    const businessRow = screen.getByText('Business Suit').closest('li') as HTMLElement;
+    expect(within(businessRow).getByText('11 wk left, +13 wk on purchase')).toBeInTheDocument();
+  });
+
   it('buys clothes successfully and notifies without a level number', async () => {
     buyClothesMock.mockResolvedValue({
       item: 'DRESS',
