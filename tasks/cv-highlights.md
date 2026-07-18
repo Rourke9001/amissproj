@@ -575,6 +575,37 @@ can see it. That's the entire argument for Testcontainers over an in-memory H2 t
 happily accepted both. And it's why I check the skipped count, not just BUILD SUCCESS —
 Testcontainers skips silently when Docker is down, which reads exactly like passing."*
 
+### Clothing wear — one predicate, two consumers, and a gate that was always there (KAN-23 PR 3)
+- Replaced a single non-decaying `clothing` level with **three independent per-category week
+  counters** (Casual/Dress/Business, wiki-exact prices and durabilities): purchases stack
+  additively into their own category, every category decays 1/week flooring at zero, and the
+  V11 migration drops the old column outright — an old flat "level" can't be honestly mapped
+  into weeks, so existing saves get the same 6/0/0 seed a new game gets, stated in the SQL
+  comment and pinned by the legacy-chain IT.
+- Put the **"higher category satisfies lower" rule in exactly one place** —
+  `SaveState.hasClothingLevel(level)` — and made both consumers call it: the existing
+  `ShiftService` UNDERDRESSED check and a `HiringService` requirement gate that the job catalog
+  had carried **dormant since the catalog shipped** (`reqClothing` existed on every job; nothing
+  read it). A Business Suit gets you a Casual job; the reverse never works.
+- Treated **non-discriminating tests as defects, twice**: the QT panel's weeks display was first
+  tested with only one non-zero category, so swapping the Dress/Business wiring would have
+  passed — the fix was a fixture with three distinct values *plus a break-test* (invert the
+  production switch, watch the test fail, restore). Same standard applied at the JPA layer: the
+  round-trip IT stores 3/7/0, not three equal values.
+- **Live-verified the whole loop** against real MySQL: fresh save seeds 6/0/0, Broker application
+  rejected citing `NOT_ENOUGH_CLOTHING` with casual-only wear, all three categories bought and
+  stacking independently (17/13/13), one rollover decaying each by exactly one (16/12/12), and
+  the same application passing the clothing gate once a Business Suit is owned.
+
+**Talking point:** *"The detail I'd pull out is the hiring gate: `reqClothing` had been sitting
+on every job row since the catalog migration, unread — the schema was ahead of the rules. Wiring
+it was ten lines because the predicate already had one owner; both the shift check and the
+hiring check call the same `hasClothingLevel`, so the 'suit satisfies casual' rule can't drift
+between them. The other thing is test discrimination — a review caught that our weeks display
+test passed with the Dress and Business wires crossed. The fix isn't just more assertions, it's
+proving the test can fail: break the switch deliberately, watch red, restore. A test you've
+never seen fail is a hope, not a check."*
+
 ## Phase 4 — Showcase & deploy
 
 ### Architecture documentation refresh — the map matches the territory (KAN-55)
