@@ -53,7 +53,7 @@ class BankControllerTest {
         return new SaveState(7L, "bob", "My Save", 2, 0, 3960, 3, 70, 50, 0, 0, 1,
                 1, 0, 0,
                 null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
-                false, Set.of());
+                false, Set.of(), 10, false);
     }
 
     private static SaveStateDto dto() {

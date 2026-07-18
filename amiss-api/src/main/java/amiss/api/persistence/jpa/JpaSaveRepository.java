@@ -63,6 +63,8 @@ public class JpaSaveRepository implements SaveRepository {
             entity.setEconomyIndex(state.economyIndex());
             entity.setEconomyReading(state.economyReading());
             entity.setAteFastFoodLastTurn(state.ateFastFoodLastTurn());
+            entity.setRelaxation(state.relaxation());
+            entity.setRelaxedThisTurn(state.relaxedThisTurn());
             entity.getOwnedAppliances().clear();
             entity.getOwnedAppliances().addAll(state.ownedAppliances());
             saves.saveAndFlush(entity);
@@ -77,7 +79,8 @@ public class JpaSaveRepository implements SaveRepository {
                 e.getDependability(), e.getCurrentCourseId(), e.getEduprog(),
                 e.getGoalWealth(), e.getGoalHappiness(), e.getGoalEducation(), e.getGoalCareer(),
                 e.getWon() != 0, e.getEconomyIndex(), e.getEconomyReading(), e.getWage(),
-                e.isAteFastFoodLastTurn(), e.getOwnedAppliances());
+                e.isAteFastFoodLastTurn(), e.getOwnedAppliances(),
+                e.getRelaxation(), e.isRelaxedThisTurn());
     }
 
     /** Runs {@code call}, translating any persistence failure into {@link PersistenceFailureException}. */

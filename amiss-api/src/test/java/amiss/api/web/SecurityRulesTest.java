@@ -112,7 +112,7 @@ class SecurityRulesTest {
         SaveState save = new SaveState(7L, "alice", "My Save", 0, 2, 3600, 1, 120, 0, 0, 1, 1,
                 1, 0, 0,
                 null, 0, 10, 20, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
-                false, Set.of());
+                false, Set.of(), 10, false);
         when(scope.require(eq(7L), any())).thenReturn(save);
         when(assembler.assemble(services, save)).thenReturn(dto());
 
