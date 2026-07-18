@@ -118,6 +118,7 @@ class HiringServiceTest {
         assertEquals(240, outcome.minutesCharged());
         assertEquals(3360, save.timeMinutes());
         assertEquals(49, save.happiness());
+        assertTrue(outcome.reasons().contains(HireOutcome.Reason.NOT_ENOUGH_CLOTHING));
         verify(saves).update(save);
     }
 

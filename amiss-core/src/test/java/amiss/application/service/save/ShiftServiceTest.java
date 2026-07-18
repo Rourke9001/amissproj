@@ -56,7 +56,7 @@ class ShiftServiceTest {
         save.setDependability(70);
         when(jobs.byId(TestSaves.BROKER.id())).thenReturn(Optional.of(TestSaves.BROKER));
 
-        ShiftOutcome outcome = service().work(save);   // clothing 1 < Business (3)
+        ShiftOutcome outcome = service().work(save);   // no Business weeks for a level-3 job
 
         assertEquals(ShiftOutcome.Status.UNDERDRESSED, outcome.status());
         assertEquals(3600, save.timeMinutes());
