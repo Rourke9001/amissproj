@@ -16,6 +16,7 @@ public class DoctorVisitService {
 
     private static final int STARVATION_CHANCE = 4;    // 1-in-4 = 25%
     private static final int SPOILAGE_CHANCE = 2;       // 1-in-2 = 50%
+    private static final int RELAXATION_CHANCE = 5;   // 1-in-5 = 20%
     private static final int MINUTES_LOST = 600;       // 10h
     private static final int HAPPINESS_LOST = 4;
     private static final int HIGH_CASH_THRESHOLD = 500;
@@ -31,13 +32,15 @@ public class DoctorVisitService {
         this.roll1toN = roll1toN;
     }
 
-    public DoctorVisitOutcome resolve(SaveState save, boolean starved, boolean spoiledFreshFood) {
+    public DoctorVisitOutcome resolve(SaveState save, boolean starved, boolean spoiledFreshFood,
+            boolean relaxationAtFloor) {
         if (save.cash() <= 0) {
             return DoctorVisitOutcome.none();
         }
         boolean starvationHit = starved && roll1toN.applyAsInt(STARVATION_CHANCE) == 1;
         boolean spoilageHit = spoiledFreshFood && roll1toN.applyAsInt(SPOILAGE_CHANCE) == 1;
-        boolean triggered = starvationHit || spoilageHit;
+        boolean relaxationHit = relaxationAtFloor && roll1toN.applyAsInt(RELAXATION_CHANCE) == 1;
+        boolean triggered = starvationHit || spoilageHit || relaxationHit;
         if (!triggered) {
             return DoctorVisitOutcome.none();
         }
