@@ -16,7 +16,7 @@ import java.util.function.IntSupplier;
 /**
  * The Employment Office hiring rule (KAN-53), wiki-exact. Applying charges the
  * interview time (clamped to the clock) win or lose; requirements are checked in the
- * wiki's order (education → experience → dependability → luck), every failing named
+ * wiki's order (education → experience → dependability → clothing → luck), every failing named
  * check is reported, and a failed luck roll turns the job down for the rest of the
  * round. Weeks 1–4 report a dependability shortfall as {@code NO_OPENINGS} (wiki
  * suppression rule). The Cook at Monolith Burgers skips every check.
@@ -81,6 +81,9 @@ public class HiringService {
             reasons.add(save.round() <= POOR_HISTORY_SUPPRESSED_UNTIL_ROUND
                     ? HireOutcome.Reason.NO_OPENINGS
                     : HireOutcome.Reason.POOR_WORK_HISTORY);
+        }
+        if (!save.hasClothingLevel(job.reqClothing())) {
+            reasons.add(HireOutcome.Reason.NOT_ENOUGH_CLOTHING);
         }
         if (!reasons.isEmpty()) {
             return reject(save, job, reasons, charged);
