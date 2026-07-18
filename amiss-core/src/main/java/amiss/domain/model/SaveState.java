@@ -50,6 +50,8 @@ public class SaveState {
     private Integer wage;
     private boolean ateFastFoodLastTurn;
     private final Set<ApplianceItem> ownedAppliances;
+    private int relaxation;
+    private boolean relaxedThisTurn;
 
     public SaveState(long id, String owner, String label, int xpos, int ypos, int timeMinutes,
             int round, int cash, int bank, int debt, int rent, int eat,
@@ -58,7 +60,8 @@ public class SaveState {
             Integer currentCourseId, int eduprog,
             int goalWealth, int goalHappiness, int goalEducation, int goalCareer, boolean won,
             byte economyIndex, short economyReading, Integer wage,
-            boolean ateFastFoodLastTurn, Set<ApplianceItem> ownedAppliances) {
+            boolean ateFastFoodLastTurn, Set<ApplianceItem> ownedAppliances,
+            int relaxation, boolean relaxedThisTurn) {
         this.id = id;
         this.owner = owner;
         this.label = label;
@@ -90,6 +93,8 @@ public class SaveState {
         this.wage = wage;
         this.ateFastFoodLastTurn = ateFastFoodLastTurn;
         this.ownedAppliances = new HashSet<>(ownedAppliances);
+        this.relaxation = relaxation;
+        this.relaxedThisTurn = relaxedThisTurn;
     }
 
     public long id() {
@@ -347,5 +352,27 @@ public class SaveState {
 
     public void grantAppliance(ApplianceItem item) {
         ownedAppliances.add(item);
+    }
+
+    public int relaxation() {
+        return relaxation;
+    }
+
+    public void setRelaxation(int relaxation) {
+        this.relaxation = relaxation;
+    }
+
+    /** Applies {@code delta} clamped to the wiki's 10..50 band — used for both the Relax
+     *  action's +3 gain and the weekly -1 decay. */
+    public void addRelaxation(int delta) {
+        this.relaxation = Math.max(10, Math.min(50, relaxation + delta));
+    }
+
+    public boolean relaxedThisTurn() {
+        return relaxedThisTurn;
+    }
+
+    public void setRelaxedThisTurn(boolean relaxedThisTurn) {
+        this.relaxedThisTurn = relaxedThisTurn;
     }
 }

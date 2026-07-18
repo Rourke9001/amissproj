@@ -75,6 +75,10 @@ export function Hud({ player, onEndWeek, endWeekPending }: HudProps) {
           <dt>Happiness</dt>
           <dd>{goals.happiness.current}</dd>
         </div>
+        <div className="hud-stat">
+          <dt>Relaxation</dt>
+          <dd>{player.relaxation} / 50</dd>
+        </div>
       </dl>
 
       <div className="hud-goals">

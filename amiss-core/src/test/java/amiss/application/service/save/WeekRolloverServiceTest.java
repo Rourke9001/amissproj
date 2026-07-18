@@ -204,6 +204,7 @@ class WeekRolloverServiceTest {
         // and spoilage) from consuming a roll, so the queue below is economy-only.
         save.grantAppliance(ApplianceItem.FRIDGE);
         save.setEat(1);
+        save.setRelaxation(20);   // above the floor: the relaxation trigger must not consume a roll here
 
         // Index roll 3 -> +1; noise roll 6 -> 0: reading 0 -> 10.
         service(rolls(3, 6)).endWeek(save);
@@ -222,6 +223,7 @@ class WeekRolloverServiceTest {
         // and spoilage) from consuming a roll, so the queue below is economy-only.
         save.grantAppliance(ApplianceItem.FRIDGE);
         save.setEat(1);
+        save.setRelaxation(20);   // above the floor: the relaxation trigger must not consume a roll here
         save.setRound(8);
         save.setEconomyReading((short) 85);
         save.setCash(3000);
@@ -281,6 +283,7 @@ class WeekRolloverServiceTest {
         SaveState save = weekOverSave();
         save.setEat(0);
         save.setCash(100);
+        save.setRelaxation(20);   // above the floor: the relaxation trigger must not consume a roll here
 
         // The implementation (Step 3) calls doctorVisit.resolve(...) BEFORE
         // economy.driftWeekly(...), so Doctor Visit's rolls are consumed first:
@@ -304,6 +307,7 @@ class WeekRolloverServiceTest {
         SaveState save = weekOverSave();
         save.setEat(3);              // fridgeless leftover from a prior purchase
         save.setCash(100);
+        save.setRelaxation(20);   // above the floor: the relaxation trigger must not consume a roll here
 
         // hadFreshFood=true -> fed=true -> starved=false (no roll consumed for it).
         // Doctor Visit rolls first: spoilage roll (1-in-2, value 1 = hit), cost
@@ -343,5 +347,41 @@ class WeekRolloverServiceTest {
         assertEquals(0, save.casualWeeks());
         assertEquals(0, save.dressWeeks());   // floors, does not go negative
         assertEquals(4, save.businessWeeks());
+    }
+
+    @Test
+    void relaxationDecaysWeeklyResetsTheFirstRelaxFlagAndFloorFeedsDoctorVisit() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setAteFastFoodLastTurn(true);   // fed, with no Fridge involved either way:
+        save.setEat(0);                      // isolates this test to the relaxation trigger only
+        save.setRelaxation(11);
+        save.setRelaxedThisTurn(true);
+        save.setCash(100);
+
+        // starved=false, spoiledFreshFood=false (fed via fast food, no fresh food to
+        // spoil) -> neither consumes a roll. Doctor Visit rolls first: relaxation-floor
+        // roll (1-in-5, value 1 = hit), cost roll (21-wide, value 1 -> 30); then the two
+        // neutral economy drift rolls (3, 6).
+        WeekRolloverService.RolloverResult result = service(rolls(1, 1, 3, 6)).endWeek(save);
+
+        assertEquals(10, save.relaxation());          // 11 - 1, now at the floor
+        assertFalse(save.relaxedThisTurn());          // reset for the new turn
+        assertTrue(result.doctorVisit().triggered());  // floor feeds the 20% trigger
+        assertEquals(70, save.cash());
+    }
+
+    @Test
+    void relaxationAboveTheFloorNeverTriggersItsCondition() {
+        when(degrees.earned(TestSaves.SAVE_ID)).thenReturn(Set.of());
+        SaveState save = weekOverSave();
+        save.setAteFastFoodLastTurn(true);
+        save.setEat(0);
+        save.setRelaxation(20);
+
+        WeekRolloverService.RolloverResult result = service().endWeek(save);
+
+        assertEquals(19, save.relaxation());
+        assertFalse(result.doctorVisit().triggered());
     }
 }

@@ -140,6 +140,13 @@ public class SaveEntity {
     @Column(name = "ate_fast_food_last_turn", nullable = false)
     private int ateFastFoodLastTurn;
 
+    @Column(name = "relaxation", nullable = false)
+    private int relaxation;
+
+    /** 1 = this turn's first-Relax happiness bonus already paid. */
+    @Column(name = "relaxed_this_turn", nullable = false)
+    private int relaxedThisTurn;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "tblsave_appliance", joinColumns = @JoinColumn(name = "save_id"))
     @Enumerated(EnumType.STRING)
@@ -171,6 +178,7 @@ public class SaveEntity {
         this.casualWeeks = 6;
         this.experience = 10;
         this.dependability = 20;
+        this.relaxation = 10;
     }
 
     public Long getId() {
@@ -395,6 +403,22 @@ public class SaveEntity {
 
     public void setAteFastFoodLastTurn(boolean ateFastFoodLastTurn) {
         this.ateFastFoodLastTurn = ateFastFoodLastTurn ? 1 : 0;
+    }
+
+    public int getRelaxation() {
+        return relaxation;
+    }
+
+    public void setRelaxation(int relaxation) {
+        this.relaxation = relaxation;
+    }
+
+    public boolean isRelaxedThisTurn() {
+        return relaxedThisTurn != 0;
+    }
+
+    public void setRelaxedThisTurn(boolean relaxedThisTurn) {
+        this.relaxedThisTurn = relaxedThisTurn ? 1 : 0;
     }
 
     public Set<ApplianceItem> getOwnedAppliances() {

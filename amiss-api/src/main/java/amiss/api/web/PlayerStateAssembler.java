@@ -73,6 +73,7 @@ public class PlayerStateAssembler {
                 save.casualWeeks(),
                 save.dressWeeks(),
                 save.businessWeeks(),
+                save.relaxation(),
                 jobFor(save),
                 new LocationDto(location.name(), location.displayName(), board.ringIndex(row, col), row, col),
                 degreesEarned,

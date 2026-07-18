@@ -82,6 +82,7 @@ export interface SaveStateDto {
   clothingCasualWeeks: number;
   clothingDressWeeks: number;
   clothingBusinessWeeks: number;
+  relaxation: number;
   job: JobDto;
   location: LocationDto;
   degreesEarned: string[];
@@ -262,5 +263,11 @@ export interface ApplianceDto {
 export interface ApplianceResponse {
   item: string;
   price: number;
+  state: SaveStateDto;
+}
+
+export interface RelaxResponse {
+  minutesCharged: number;
+  relaxation: number;
   state: SaveStateDto;
 }

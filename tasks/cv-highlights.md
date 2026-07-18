@@ -606,6 +606,34 @@ test passed with the Dress and Business wires crossed. The fix isn't just more a
 proving the test can fail: break the switch deliberately, watch red, restore. A test you've
 never seen fail is a hope, not a check."*
 
+### Relaxation stat & the Relax action — closing the one-event/three-triggers design (KAN-23 PR 4)
+- Added the wiki-exact **Relaxation stat** (10..50, floored at the same 10 it starts on) and a
+  6-hour **Relax action** at Home that raises it by 3 per use, with a +2 happiness bonus paid on
+  only the first Relax of a turn (`relaxedThisTurn`, reset every rollover) — a repeatable action
+  whose stat reward doesn't diminish but whose happiness reward does, modelled as two independent
+  fields rather than one that would have to encode both rules.
+- Landed Doctor Visit's **third and final trigger**: a floored Relaxation stat rolls the event at
+  20%, alongside PR 1's starvation (25%) and PR 2's spoiled food (50%) — completing the "one event,
+  three independent triggers, at most one visit per turn" design stated in PR 1 before either of
+  the other two triggers existed, with no new call site and no new resolver.
+- Shipped the additive **V12 migration** (`relaxation INT DEFAULT 10`, `relaxed_this_turn INT
+  DEFAULT 0`) and pinned that its defaults reach a row with no legacy analogue to carry forward —
+  the same legacy-chain IT that has proven every migration since V5 now asserts a pre-existing
+  account lands on 10/floor, not yet relaxed, after the full V1-to-latest path.
+- Gave **HomePanel its first real functionality since its KAN-40 placeholder**: a stat bar plus a
+  Relax button wired to `POST /relax`, live-verified end-to-end — repeated clicks within one turn
+  raise the stat by 3 each time while happiness rises only once, several unrelaxed weeks decay the
+  stat to (and hold it at) the floor, and holding a save at the floor across End Weeks eventually
+  fires a Doctor Visit from the relaxation condition alone.
+
+**Talking point:** *"This PR is the payoff of a design decision made three PRs earlier: PR 1 built
+Doctor Visit as one resolver with three independent triggers before triggers two and three even
+existed, specifically so they wouldn't each need their own call site. Wiring in the third trigger
+here was a ~10-line addition, not a new code path. The other thing I'd point to is the migration
+IT: V12 has no legacy column to carry forward, so the interesting assertion isn't 'the new columns
+exist', it's 'a pre-existing row gets the same default a brand-new save gets' — proven against the
+same full V1-to-latest chain every migration in this project has to survive."*
+
 ## Phase 4 — Showcase & deploy
 
 ### Architecture documentation refresh — the map matches the territory (KAN-55)

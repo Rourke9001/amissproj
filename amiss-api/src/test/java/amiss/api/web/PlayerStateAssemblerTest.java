@@ -65,14 +65,14 @@ class PlayerStateAssemblerTest {
                 1, 0, 0,
                 jobId, 60, 30, 40, currentCourseId, eduprog, 200, 100, 30, 50, false, (byte) 0, (short) 0,
                 jobId != null ? 6 : null,  // wage snapshot when employed
-                false, Set.of());
+                false, Set.of(), 10, false);
     }
 
     private static SaveState save(int timeMinutes) {
         return new SaveState(SAVE_ID, "bob", "My Save", 0, 2, timeMinutes, 3, 120, 50, 0, 0, 1,
                 1, 0, 0,
                 null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
-                false, Set.of());
+                false, Set.of(), 10, false);
     }
 
     @Test
@@ -112,6 +112,7 @@ class PlayerStateAssemblerTest {
         assertEquals(1, dto.clothingCasualWeeks());
         assertEquals(0, dto.clothingDressWeeks());
         assertEquals(0, dto.clothingBusinessWeeks());
+        assertEquals(10, dto.relaxation());
         assertEquals(50, dto.bank());
         assertEquals(List.of("Junior College"), dto.degreesEarned());
         assertNull(dto.currentCourse());
@@ -133,7 +134,7 @@ class PlayerStateAssemblerTest {
         SaveState save = new SaveState(SAVE_ID, "bob", "My Save", 0, 2, 3960, 3, 120, 50, 0, 0, 1,
                 1, 0, 0,
                 null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
-                true, Set.of());
+                true, Set.of(), 10, false);
 
         SaveStateDto dto = assembler.assemble(services(), save);
 
@@ -162,7 +163,7 @@ class PlayerStateAssemblerTest {
         SaveState stale = new SaveState(SAVE_ID, "bob", "My Save", 9, 9, 3960, 3, 120, 50, 0, 0, 1,
                 1, 0, 0,
                 null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
-                false, Set.of());
+                false, Set.of(), 10, false);
 
         SaveStateDto dto = assembler.assemble(services(), stale);
 

@@ -3490,6 +3490,8 @@ Add a floor constant and the decay/reset/condition, placed after the clothing de
 
 (Replaces the old 3-arg `doctorVisit.resolve(save, !fed, spoiledFreshFood)` call from PR 2's Task 9.)
 
+Note: TestSaves.newSave() defaults relaxation to the floor (10), so four pre-existing rollover tests with hand-scripted roll queues need a `setRelaxation(20)` grant to keep the relaxation condition roll-free (same fixture-grant pattern as PR 2's Fridge grants).
+
 - [ ] **Step 5: Run to verify pass**
 
 Run: `.\mvnw -B -pl amiss-core test "-Dtest=WeekRolloverServiceTest"` then the full core suite `.\mvnw -B -pl amiss-core test`.

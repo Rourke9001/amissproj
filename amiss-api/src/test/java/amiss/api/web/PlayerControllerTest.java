@@ -62,13 +62,13 @@ class PlayerControllerTest {
         return new SaveState(7L, "bob", "My Save", 0, 2, 3960, 3, 120, 50, 0, 0, 1,
                 1, 0, 0,
                 null, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
-                false, Set.of());
+                false, Set.of(), 10, false);
     }
 
     private static SaveStateDto dto() {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 3, 3960, "66h", false, 120, 50, 0, false,
-                1, false, 1, 0, 0, null, new LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2),
+                1, false, 1, 0, 0, 10, null, new LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 

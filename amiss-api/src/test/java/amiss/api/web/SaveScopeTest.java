@@ -24,7 +24,7 @@ class SaveScopeTest {
         return new SaveState(id, owner, "My Save", 0, 2, 4320, 1, 100, 0, 0, 1, 0,
                 1, 0, 0,
                 null, 0, 10, 20, null, 0, 50, 50, 50, 50, false, (byte) 0, (short) 0, null,
-                false, Set.of());
+                false, Set.of(), 10, false);
     }
 
     private static Authentication authenticationFor(String name) {

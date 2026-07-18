@@ -101,6 +101,8 @@ class SavePortsAdapterIT extends MySqlITSupport {
         loaded.setWage(12);
         loaded.setAteFastFoodLastTurn(true);
         loaded.grantAppliance(ApplianceItem.FRIDGE);
+        loaded.setRelaxation(27);
+        loaded.setRelaxedThisTurn(true);
 
         saveRepository.update(loaded);
 
@@ -130,6 +132,8 @@ class SavePortsAdapterIT extends MySqlITSupport {
         assertThat(reloaded.wage()).isEqualTo(Integer.valueOf(12));
         assertThat(reloaded.ateFastFoodLastTurn()).isTrue();
         assertThat(reloaded.ownedAppliances()).isEqualTo(Set.of(ApplianceItem.FRIDGE));
+        assertThat(reloaded.relaxation()).isEqualTo(27);
+        assertThat(reloaded.relaxedThisTurn()).isTrue();
         // goals are immutable on SaveState and untouched by update()
         assertThat(reloaded.goalWealth()).isEqualTo(40);
 

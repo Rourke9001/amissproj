@@ -13,10 +13,12 @@ import amiss.domain.model.SaveState;
  * week's food — stored fresh food feeds it (fast food only ever feeds the turn just
  * spent, and is cleared here), fridgeless fresh food then spoils to zero while a
  * Fridge owner's stock decays by one instead; reset clock and board position; advance
- * the round (flagging rent due); decay dependability −3 (floor 0); apply the unfed
- * starvation penalty and resolve a possible Doctor Visit (starvation or spoilage can
- * each trigger it, at most one visit per turn); then drift the economy; then the win
- * check — all four goals met at the start of a turn wins, and {@code won} is sticky.
+ * the round (flagging rent due); decay dependability −3 (floor 0); decay each clothing
+ * category's remaining weeks (floor 0); reset the first-relax flag and decay Relaxation
+ * by 1 (floor 10) and resolve a possible Doctor Visit (starvation, spoilage, or a
+ * Relaxation stat at its floor can each trigger it, at most one visit per turn); then
+ * drift the economy; then the win check — all four goals met at the start of a turn
+ * wins, and {@code won} is sticky.
  */
 public class WeekRolloverService {
 
@@ -24,6 +26,7 @@ public class WeekRolloverService {
     private static final int LATE_RENT_DEBT = 80;
     private static final int WEEKLY_DEPENDABILITY_DECAY = 3;
     private static final int STARVATION_HAPPINESS_LOSS = 2;
+    private static final int RELAXATION_FLOOR = 10;
 
     /** What happened at rollover; {@code rolled} false = the week wasn't over. */
     public record RolloverResult(boolean rolled, int newRound, boolean fed, int weekMinutes,
@@ -93,7 +96,11 @@ public class WeekRolloverService {
         save.setDressWeeks(Math.max(0, save.dressWeeks() - 1));
         save.setBusinessWeeks(Math.max(0, save.businessWeeks() - 1));
 
-        DoctorVisitOutcome doctorVisitOutcome = doctorVisit.resolve(save, !fed, spoiledFreshFood);
+        save.setRelaxedThisTurn(false);
+        save.addRelaxation(-1);
+        boolean relaxationAtFloor = save.relaxation() <= RELAXATION_FLOOR;
+
+        DoctorVisitOutcome doctorVisitOutcome = doctorVisit.resolve(save, !fed, spoiledFreshFood, relaxationAtFloor);
 
         economy.driftWeekly(save);
         EconomyEvent economyEvent = economy.rollEvent(save);
