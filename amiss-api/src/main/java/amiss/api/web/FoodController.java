@@ -79,7 +79,7 @@ public class FoodController {
         List<ClothingItemDto> items = new ArrayList<>(ClothingItem.values().length);
         for (ClothingItem item : ClothingItem.values()) {
             items.add(new ClothingItemDto(item.name(), item.displayName(),
-                    economy.price(item.price(), save), item.level()));
+                    economy.price(item.price(), save), item.level(), item.weeks()));
         }
         return items;
     }
@@ -141,7 +141,7 @@ public class FoodController {
             case INSUFFICIENT_TIME:
                 throw new InsufficientTimeException(saveId);
             default:
-                return new ClothesResponse(item.name(), outcome.pricePaid(), item.level(), assembler.assemble(services, save));
+                return new ClothesResponse(item.name(), outcome.pricePaid(), assembler.assemble(services, save));
         }
     }
 

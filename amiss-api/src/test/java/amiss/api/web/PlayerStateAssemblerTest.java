@@ -109,7 +109,9 @@ class PlayerStateAssemblerTest {
 
         assertEquals(1, dto.foodWeeks());
         assertEquals(false, dto.ateFastFoodLastTurn());
-        assertEquals(1, dto.clothing());
+        assertEquals(1, dto.clothingCasualWeeks());
+        assertEquals(0, dto.clothingDressWeeks());
+        assertEquals(0, dto.clothingBusinessWeeks());
         assertEquals(50, dto.bank());
         assertEquals(List.of("Junior College"), dto.degreesEarned());
         assertNull(dto.currentCourse());

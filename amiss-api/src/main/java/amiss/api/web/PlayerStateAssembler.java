@@ -71,6 +71,8 @@ public class PlayerStateAssembler {
                 save.eat(),
                 save.ateFastFoodLastTurn(),
                 save.casualWeeks(),
+                save.dressWeeks(),
+                save.businessWeeks(),
                 jobFor(save),
                 new LocationDto(location.name(), location.displayName(), board.ringIndex(row, col), row, col),
                 degreesEarned,
