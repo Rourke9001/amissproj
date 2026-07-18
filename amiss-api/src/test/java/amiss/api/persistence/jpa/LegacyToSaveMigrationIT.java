@@ -130,7 +130,11 @@ class LegacyToSaveMigrationIT {
                 assertThat(rs.getInt("bank")).isEqualTo(300);
                 assertThat(rs.getInt("debt")).isEqualTo(50);
                 assertThat(rs.getInt("rent")).isEqualTo(0);
-                assertThat(rs.getInt("clothing")).isEqualTo(2);
+                // clothing: V11 replaces the single legacy column with per-category weeks; the old
+                // value (2, Dress) cannot be recovered, so defaults apply (6/0/0).
+                assertThat(rs.getInt("clothing_casual_weeks")).isEqualTo(6);
+                assertThat(rs.getInt("clothing_dress_weeks")).isEqualTo(0);
+                assertThat(rs.getInt("clothing_business_weeks")).isEqualTo(0);
                 // eat is the exception to "verbatim": V5 carries the legacy 3 across, then V10
                 // clamps it to 1. The legacy account owns no Fridge (nothing could, before V10),
                 // and the fridgeless rule caps storage at one week — so 3 is unreachable state
