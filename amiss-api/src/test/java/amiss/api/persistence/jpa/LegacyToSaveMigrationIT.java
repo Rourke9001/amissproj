@@ -153,6 +153,10 @@ class LegacyToSaveMigrationIT {
                 assertThat(rs.getInt("goal_happiness")).isEqualTo(50);
                 assertThat(rs.getInt("goal_education")).isEqualTo(50);
                 assertThat(rs.getInt("goal_career")).isEqualTo(50);
+                // relaxation: no legacy column to carry forward, so V12's defaults apply
+                // verbatim to this pre-existing row (10/floor, not yet relaxed this turn).
+                assertThat(rs.getInt("relaxation")).isEqualTo(10);
+                assertThat(rs.getInt("relaxed_this_turn")).isEqualTo(0);
 
                 assertThat(rs.next()).as("exactly one starter save").isFalse();
             }
