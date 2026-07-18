@@ -64,7 +64,7 @@ class ApplianceControllerTest {
     private static SaveStateDto dto() {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 3, 3960, "66h", false, 70, 0, 0, false,
-                1, false, 1, 0, 0, null, new LocationDto("SOCKET_CITY", "Socket City", 3, 1, 4),
+                1, false, 1, 0, 0, 10, null, new LocationDto("SOCKET_CITY", "Socket City", 3, 1, 4),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 

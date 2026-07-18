@@ -70,7 +70,7 @@ class FoodControllerTest {
     private static SaveStateDto dto(int foodWeeks, boolean ateFastFoodLastTurn) {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 3, 3960, "66h", false, 70, 0, 0, false,
-                foodWeeks, ateFastFoodLastTurn, 1, 0, 0, null,
+                foodWeeks, ateFastFoodLastTurn, 1, 0, 0, 10, null,
                 new LocationDto("MONOLITH_BURGERS", "Monolith Burgers", 3, 1, 4),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }

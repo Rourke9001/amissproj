@@ -29,6 +29,7 @@ public record SaveStateDto(
         int clothingCasualWeeks,
         int clothingDressWeeks,
         int clothingBusinessWeeks,
+        int relaxation,
         JobDto job,
         LocationDto location,
         List<String> degreesEarned,

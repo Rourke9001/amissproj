@@ -68,7 +68,7 @@ class PlayerControllerTest {
     private static SaveStateDto dto() {
         GoalDto goal = new GoalDto(0, 1);
         return new SaveStateDto(7L, "My Save", 3, 3960, "66h", false, 120, 50, 0, false,
-                1, false, 1, 0, 0, null, new LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2),
+                1, false, 1, 0, 0, 10, null, new LocationDto("LOW_COST_HOUSING", "Low-Cost Housing", 0, 0, 2),
                 List.of(), null, new GoalsDto(goal, goal, goal, goal), false);
     }
 
