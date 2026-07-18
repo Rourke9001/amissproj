@@ -302,6 +302,41 @@ class ShopServiceTest {
         assertEquals(13, save.businessWeeks());
     }
 
+    @Test
+    void buyingCasualClothesAddsWeeksAndGrantsNoHappiness() {
+        SaveState save = TestSaves.newSave();   // casualWeeks 6, cash 100
+        int happinessBefore = save.happiness();
+
+        service().buyClothes(save, ClothingItem.CASUAL);
+
+        assertEquals(6 + ClothingItem.CASUAL.weeks(), save.casualWeeks());
+        assertEquals(happinessBefore, save.happiness());
+    }
+
+    @Test
+    void buyingDressClothesAddsToItsOwnCategoryAndGrantsHappiness() {
+        SaveState save = TestSaves.newSave();
+        save.setCash(300);  // enough for DRESS at 125
+        int happinessBefore = save.happiness();
+
+        service().buyClothes(save, ClothingItem.DRESS);
+
+        assertEquals(6, save.casualWeeks());        // untouched — separate category
+        assertEquals(ClothingItem.DRESS.weeks(), save.dressWeeks());
+        assertEquals(happinessBefore + 1, save.happiness());
+    }
+
+    @Test
+    void multiplePurchasesOfTheSameCategoryStack() {
+        SaveState save = TestSaves.newSave();
+        save.setCash(1000);
+
+        service().buyClothes(save, ClothingItem.BUSINESS);
+        service().buyClothes(save, ClothingItem.BUSINESS);
+
+        assertEquals(2 * ClothingItem.BUSINESS.weeks(), save.businessWeeks());
+    }
+
     // ---- economy pricing -------------------------------------------------------
 
     @Test
