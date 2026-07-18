@@ -86,7 +86,9 @@ class SavePortsAdapterIT extends MySqlITSupport {
         loaded.setDebt(222);
         loaded.setRent(0);
         loaded.setEat(5);
-        loaded.setDressWeeks(2);
+        loaded.setCasualWeeks(3);
+        loaded.setDressWeeks(7);
+        loaded.setBusinessWeeks(0);
         loaded.setJobId(4);
         loaded.addHappiness(10);
         loaded.setExperience(30);
@@ -113,7 +115,9 @@ class SavePortsAdapterIT extends MySqlITSupport {
         assertThat(reloaded.debt()).isEqualTo(222);
         assertThat(reloaded.rent()).isEqualTo(0);
         assertThat(reloaded.eat()).isEqualTo(5);
-        assertThat(reloaded.dressWeeks()).isEqualTo(2);
+        assertThat(reloaded.casualWeeks()).isEqualTo(3);
+        assertThat(reloaded.dressWeeks()).isEqualTo(7);
+        assertThat(reloaded.businessWeeks()).isEqualTo(0);
         assertThat(reloaded.jobId()).isEqualTo(4);
         assertThat(reloaded.happiness()).isGreaterThan(0);
         assertThat(reloaded.experience()).isEqualTo(30);
