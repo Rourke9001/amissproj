@@ -31,7 +31,9 @@ public class SaveState {
     private int debt;
     private int rent;
     private int eat;
-    private int clothing;
+    private int casualWeeks;
+    private int dressWeeks;
+    private int businessWeeks;
     private Integer jobId;
     private int happiness;
     private int experience;
@@ -50,7 +52,8 @@ public class SaveState {
     private final Set<ApplianceItem> ownedAppliances;
 
     public SaveState(long id, String owner, String label, int xpos, int ypos, int timeMinutes,
-            int round, int cash, int bank, int debt, int rent, int eat, int clothing,
+            int round, int cash, int bank, int debt, int rent, int eat,
+            int casualWeeks, int dressWeeks, int businessWeeks,
             Integer jobId, int happiness, int experience, int dependability,
             Integer currentCourseId, int eduprog,
             int goalWealth, int goalHappiness, int goalEducation, int goalCareer, boolean won,
@@ -68,7 +71,9 @@ public class SaveState {
         this.debt = debt;
         this.rent = rent;
         this.eat = eat;
-        this.clothing = clothing;
+        this.casualWeeks = casualWeeks;
+        this.dressWeeks = dressWeeks;
+        this.businessWeeks = businessWeeks;
         this.jobId = jobId;
         this.happiness = happiness;
         this.experience = experience;
@@ -183,12 +188,43 @@ public class SaveState {
         this.eat = eat;
     }
 
-    public int clothing() {
-        return clothing;
+    public int casualWeeks() {
+        return casualWeeks;
     }
 
-    public void setClothing(int clothing) {
-        this.clothing = clothing;
+    public void setCasualWeeks(int casualWeeks) {
+        this.casualWeeks = casualWeeks;
+    }
+
+    public int dressWeeks() {
+        return dressWeeks;
+    }
+
+    public void setDressWeeks(int dressWeeks) {
+        this.dressWeeks = dressWeeks;
+    }
+
+    public int businessWeeks() {
+        return businessWeeks;
+    }
+
+    public void setBusinessWeeks(int businessWeeks) {
+        this.businessWeeks = businessWeeks;
+    }
+
+    /**
+     * Whether this save has at least one week of clothing left in {@code requiredLevel}
+     * (1=Casual, 2=Dress, 3=Business) <strong>or a higher category</strong> — a Business
+     * Suit satisfies a Casual-requiring job, but not vice-versa. {@code 0} (no requirement)
+     * always passes.
+     */
+    public boolean hasClothingLevel(int requiredLevel) {
+        return switch (requiredLevel) {
+            case 1 -> casualWeeks > 0 || dressWeeks > 0 || businessWeeks > 0;
+            case 2 -> dressWeeks > 0 || businessWeeks > 0;
+            case 3 -> businessWeeks > 0;
+            default -> true;
+        };
     }
 
     public Integer jobId() {

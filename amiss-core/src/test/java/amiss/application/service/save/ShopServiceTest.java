@@ -237,14 +237,15 @@ class ShopServiceTest {
 
     @Test
     void buyingClothesRaisesTheLevelAndChargesCash() {
-        SaveState save = TestSaves.newSave(); // clothing 1, cash 100
+        SaveState save = TestSaves.newSave(); // casual 6, dress/business 0
+        save.setCash(400); // enough for a Business Suit at 295
 
-        PurchaseOutcome result = service().buyClothes(save, ClothingItem.SUIT); // price 55, level 3
+        PurchaseOutcome result = service().buyClothes(save, ClothingItem.BUSINESS); // price 295, level 3
 
         assertEquals(PurchaseOutcome.Status.OK, result.status());
-        assertEquals(45, result.cash());
-        assertEquals(3, save.clothing());
-        assertEquals(45, save.cash());
+        assertEquals(105, result.cash());
+        assertEquals(13, save.businessWeeks());
+        assertEquals(105, save.cash());
         verify(saves).update(save);
     }
 
@@ -253,10 +254,10 @@ class ShopServiceTest {
         SaveState save = TestSaves.newSave();
         save.setTimeMinutes(0);
 
-        PurchaseOutcome result = service().buyClothes(save, ClothingItem.SUIT);
+        PurchaseOutcome result = service().buyClothes(save, ClothingItem.BUSINESS);
 
         assertEquals(PurchaseOutcome.Status.WEEK_OVER, result.status());
-        assertEquals(1, save.clothing()); // unchanged
+        assertEquals(0, save.businessWeeks()); // unchanged
         assertEquals(100, save.cash());
         verifyNoInteractions(saves);
     }
@@ -264,13 +265,13 @@ class ShopServiceTest {
     @Test
     void insufficientCashRejectsAndDoesNotGiveFreeClothes() {
         SaveState save = TestSaves.newSave();
-        save.setCash(10); // < 55
+        save.setCash(10); // < 295
 
-        PurchaseOutcome result = service().buyClothes(save, ClothingItem.SUIT);
+        PurchaseOutcome result = service().buyClothes(save, ClothingItem.BUSINESS);
 
         assertEquals(PurchaseOutcome.Status.INSUFFICIENT_CASH, result.status());
         assertEquals(10, result.cash());
-        assertEquals(1, save.clothing()); // unchanged - the KAN-32 fix
+        assertEquals(0, save.businessWeeks()); // unchanged - the KAN-32 fix
         verifyNoInteractions(saves);
     }
 
@@ -278,26 +279,27 @@ class ShopServiceTest {
     void insufficientTimeRejectsAndDoesNotGiveFreeClothes() {
         ActionCosts costed = new ActionCosts(360, 360, 360, 240, 120, 60, 100, 40, 120, 3600, 1200);
         SaveState save = TestSaves.newSave();
+        save.setCash(400); // enough cash for the Business Suit so the time check is reached
         save.setTimeMinutes(50); // clock read (0-cost) OK, then 50 - 100 < 0
 
-        PurchaseOutcome result = new ShopService(saves, costed, new EconomyService(n -> 1)).buyClothes(save, ClothingItem.SUIT);
+        PurchaseOutcome result = new ShopService(saves, costed, new EconomyService(n -> 1)).buyClothes(save, ClothingItem.BUSINESS);
 
         assertEquals(PurchaseOutcome.Status.INSUFFICIENT_TIME, result.status());
-        assertEquals(1, save.clothing());
-        assertEquals(100, save.cash());
+        assertEquals(0, save.businessWeeks());
+        assertEquals(400, save.cash());
         verifyNoInteractions(saves);
     }
 
     @Test
     void buyingClothesWithExactlyEnoughCashSucceeds() {
         SaveState save = TestSaves.newSave();
-        save.setCash(55);
+        save.setCash(295);
 
-        PurchaseOutcome result = service().buyClothes(save, ClothingItem.SUIT);
+        PurchaseOutcome result = service().buyClothes(save, ClothingItem.BUSINESS);
 
         assertEquals(PurchaseOutcome.Status.OK, result.status());
         assertEquals(0, save.cash());
-        assertEquals(3, save.clothing());
+        assertEquals(13, save.businessWeeks());
     }
 
     // ---- economy pricing -------------------------------------------------------
@@ -327,6 +329,6 @@ class ShopServiceTest {
         assertEquals(12, groceries.pricePaid());    // floorDiv(25*-30,60)=-13 -> 12
 
         PurchaseOutcome clothes = shop.buyClothes(save, ClothingItem.CASUAL);
-        assertEquals(10, clothes.pricePaid());      // base 20 halved
+        assertEquals(36, clothes.pricePaid());      // base 73 halved: floorDiv(73*-30,60) = -37 -> 36
     }
 }

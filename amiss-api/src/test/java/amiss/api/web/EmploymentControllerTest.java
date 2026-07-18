@@ -62,7 +62,8 @@ class EmploymentControllerTest {
     private JobCatalog jobCatalog;
 
     private static SaveState save(Integer jobId) {
-        return new SaveState(7L, "bob", "My Save", 3, 3, 3960, 3, 70, 0, 0, 0, 1, 1,
+        return new SaveState(7L, "bob", "My Save", 3, 3, 3960, 3, 70, 0, 0, 0, 1,
+                1, 0, 0,
                 jobId, 60, 30, 40, null, 0, 200, 100, 30, 50, false, (byte) 0, (short) 0, null,
                 false, Set.of());
     }

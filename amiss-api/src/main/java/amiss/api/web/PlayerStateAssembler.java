@@ -70,7 +70,7 @@ public class PlayerStateAssembler {
                 save.rent() == 1,
                 save.eat(),
                 save.ateFastFoodLastTurn(),
-                save.clothing(),
+                save.casualWeeks(),
                 jobFor(save),
                 new LocationDto(location.name(), location.displayName(), board.ringIndex(row, col), row, col),
                 degreesEarned,
