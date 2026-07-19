@@ -55,7 +55,7 @@ export function Hud({ player, onEndWeek, endWeekPending }: HudProps) {
           <dd>
             {player.degreesEarned.length > 0 ? player.degreesEarned.join(', ') : 'None yet'}
             {player.currentCourse !== null &&
-              ` — Studying ${player.currentCourse.name} (${player.currentCourse.studiesDone}/10)`}
+              ` — Studying ${player.currentCourse.name} (${player.currentCourse.studiesDone}/${player.currentCourse.studiesRequired})`}
           </dd>
         </div>
         <div className="hud-stat">

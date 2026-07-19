@@ -64,6 +64,7 @@ export interface CurrentCourseDto {
   id: number;
   name: string;
   studiesDone: number;
+  studiesRequired: number;
 }
 
 export interface SaveStateDto {
@@ -199,6 +200,7 @@ export interface EnrollResponse {
 export interface StudyResponse {
   studiesDone: number;
   studiesRemaining: number;
+  studiesRequired: number;
   degreeCompleted: string | null;
   minutesCharged: number;
   state: SaveStateDto;

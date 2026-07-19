@@ -7,6 +7,7 @@ import { MonolithBurgersPanel } from './MonolithBurgersPanel';
 import { BlacksMarketPanel } from './BlacksMarketPanel';
 import { QTClothingPanel } from './QTClothingPanel';
 import { SocketCityPanel } from './SocketCityPanel';
+import { ZMartPanel } from './ZMartPanel';
 import { HomePanel } from './HomePanel';
 import { DefaultPanel } from './DefaultPanel';
 import type { PanelProps } from './types';
@@ -23,6 +24,7 @@ const PANEL_REGISTRY: Record<string, ComponentType<PanelProps>> = {
   BLACKS_MARKET: BlacksMarketPanel,
   QT_CLOTHING: QTClothingPanel,
   SOCKET_CITY: SocketCityPanel,
+  Z_MART: ZMartPanel,
   LOW_COST_HOUSING: HomePanel,
 };
 
