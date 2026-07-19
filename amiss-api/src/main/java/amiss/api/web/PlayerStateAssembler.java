@@ -46,7 +46,8 @@ public class PlayerStateAssembler {
         }
         Location location = board.locationAt(row, col);
 
-        List<CourseService.CourseView> courses = services.courses().courses(save);
+        CourseService courseService = services.courses();
+        List<CourseService.CourseView> courses = courseService.courses(save);
         List<String> degreesEarned = courses.stream()
                 .filter(c -> c.status() == CourseService.CourseStatus.EARNED)
                 .map(c -> c.degree().name())
@@ -54,7 +55,8 @@ public class PlayerStateAssembler {
         CurrentCourseDto currentCourse = courses.stream()
                 .filter(CourseService.CourseView::enrolled)
                 .findFirst()
-                .map(c -> new CurrentCourseDto(c.degree().id(), c.degree().name(), c.studiesDone()))
+                .map(c -> new CurrentCourseDto(c.degree().id(), c.degree().name(), c.studiesDone(),
+                        courseService.studiesRequired(save)))
                 .orElse(null);
 
         return new SaveStateDto(

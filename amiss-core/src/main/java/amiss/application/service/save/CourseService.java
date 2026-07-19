@@ -4,6 +4,7 @@ import amiss.application.config.ActionCosts;
 import amiss.application.port.DegreeCatalog;
 import amiss.application.port.SaveDegrees;
 import amiss.application.port.SaveRepository;
+import amiss.domain.model.ApplianceItem;
 import amiss.domain.model.DegreeSpec;
 import amiss.domain.model.SaveState;
 import java.util.ArrayList;
@@ -14,9 +15,11 @@ import java.util.Set;
 /**
  * Hi-Tech U over the 11-degree tree (KAN-53). Enrolling targets a specific AVAILABLE
  * course (prerequisite earned, not already earned, not already enrolled elsewhere) and
- * charges the R50 fee; ten study sessions graduate it. Graduation awards the degree
- * (never lost), +5 dependability — deliberately allowed over the cap; the weekly −3
- * decay erodes it — and unlocks the courses it gates.
+ * charges the R50 fee; ten study sessions graduate it — extra credit (KAN-23) shortens
+ * that: owning a Computer knocks off one session, owning all three Books knocks off
+ * another, floor 8. Graduation awards the degree (never lost), +5 dependability —
+ * deliberately allowed over the cap; the weekly −3 decay erodes it — and unlocks the
+ * courses it gates.
  */
 public class CourseService {
 
@@ -106,6 +109,19 @@ public class CourseService {
         return new EnrollResult(EnrollResult.Status.OK, save.cash(), fee);
     }
 
+    /** 10, minus 1 for owning a Computer, minus 1 more for owning all three Books, floor 8. */
+    public int studiesRequired(SaveState save) {
+        int required = STUDIES_PER_DEGREE;
+        if (save.owns(ApplianceItem.COMPUTER)) {
+            required--;
+        }
+        if (save.owns(ApplianceItem.ENCYCLOPEDIA) && save.owns(ApplianceItem.DICTIONARY)
+                && save.owns(ApplianceItem.ATLAS)) {
+            required--;
+        }
+        return required;
+    }
+
     public StudyResult study(SaveState save) {
         if (save.currentCourseId() == null) {
             return new StudyResult(StudyResult.Status.NOT_ENROLLED, 0, save.timeMinutes(), null);
@@ -115,7 +131,8 @@ public class CourseService {
         }
         save.spendUpTo(costs.studyMinutes());
         int done = save.eduprog() + 1;
-        if (done >= STUDIES_PER_DEGREE) {
+        int required = studiesRequired(save);
+        if (done >= required) {
             int degreeId = save.currentCourseId();
             String name = catalog.byId(degreeId).map(DegreeSpec::name).orElse("degree");
             degrees.award(save.id(), degreeId);
@@ -123,8 +140,7 @@ public class CourseService {
             save.setEduprog(0);
             save.setDependability(save.dependability() + GRADUATION_DEPENDABILITY_BONUS);
             saves.update(save);
-            return new StudyResult(StudyResult.Status.GRADUATED, STUDIES_PER_DEGREE,
-                    save.timeMinutes(), name);
+            return new StudyResult(StudyResult.Status.GRADUATED, required, save.timeMinutes(), name);
         }
         save.setEduprog(done);
         saves.update(save);

@@ -22,6 +22,7 @@ import amiss.application.service.save.CourseService;
 import amiss.application.service.save.SaveGameServices;
 import amiss.application.service.save.TravelService;
 import amiss.domain.board.Location;
+import amiss.domain.model.ApplianceItem;
 import amiss.domain.model.DegreeSpec;
 import amiss.domain.model.SaveState;
 import java.util.List;
@@ -265,12 +266,14 @@ class UniversityControllerTest {
         when(services.courses()).thenReturn(courses);
         when(courses.study(save)).thenReturn(new CourseService.StudyResult(
                 CourseService.StudyResult.Status.OK, 2, 3600, null));
+        when(courses.studiesRequired(save)).thenReturn(10);
         when(assembler.assemble(services, save)).thenReturn(dto());
 
         mvc.perform(post("/api/saves/7/courses/study").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.studiesDone").value(2))
                 .andExpect(jsonPath("$.studiesRemaining").value(8))
+                .andExpect(jsonPath("$.studiesRequired").value(10))
                 .andExpect(jsonPath("$.degreeCompleted").doesNotExist())
                 .andExpect(jsonPath("$.minutesCharged").value(360));
     }
@@ -283,12 +286,33 @@ class UniversityControllerTest {
         when(services.courses()).thenReturn(courses);
         when(courses.study(save)).thenReturn(new CourseService.StudyResult(
                 CourseService.StudyResult.Status.GRADUATED, 10, 3600, "Junior College"));
+        when(courses.studiesRequired(save)).thenReturn(10);
         when(assembler.assemble(services, save)).thenReturn(dto());
 
         mvc.perform(post("/api/saves/7/courses/study").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.studiesDone").value(10))
                 .andExpect(jsonPath("$.studiesRemaining").value(0))
+                .andExpect(jsonPath("$.studiesRequired").value(10))
                 .andExpect(jsonPath("$.degreeCompleted").value("Junior College"));
+    }
+
+    @Test
+    void study_withComputerReportsTheReducedStudiesRequired() throws Exception {
+        SaveState save = save();
+        save.grantAppliance(ApplianceItem.COMPUTER);
+        mockTravelAt(save, Location.HI_TECH_U);
+        CourseService courses = mock(CourseService.class);
+        when(services.courses()).thenReturn(courses);
+        when(courses.study(save)).thenReturn(new CourseService.StudyResult(
+                CourseService.StudyResult.Status.OK, 3, 3600, null));
+        when(courses.studiesRequired(save)).thenReturn(9);
+        when(assembler.assemble(services, save)).thenReturn(dto());
+
+        mvc.perform(post("/api/saves/7/courses/study").with(jwt().jwt(j -> j.subject("bob"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.studiesDone").value(3))
+                .andExpect(jsonPath("$.studiesRequired").value(9))
+                .andExpect(jsonPath("$.studiesRemaining").value(6));
     }
 }
