@@ -154,6 +154,7 @@ class PlayerStateAssemblerTest {
         assertEquals(2, dto.currentCourse().id());
         assertEquals("Business", dto.currentCourse().name());
         assertEquals(4, dto.currentCourse().studiesDone());
+        assertEquals(10, dto.currentCourse().studiesRequired());
     }
 
     @Test

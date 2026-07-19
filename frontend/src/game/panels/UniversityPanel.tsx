@@ -58,7 +58,7 @@ export function UniversityPanel({ saveId, player, onNotify }: PanelProps) {
       <h3>Hi-Tech U</h3>
       {player.currentCourse && (
         <p className="current-course">
-          Studying {player.currentCourse.name} ({player.currentCourse.studiesDone}/10){' '}
+          {`Studying ${player.currentCourse.name} (${player.currentCourse.studiesDone}/${player.currentCourse.studiesRequired})`}{' '}
           <button
             type="button"
             disabled={studyMutation.isPending}

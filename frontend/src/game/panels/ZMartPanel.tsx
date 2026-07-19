@@ -6,14 +6,13 @@ import type { StoreRow } from './StorePanel';
 import type { ApplianceResponse } from '../../api/types';
 import type { PanelProps } from './types';
 
-// Item ids are the ApplianceItem enum names on the wire.
-const APPLIANCE_NAMES: Record<string, string> = {
-  FRIDGE: 'Refrigerator',
-  FREEZER: 'Freezer',
-  COMPUTER: 'Computer',
+const BOOK_NAMES: Record<string, string> = {
+  ENCYCLOPEDIA: 'Encyclopedia',
+  DICTIONARY: 'Dictionary',
+  ATLAS: 'Atlas',
 };
 
-export function SocketCityPanel({ saveId, onNotify }: PanelProps) {
+export function ZMartPanel({ saveId, onNotify }: PanelProps) {
   const queryClient = useQueryClient();
   const catalogQuery = useQuery({
     queryKey: ['appliances', saveId],
@@ -26,7 +25,7 @@ export function SocketCityPanel({ saveId, onNotify }: PanelProps) {
     onSuccess: (res: ApplianceResponse) => {
       queryClient.setQueryData(['save', saveId], res.state);
       void queryClient.invalidateQueries({ queryKey: ['appliances', saveId] });
-      const name = APPLIANCE_NAMES[res.item] ?? res.item;
+      const name = BOOK_NAMES[res.item] ?? res.item;
       onNotify(`Bought ${name} (R${res.price})`);
     },
     onError: () => {
@@ -41,14 +40,14 @@ export function SocketCityPanel({ saveId, onNotify }: PanelProps) {
     return <p role="alert">{catalogQuery.error.message}</p>;
   }
 
-  const stock = catalogQuery.data?.filter((item) => item.store === 'SOCKET_CITY');
+  const stock = catalogQuery.data?.filter((item) => item.store === 'Z_MART');
   if (stock === undefined) {
     return null;
   }
 
   const rows: StoreRow[] = stock.map((item) => ({
     id: item.id,
-    label: APPLIANCE_NAMES[item.id] ?? item.id,
+    label: BOOK_NAMES[item.id] ?? item.id,
     price: item.price,
     detail: item.owned ? 'Owned' : undefined,
     actionLabel: 'Buy',
@@ -57,7 +56,7 @@ export function SocketCityPanel({ saveId, onNotify }: PanelProps) {
 
   return (
     <StorePanel
-      heading="Socket City"
+      heading="Z-Mart"
       rows={rows}
       onAction={(id) => mutation.mutate(id)}
       pending={mutation.isPending}

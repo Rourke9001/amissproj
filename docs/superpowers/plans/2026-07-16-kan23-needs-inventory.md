@@ -3814,7 +3814,8 @@ git commit -F commit.txt
 - Modify: `amiss-core/src/test/java/amiss/application/service/save/CourseServiceTest.java`
 
 **Interfaces:**
-- Produces: `CourseService.study` grades against a per-save `studiesRequired(save)` (10, minus 1 for Computer, minus 1 more for all three Books, floor 8) instead of the flat `STUDIES_PER_DEGREE` constant. `STUDIES_PER_DEGREE` itself is unchanged (still the base) — only the comparison and the `GRADUATED` result's reported count use the adjusted value.
+- Produces: `CourseService.study` grades against a per-save `studiesRequired(save)` (10, minus 1 for Computer, minus 1 more for all three Books, floor 8) instead of the flat `STUDIES_PER_DEGREE` constant. `STUDIES_PER_DEGREE` itself is unchanged (still the base).
+- AS BUILT (drift fixed during execution): `studiesRequired(SaveState)` is a PUBLIC instance method, not the private static helper shown below, because the flat-10 requirement also leaked onto the wire — `UniversityController` computed `studiesRemaining = STUDIES_PER_DEGREE - studiesDone` and the frontend hardcodes "/10" (`UniversityPanel.tsx`, `Hud.tsx`). `StudyResponse` gained `studiesRequired` (after `studiesRemaining`), `CurrentCourseDto` gained `studiesRequired` (after `studiesDone`, populated by `PlayerStateAssembler` via the public method), and the controller derives `studiesRemaining` from the adjusted requirement. Task 27 consumes the new fields to replace the frontend's "/10" literals.
 
 - [ ] **Step 1: Write the failing tests** (read `CourseServiceTest` first for its exact degree-fixture constant name, e.g. `JUNIOR_COLLEGE`, and mirror it)
 

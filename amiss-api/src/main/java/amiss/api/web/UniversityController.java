@@ -93,18 +93,20 @@ public class UniversityController {
         SaveState save = scope.require(saveId, authentication);
         LocationGuard.requireAt(services.travel(), save, Location.HI_TECH_U);
 
-        CourseService.StudyResult outcome = services.courses().study(save);
+        CourseService courseService = services.courses();
+        CourseService.StudyResult outcome = courseService.study(save);
         switch (outcome.status()) {
             case NOT_ENROLLED:
                 throw new NotEnrolledException(saveId);
             case WEEK_OVER:
                 throw new WeekOverException(saveId);
             default:
+                int studiesRequired = courseService.studiesRequired(save);
                 int studiesRemaining = outcome.status() == CourseService.StudyResult.Status.GRADUATED
                         ? 0
-                        : CourseService.STUDIES_PER_DEGREE - outcome.studiesDone();
-                return new StudyResponse(outcome.studiesDone(), studiesRemaining, outcome.degreeCompleted(),
-                        costs.studyMinutes(), assembler.assemble(services, save));
+                        : studiesRequired - outcome.studiesDone();
+                return new StudyResponse(outcome.studiesDone(), studiesRemaining, studiesRequired,
+                        outcome.degreeCompleted(), costs.studyMinutes(), assembler.assemble(services, save));
         }
     }
 }

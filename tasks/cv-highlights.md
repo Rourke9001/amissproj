@@ -634,6 +634,34 @@ IT: V12 has no legacy column to carry forward, so the interesting assertion isn'
 exist', it's 'a pre-existing row gets the same default a brand-new save gets' — proven against the
 same full V1-to-latest chain every migration in this project has to survive."*
 
+### Extra credit & Z-Mart books — the zero-migration payoff PR (KAN-23 PR 5)
+- Closed out KAN-23 with the **extra-credit rule**: a degree needs 10 study sessions, minus one
+  for owning a Computer, minus one more for owning all three Books (Encyclopedia, Dictionary,
+  Atlas), floor 8 — implemented TDD-first as a single `studiesRequired(save)` authority on
+  `CourseService` so the grading comparison, the graduation report, and the wire all read one
+  method.
+- Shipped four new store items with **zero backend service, controller, or schema changes**: the
+  Computer and three Books are enum constants flowing through PR 2's `@ElementCollection`
+  ownership table, the values()-driven catalog endpoint, the shared `EconomyService` pricing
+  path, and the service-side ALREADY_OWNED guard — every piece was built one-to-three PRs
+  earlier so this PR could be pure data.
+- Caught and fixed a **wire-contract lie the plan missed**: the API computed `studiesRemaining`
+  from the flat constant, so a Computer owner would have been told "4 sessions to go" and then
+  graduated after 3. `studiesRequired` now travels on both the study response and the
+  current-course state, and the frontend's two hardcoded "/10" displays render the real per-save
+  requirement instead.
+- Added the **Z-Mart panel** by reusing the shared `StorePanel` component and the existing
+  appliance API untouched — a filtered view plus a name map — with mutation-tested display
+  coverage (revert the field to a literal 10, watch the suite fail; flip the store filter, watch
+  it fail) proving the tests discriminate rather than decorate.
+
+**Talking point:** *"The headline here is what this PR didn't have to touch: four new purchasable
+items and a gameplay rule, with no migration, no new endpoint, and no service changes, because the
+ownership plumbing, the pricing authority, and the already-owned guard were all placed in earlier
+PRs with this one in mind. The bug worth telling is the study counter: the plan changed when you
+graduate but not what the API told you was remaining — the kind of drift you only catch by
+grepping every consumer of a constant instead of trusting the plan's file list."*
+
 ## Phase 4 — Showcase & deploy
 
 ### Architecture documentation refresh — the map matches the territory (KAN-55)

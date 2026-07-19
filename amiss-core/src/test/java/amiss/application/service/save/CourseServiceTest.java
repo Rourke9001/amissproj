@@ -9,6 +9,7 @@ import amiss.application.config.ActionCosts;
 import amiss.application.port.DegreeCatalog;
 import amiss.application.port.SaveDegrees;
 import amiss.application.port.SaveRepository;
+import amiss.domain.model.ApplianceItem;
 import amiss.domain.model.DegreeSpec;
 import amiss.domain.model.SaveState;
 import java.util.List;
@@ -108,6 +109,66 @@ class CourseServiceTest {
         assertEquals(45, save.dependability());
         verify(degrees).award(TestSaves.SAVE_ID, 1);
         verify(saves).update(save);
+    }
+
+    @Test
+    void ownersOfAComputerGraduateOneStudySessionEarly() {
+        when(catalog.byId(1)).thenReturn(Optional.of(JUNIOR_COLLEGE));
+        SaveState save = TestSaves.newSave();
+        save.setCurrentCourseId(1);
+        save.setEduprog(8);
+        save.grantAppliance(ApplianceItem.COMPUTER);
+
+        CourseService.StudyResult result = service().study(save);
+
+        assertEquals(CourseService.StudyResult.Status.GRADUATED, result.status());
+        assertEquals(9, result.studiesDone());
+    }
+
+    @Test
+    void ownersOfAllThreeBooksGraduateOneStudySessionEarly() {
+        when(catalog.byId(1)).thenReturn(Optional.of(JUNIOR_COLLEGE));
+        SaveState save = TestSaves.newSave();
+        save.setCurrentCourseId(1);
+        save.setEduprog(8);
+        save.grantAppliance(ApplianceItem.ENCYCLOPEDIA);
+        save.grantAppliance(ApplianceItem.DICTIONARY);
+        save.grantAppliance(ApplianceItem.ATLAS);
+
+        CourseService.StudyResult result = service().study(save);
+
+        assertEquals(CourseService.StudyResult.Status.GRADUATED, result.status());
+    }
+
+    @Test
+    void owningOnlyTwoOfTheThreeBooksGrantsNoBonus() {
+        SaveState save = TestSaves.newSave();
+        save.setCurrentCourseId(1);
+        save.setEduprog(8);
+        save.grantAppliance(ApplianceItem.ENCYCLOPEDIA);
+        save.grantAppliance(ApplianceItem.DICTIONARY);
+
+        CourseService.StudyResult result = service().study(save);
+
+        assertEquals(CourseService.StudyResult.Status.OK, result.status());
+        assertEquals(9, result.studiesDone());
+    }
+
+    @Test
+    void computerAndAllThreeBooksTogetherFloorAtEight() {
+        when(catalog.byId(1)).thenReturn(Optional.of(JUNIOR_COLLEGE));
+        SaveState save = TestSaves.newSave();
+        save.setCurrentCourseId(1);
+        save.setEduprog(7);
+        save.grantAppliance(ApplianceItem.COMPUTER);
+        save.grantAppliance(ApplianceItem.ENCYCLOPEDIA);
+        save.grantAppliance(ApplianceItem.DICTIONARY);
+        save.grantAppliance(ApplianceItem.ATLAS);
+
+        CourseService.StudyResult result = service().study(save);
+
+        assertEquals(CourseService.StudyResult.Status.GRADUATED, result.status());
+        assertEquals(8, result.studiesDone());
     }
 
     @Test

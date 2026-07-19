@@ -67,6 +67,19 @@ describe('Hud', () => {
     expect(screen.getByText('Casual 4wk / Dress 7wk / Business 11wk')).toBeInTheDocument();
   });
 
+  it('shows the current course studies-done/studies-required ratio, not a hardcoded 10', () => {
+    render(
+      <Hud
+        player={playerFixture({
+          currentCourse: { id: 1, name: 'Junior College', studiesDone: 3, studiesRequired: 9 },
+        })}
+        onEndWeek={vi.fn()}
+        endWeekPending={false}
+      />,
+    );
+    expect(screen.getByText(/Studying Junior College \(3\/9\)/)).toBeInTheDocument();
+  });
+
   it('shows the relaxation stat distinctly from every other numeric stat', () => {
     render(
       <Hud player={playerFixture({ relaxation: 37 })} onEndWeek={vi.fn()} endWeekPending={false} />,

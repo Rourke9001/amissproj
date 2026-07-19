@@ -88,10 +88,22 @@ describe('UniversityPanel', () => {
     expect(screen.getByText('Requires: Junior College')).toBeInTheDocument();
   });
 
+  it('renders the studies-done/studies-required ratio from the current course', async () => {
+    renderPanel(
+      playerFixture({
+        currentCourse: { id: 1, name: 'Junior College', studiesDone: 3, studiesRequired: 9 },
+      }),
+    );
+
+    expect(await screen.findByText(/3\/9/)).toBeInTheDocument();
+  });
+
   it('enrolls by degree id and applies the returned state', async () => {
     const response: EnrollResponse = {
       feePaid: 50,
-      state: playerFixture({ currentCourse: { id: 1, name: 'Junior College', studiesDone: 0 } }),
+      state: playerFixture({
+        currentCourse: { id: 1, name: 'Junior College', studiesDone: 0, studiesRequired: 9 },
+      }),
     };
     vi.mocked(enroll).mockResolvedValue(response);
     const { onNotify, queryClient } = renderPanel();
@@ -106,15 +118,18 @@ describe('UniversityPanel', () => {
 
   it('study takes no degree id and reports graduation', async () => {
     const response: StudyResponse = {
-      studiesDone: 10,
+      studiesDone: 9,
       studiesRemaining: 0,
+      studiesRequired: 9,
       degreeCompleted: 'Junior College',
       minutesCharged: 360,
       state: playerFixture({ degreesEarned: ['Junior College'] }),
     };
     vi.mocked(study).mockResolvedValue(response);
     const { onNotify } = renderPanel(
-      playerFixture({ currentCourse: { id: 1, name: 'Junior College', studiesDone: 9 } }),
+      playerFixture({
+        currentCourse: { id: 1, name: 'Junior College', studiesDone: 8, studiesRequired: 9 },
+      }),
     );
     const user = userEvent.setup();
 
