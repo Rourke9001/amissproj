@@ -106,7 +106,7 @@ class ApplianceControllerTest {
 
         mvc.perform(get("/api/saves/7/appliances").with(jwt().jwt(j -> j.subject("bob"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$.length()").value(6))
                 .andExpect(jsonPath("$[0].id").value("FRIDGE"))
                 .andExpect(jsonPath("$[0].price").value(1314))  // base 876 + 438
                 .andExpect(jsonPath("$[0].store").value("SOCKET_CITY"))
@@ -114,7 +114,23 @@ class ApplianceControllerTest {
                 .andExpect(jsonPath("$[1].id").value("FREEZER"))
                 .andExpect(jsonPath("$[1].price").value(769))   // base 513 + 256 (floor)
                 .andExpect(jsonPath("$[1].store").value("SOCKET_CITY"))
-                .andExpect(jsonPath("$[1].owned").value(false));
+                .andExpect(jsonPath("$[1].owned").value(false))
+                .andExpect(jsonPath("$[2].id").value("COMPUTER"))
+                .andExpect(jsonPath("$[2].price").value(2398))  // base 1599 + 799 (floor)
+                .andExpect(jsonPath("$[2].store").value("SOCKET_CITY"))
+                .andExpect(jsonPath("$[2].owned").value(false))
+                .andExpect(jsonPath("$[3].id").value("ENCYCLOPEDIA"))
+                .andExpect(jsonPath("$[3].price").value(712))   // base 475 + 237 (floor)
+                .andExpect(jsonPath("$[3].store").value("Z_MART"))
+                .andExpect(jsonPath("$[3].owned").value(false))
+                .andExpect(jsonPath("$[4].id").value("DICTIONARY"))
+                .andExpect(jsonPath("$[4].price").value(105))   // base 70 + 35
+                .andExpect(jsonPath("$[4].store").value("Z_MART"))
+                .andExpect(jsonPath("$[4].owned").value(false))
+                .andExpect(jsonPath("$[5].id").value("ATLAS"))
+                .andExpect(jsonPath("$[5].price").value(82))    // base 55 + 27 (floor)
+                .andExpect(jsonPath("$[5].store").value("Z_MART"))
+                .andExpect(jsonPath("$[5].owned").value(false));
     }
 
     // ---- POST /api/saves/{id}/appliances -----------------------------------------
@@ -133,7 +149,8 @@ class ApplianceControllerTest {
 
     @Test
     void buy_unknownItemIsA400Problem() throws Exception {
-        mvc.perform(postBody("/api/saves/7/appliances", "item", "COMPUTER"))
+        // TOASTER isn't a real ApplianceItem constant (COMPUTER became one in KAN-23 extra credit).
+        mvc.perform(postBody("/api/saves/7/appliances", "item", "TOASTER"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:amiss:unknown-item"));
